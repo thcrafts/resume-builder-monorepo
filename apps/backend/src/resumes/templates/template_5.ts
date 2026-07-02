@@ -673,39 +673,54 @@ export class ResumePDFTemplate5 {
         doc.addPage();
       }
 
-      // Render degree title
-      doc
-        .font(this.fontBold)
-        .fontSize(degreeFontSize)
-        .fillColor(defaultColor)
-        .text(edu.degree || '', this.marginX, doc.y, {
-          width: this.contentWidth,
-          align: 'left'
-        });
-
       const institution = edu.institution || '';
       const dateRange = edu.date_range || '';
       const location = edu.location || '';
       const institutionText = institution.trim();
 
+      // Bachelor of Science in Computer Science
+      // University of Kansas — Lawrence, KS
+      // 08/2012 - 05/2016
+      // doc
+      //   .font(this.fontBold)
+      //   .fontSize(degreeFontSize)
+      //   .fillColor(defaultColor)
+      //   .text(edu.degree || '', this.marginX, doc.y, {
+      //     width: this.contentWidth,
+      //     align: 'left'
+      //   });
+      // doc
+      //   .font(this.fontName)
+      //   .fontSize(institutionFontSize)
+      //   .fillColor(defaultColor)
+      //   .text(`${institutionText} — ${location}`, this.marginX, doc.y, {
+      //     width: this.contentWidth,
+      //     align: 'left',
+      //     lineGap: 2
+      //   });
+      // doc
+      //   .font(this.fontName)
+      //   .fontSize(dateFontSize)
+      //   .fillColor(defaultColor)
+      //   .text(`${dateRange}`, this.marginX, doc.y, {
+      //     width: this.contentWidth,
+      //     align: 'left',
+      //   });
+
+
+      // UC Berkeley — B.S. Computer Science, 2018
       doc
-        .font(this.fontName)
+        .font(this.fontBold)
         .fontSize(institutionFontSize)
         .fillColor(defaultColor)
-        .text(`${institutionText} — ${location}`, this.marginX, doc.y, {
+        .text(`${institutionText} — ${edu.degree}, `, this.marginX, doc.y, {
           width: this.contentWidth,
           align: 'left',
-          lineGap: 2
+          lineGap: 2,
+          continued: true
         });
-
-      doc
-        .font(this.fontName)
-        .fontSize(dateFontSize)
-        .fillColor(defaultColor)
-        .text(`${dateRange}`, this.marginX, doc.y, {
-          width: this.contentWidth,
-          align: 'left',
-        });
+      doc.font(this.fontName)
+        .text(`${dateRange}`);
       doc.moveDown(1);
     }
   }

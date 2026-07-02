@@ -67,26 +67,23 @@ export class User {
   @Prop({ type: String, required: false })
   coverLetterPrompt?: string;
 
-  @Prop({ default: 'claude', enum: ['openai', 'claude'] })
+  @Prop({ default: 'anthropic' })
   defaultAiModel: string;
 
-  @Prop({ default: 'claude-sonnet-4-6' })
+  @Prop({ default: 'anthropic/claude-sonnet-4.6' })
   defaultAiVersion: string;
 
   @Prop({ default: false })
   defaultGenerateFromJson: boolean;
 
-  @Prop({ default: 'openai', enum: ['openai', 'claude'] })
+  @Prop({ default: 'openai' })
   defaultFromJsonAiModel: string;
 
-  @Prop({ default: 'gpt-5.5-thinking' })
+  @Prop({ default: 'openai/gpt-5.2' })
   defaultFromJsonAiVersion: string;
 
   @Prop({ type: String, required: false, select: false })
-  encryptedOpenaiApiKey?: string;
-
-  @Prop({ type: String, required: false, select: false })
-  encryptedAnthropicApiKey?: string;
+  encryptedOpenrouterApiKey?: string;
 
   @Prop({
     type: ResumeSettingsEmbedded,

@@ -13,7 +13,7 @@ export interface GenerateResumeDto {
   roleType: string;
   jobDescription: string;
   industry: string;
-  aiModel: "openai" | "claude";
+  aiModel: string;
   aiVersion: string;
 }
 
@@ -27,7 +27,7 @@ export interface ResumeResponse {
   conversationId?: string;
   status?: 'in_progress' | 'completed' | 'failed';
   failureMessage?: string;
-  aiModel?: 'openai' | 'claude';
+  aiModel?: string;
   aiVersion?: string;
   generationSource?: 'ai' | 'manual';
   coverLetter?: string;
@@ -261,7 +261,7 @@ export interface FromJsonDto {
   roleType: string;
   jobDescription: string;
   jsonContent: string;
-  aiModel: "openai" | "claude";
+  aiModel: string;
   aiVersion: string;
 }
 

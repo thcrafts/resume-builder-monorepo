@@ -45,7 +45,6 @@ import {
   DarkMode as DarkModeIcon,
   Refresh as RefreshIcon,
 } from "@mui/icons-material";
-import { OpenAI, Claude } from "@lobehub/icons";
 import { Link, useNavigate } from "react-router";
 import {
   getResumes,
@@ -64,6 +63,10 @@ import QuestionsDialog from "../../components/resumes/QuestionsDialog";
 import AiVersionBadge from "../../components/resumes/AiVersionBadge";
 import { useAuth } from "../../components/common/AuthContext";
 import { useThemeMode } from "../../components/common/ThemeContext";
+import { useAiModels } from "../../components/common/AiModelsContext";
+import ModelProviderIcon from "../../components/common/ModelProviderIcon";
+import { getProviderLabel } from "../../constants/aiModels";
+import { chipWithIconSx } from "../../styles/chipWithIcon";
 import { getProfile } from "../../services/userService";
 import { socket } from "./socket";
 
@@ -74,65 +77,52 @@ const getLocalDateString = (date = new Date()) => {
   return `${year}-${month}-${day}`;
 };
 
-const countChipSx = {
+const countChipSx = chipWithIconSx;
+
+const sourceChipSelectedSx = {
+  bgcolor: "primary.main",
+  color: "primary.contrastText",
+  borderColor: "primary.main",
+  fontWeight: 700,
+  boxShadow: 3,
   "& .MuiChip-icon": {
-    marginLeft: "6px",
-    marginRight: "-2px",
+    color: "primary.contrastText",
   },
-  "& .MuiChip-label": {
-    pl: 0.75,
+  "&:hover": {
+    bgcolor: "primary.dark",
   },
 };
 
-const sourceChipSelectedSx = {
-  gpt: {
-    bgcolor: "primary.main",
-    color: "primary.contrastText",
-    borderColor: "primary.main",
-    fontWeight: 700,
-    boxShadow: 3,
-    "& .MuiChip-icon": {
-      color: "primary.contrastText",
-    },
-    "&:hover": {
-      bgcolor: "primary.dark",
-    },
-  },
-  claude: {
-    bgcolor: "#D97757",
-    color: "#fff",
-    borderColor: "#D97757",
-    fontWeight: 700,
-    boxShadow: 3,
-    "& .MuiChip-icon": {
-      color: "#fff",
-    },
-    "&:hover": {
-      bgcolor: "#C96A4D",
-    },
-  },
-  manual: {
-    bgcolor: "secondary.main",
+const manualChipSelectedSx = {
+  bgcolor: "secondary.main",
+  color: "secondary.contrastText",
+  borderColor: "secondary.main",
+  fontWeight: 700,
+  boxShadow: 3,
+  "& .MuiChip-icon": {
     color: "secondary.contrastText",
-    borderColor: "secondary.main",
-    fontWeight: 700,
-    boxShadow: 3,
-    "& .MuiChip-icon": {
-      color: "secondary.contrastText",
-    },
-    "&:hover": {
-      bgcolor: "secondary.dark",
-    },
+  },
+  "&:hover": {
+    bgcolor: "secondary.dark",
   },
 } as const;
 
-type ChipFilter =
-  | "completed"
-  | "in_progress"
-  | "failed"
-  | "gpt"
-  | "claude"
-  | "manual";
+type StatusChipFilter = "completed" | "in_progress" | "failed";
+type ChipFilter = StatusChipFilter | "manual" | `provider:${string}`;
+
+function normalizeResumeProvider(aiModel?: string): string {
+  if (!aiModel) {
+    return "unknown";
+  }
+  if (aiModel === "claude") {
+    return "anthropic";
+  }
+  if (aiModel === "openai") {
+    return "openai";
+  }
+
+  return aiModel.split("/")[0] || aiModel;
+}
 
 const matchesChipFilter = (resume: ResumeResponse, filter: ChipFilter) => {
   switch (filter) {
@@ -144,20 +134,20 @@ const matchesChipFilter = (resume: ResumeResponse, filter: ChipFilter) => {
       return resume.status === "failed";
     case "manual":
       return resume.generationSource === "manual";
-    case "gpt":
-      return (
-        resume.generationSource !== "manual" && resume.aiModel !== "claude"
-      );
-    case "claude":
-      return (
-        resume.generationSource !== "manual" && resume.aiModel === "claude"
-      );
     default:
+      if (filter.startsWith("provider:")) {
+        const providerId = filter.slice("provider:".length);
+        return (
+          resume.generationSource !== "manual" &&
+          normalizeResumeProvider(resume.aiModel) === providerId
+        );
+      }
       return true;
   }
 };
 
 const Resumes: React.FC = () => {
+  const { catalog } = useAiModels();
   const [resumes, setResumes] = React.useState<ResumeResponse[]>([]);
   const [loading, setLoading] = React.useState(false);
   const [selectedResumes, setSelectedResumes] = React.useState<Set<string>>(
@@ -436,12 +426,19 @@ const Resumes: React.FC = () => {
     const inProgress = resumes.filter((r) => r.status === "in_progress").length;
     const failed = resumes.filter((r) => r.status === "failed").length;
     const manual = resumes.filter((r) => r.generationSource === "manual").length;
-    const gpt = resumes.filter(
-      (r) => r.generationSource !== "manual" && r.aiModel !== "claude",
-    ).length;
-    const claude = resumes.filter(
-      (r) => r.generationSource !== "manual" && r.aiModel === "claude",
-    ).length;
+    const providerCounts = new Map<string, number>();
+
+    for (const resume of resumes) {
+      if (resume.generationSource === "manual") {
+        continue;
+      }
+
+      const providerId = normalizeResumeProvider(resume.aiModel);
+      providerCounts.set(
+        providerId,
+        (providerCounts.get(providerId) ?? 0) + 1,
+      );
+    }
 
     return {
       total: resumes.length,
@@ -449,10 +446,30 @@ const Resumes: React.FC = () => {
       inProgress,
       failed,
       manual,
-      gpt,
-      claude,
+      providerCounts,
     };
   }, [resumes]);
+
+  const providerFilters = React.useMemo(() => {
+    const ordered: string[] = [];
+    const seen = new Set<string>();
+
+    for (const provider of catalog?.providers ?? []) {
+      if ((resumeCounts.providerCounts.get(provider.id) ?? 0) > 0) {
+        ordered.push(provider.id);
+        seen.add(provider.id);
+      }
+    }
+
+    for (const providerId of resumeCounts.providerCounts.keys()) {
+      if (!seen.has(providerId)) {
+        ordered.push(providerId);
+        seen.add(providerId);
+      }
+    }
+
+    return ordered;
+  }, [catalog, resumeCounts.providerCounts]);
 
   const filteredResumes = React.useMemo(() => {
     if (!chipFilter) {
@@ -471,26 +488,35 @@ const Resumes: React.FC = () => {
     sx: { cursor: "pointer" },
   });
 
-  const getSourceChipProps = (filter: "gpt" | "claude" | "manual") => {
+  const getSourceChipProps = (filter: ChipFilter) => {
     const isSelected = chipFilter === filter;
+    const isManual = filter === "manual";
 
     return {
       clickable: true,
       onClick: () => handleChipFilterClick(filter),
       variant: (isSelected ? "filled" : "outlined") as "filled" | "outlined",
-      color:
-        filter === "gpt"
-          ? ("primary" as const)
-          : filter === "manual"
-            ? ("secondary" as const)
-            : undefined,
+      color: isManual ? ("secondary" as const) : undefined,
       sx: {
         ...countChipSx,
         cursor: "pointer",
         borderWidth: isSelected ? 2 : 1,
         transition: "all 0.15s ease",
+        ...(isManual
+          ? {
+              "& .MuiChip-icon": {
+                marginLeft: 0,
+                marginRight: 0,
+              },
+              "& .MuiChip-icon svg": {
+                marginRight: 0,
+              },
+            }
+          : {}),
         ...(isSelected
-          ? sourceChipSelectedSx[filter]
+          ? isManual
+            ? manualChipSelectedSx
+            : sourceChipSelectedSx
           : {
               "&:hover": {
                 bgcolor: "action.hover",
@@ -941,26 +967,21 @@ const Resumes: React.FC = () => {
                     {...getChipProps("failed")}
                   />
                 )}
+                {providerFilters.map((providerId) => {
+                  const filter = `provider:${providerId}` as const;
+                  return (
+                    <Chip
+                      key={providerId}
+                      icon={<ModelProviderIcon provider={providerId} size={16} />}
+                      label={resumeCounts.providerCounts.get(providerId) ?? 0}
+                      size="small"
+                      title={getProviderLabel(catalog, providerId)}
+                      {...getSourceChipProps(filter)}
+                    />
+                  );
+                })}
                 <Chip
-                  icon={<OpenAI size={16} />}
-                  label={resumeCounts.gpt}
-                  size="small"
-                  {...getSourceChipProps("gpt")}
-                />
-                <Chip
-                  icon={
-                    chipFilter === "claude" ? (
-                      <Claude size={16} color="#fff" />
-                    ) : (
-                      <Claude.Color size={16} />
-                    )
-                  }
-                  label={resumeCounts.claude}
-                  size="small"
-                  {...getSourceChipProps("claude")}
-                />
-                <Chip
-                  icon={<CodeIcon sx={{ fontSize: 16 }} />}
+                  icon={<CodeIcon sx={{ fontSize: 16, mr: 0 }} />}
                   label={resumeCounts.manual}
                   size="small"
                   {...getSourceChipProps("manual")}

@@ -7,7 +7,7 @@ Monorepo for the AI resume tailor application.
 ```
 resume-builder/
 ├── apps/
-│   ├── backend/    # NestJS API (MongoDB, OpenAI, Claude)
+│   ├── backend/    # NestJS API (MongoDB, OpenRouter)
 │   └── frontend/   # React + Vite UI
 ├── package.json    # Workspace root
 └── README.md
@@ -17,8 +17,7 @@ resume-builder/
 
 - Node.js 18+
 - MongoDB
-- OpenAI API key (required)
-- Anthropic API key (optional, for Claude models)
+- OpenRouter API key (required)
 
 ## Setup
 
@@ -36,7 +35,7 @@ ENCRYPTION_KEY=your_32_byte_hex_encryption_key
 PORT=3000
 ```
 
-Each user adds their own OpenAI and Anthropic API keys in **Profile** settings. Keys are encrypted at rest in the database.
+Each user adds their own OpenRouter API key in **Profile** settings. Keys are encrypted at rest in the database.
 
 3. (Optional) Configure the frontend in `apps/frontend/.env`:
 
@@ -79,65 +78,22 @@ npm run dev -w resume-builder-frontend
 npm run build
 ```
 
-## Adding a new AI model version
+## AI models
 
-Model options are defined in two places. Keep the `value` strings in sync between frontend and backend.
+Model options are loaded dynamically from the [OpenRouter models API](https://openrouter.ai/docs/api-reference/models/list-models). The backend caches the catalog for one hour and exposes it at `GET /api/ai/models`.
 
-### 1. Frontend (dropdown labels)
+- **Provider** (`aiModel`) — OpenRouter provider slug (e.g. `anthropic`, `openai`, `google`)
+- **Version** (`aiVersion`) — full OpenRouter model ID (e.g. `anthropic/claude-sonnet-4.6`)
 
-Edit `apps/frontend/src/constants/aiModels.ts`:
+The frontend uses this catalog for model selectors in Profile settings, Generate Resume, and resume list badges. Provider icons come from [`@lobehub/icons`](https://github.com/lobehub/lobe-icons).
 
-- Add an entry to `OPENAI_MODELS` or `CLAUDE_MODELS`:
-  - `label` — display name in the model selector and resume list
-  - `value` — stored as `aiVersion` and sent to the API
-- Optionally update defaults in the same file:
-  - `DEFAULT_OPENAI_VERSION` / `DEFAULT_CLAUDE_VERSION` — pre-selected model on Generate Resume
-  - `DEFAULT_FROM_JSON_AI_VERSION` — pre-selected model on From JSON
-  - `DEFAULT_AI_PROVIDER` — default provider toggle
+### Changing default models
 
-`AiModelSelector` reads these arrays automatically; no component changes are required.
+Edit defaults in `apps/backend/src/ai/openrouter-models.service.ts` (`pickDefaults`). The same values are returned in the catalog `defaults` field and used by the frontend when a user has no saved preference.
 
-### 2. Backend (API model ID mapping)
+Legacy resumes that stored `claude` / short version IDs are normalized automatically via `apps/backend/src/ai/ai-models.ts` and `apps/frontend/src/constants/aiModels.ts`.
 
-Edit `apps/backend/src/ai/ai-models.ts`:
-
-- Add the same `value` key to `OPENAI_MODEL_API_IDS` or `CLAUDE_MODEL_API_IDS`
-- Map it to the provider's real API model ID (used by `resolveApiModelId()`)
-
-**OpenAI:** multiple UI variants can map to one base model:
-
-```ts
-'gpt-5.5-instant': 'gpt-5.5',
-'gpt-5.5-thinking': 'gpt-5.5',
-'gpt-5.5-pro': 'gpt-5.5-pro',
-```
-
-**Claude:** usually 1:1 — use the exact Anthropic model string for both key and value.
-
-### 3. Optional — change app-wide defaults
-
-Only if the new model should be the default everywhere:
-
-| File | Purpose |
-|------|---------|
-| `apps/frontend/src/constants/aiModels.ts` | UI pre-selection |
-| `apps/backend/src/resumes/schemas/resume.schema.ts` | DB default when `aiVersion` is missing |
-| `apps/backend/src/openai/openai.service.ts` | Service fallback when `aiVersion` is omitted |
-| `apps/backend/src/resumes/resumes.service.ts` | Same fallback in resume generation |
-
-### Example
-
-To add **GPT-5.6 Thinking**:
-
-```ts
-// apps/frontend/src/constants/aiModels.ts
-{ label: "GPT-5.6 Thinking", value: "gpt-5.6-thinking" },
-
-// apps/backend/src/ai/ai-models.ts
-'gpt-5.6-thinking': 'gpt-5.6',
-```
-
-No DTO or schema enum updates are needed — `aiVersion` is validated as a non-empty string.
+No manual enum or hardcoded model list updates are required when OpenRouter adds new models — they appear in the UI after the cache refreshes.
 
 ## Workspaces
 

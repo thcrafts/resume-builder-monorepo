@@ -41,8 +41,10 @@ import {
   getProfile,
   updateProfile,
   revealApiKeys,
+  getOpenrouterUsage,
   type UserResponse,
   type UpdateProfileDto,
+  type OpenRouterKeyUsage,
 } from "../../services/userService";
 import { downloadTemplatePreview } from "../../services/resumeService";
 import { resizableMultilineSx, PROMPT_FIELD_ROWS } from "../../constants/textFieldStyles";
@@ -53,10 +55,10 @@ import {
 } from "../../constants/aiPrompts";
 import AiModelSelector from "../../components/resumes/AiModelSelector";
 import {
-  type AiProvider,
   resolveUserDefaultAi,
   resolveUserDefaultFromJsonAi,
 } from "../../constants/aiModels";
+import { useAiModels } from "../../components/common/AiModelsContext";
 import { useThemeMode } from "../../components/common/ThemeContext";
 import {
   ALERT_POSITIONS,
@@ -111,7 +113,7 @@ const PROFILE_SECTIONS: Array<{
   {
     id: "api-keys",
     label: "API Keys",
-    description: "OpenAI and Anthropic credentials",
+    description: "OpenRouter API key and usage",
     icon: <KeyIcon fontSize="small" />,
   },
   {
@@ -202,6 +204,7 @@ function ResumeCheckboxRow({
 }
 
 const Profile: React.FC = () => {
+  const { catalog } = useAiModels();
   const { mode, setMode } = useThemeMode();
   const { position: alertPosition, setPosition: setAlertPosition } =
     useToastPosition();
@@ -216,29 +219,30 @@ const Profile: React.FC = () => {
     instructions: "",
     coverLetterPrompt: "",
     questionsPrompt: "",
-    defaultAiModel: "claude" as AiProvider,
-    defaultAiVersion: "claude-sonnet-4-6",
-    defaultFromJsonAiModel: "openai" as AiProvider,
-    defaultFromJsonAiVersion: "gpt-5.5-thinking",
+    defaultAiModel: "anthropic",
+    defaultAiVersion: "anthropic/claude-sonnet-4.6",
+    defaultFromJsonAiModel: "openai",
+    defaultFromJsonAiVersion: "openai/gpt-5.2",
     defaultGenerateFromJson: false,
-    openaiApiKey: "",
-    anthropicApiKey: "",
+    openrouterApiKey: "",
     currentPassword: "",
     newPassword: "",
     confirmPassword: "",
   });
   const [resumeSettingsForm, setResumeSettingsForm] =
     React.useState<ResumeSettings>(DEFAULT_RESUME_SETTINGS);
-  const [clearOpenaiApiKey, setClearOpenaiApiKey] = React.useState(false);
-  const [clearAnthropicApiKey, setClearAnthropicApiKey] = React.useState(false);
+  const [clearOpenrouterApiKey, setClearOpenrouterApiKey] = React.useState(false);
   const [verifyPassword, setVerifyPassword] = React.useState("");
   const [keysRevealed, setKeysRevealed] = React.useState(false);
   const [revealingKeys, setRevealingKeys] = React.useState(false);
   const [showRevealedKeys, setShowRevealedKeys] = React.useState(true);
   const [revealedSnapshot, setRevealedSnapshot] = React.useState<{
-    openai: string | null;
-    anthropic: string | null;
+    openrouter: string | null;
   } | null>(null);
+  const [openrouterUsage, setOpenrouterUsage] =
+    React.useState<OpenRouterKeyUsage | null>(null);
+  const [loadingUsage, setLoadingUsage] = React.useState(false);
+  const [usageError, setUsageError] = React.useState<string | null>(null);
   const [apiKeysError, setApiKeysError] = React.useState<string | null>(null);
   const [securityError, setSecurityError] = React.useState<string | null>(null);
   const [changingPassword, setChangingPassword] = React.useState(false);
@@ -251,20 +255,19 @@ const Profile: React.FC = () => {
 
   const applyApiKeySaveResult = React.useCallback(
     (updateData: UpdateProfileDto) => {
-      if (updateData.clearOpenaiApiKey || updateData.openaiApiKey !== undefined) {
-        setClearOpenaiApiKey(false);
-        if (!keysRevealed) {
-          setFormData((prev) => ({ ...prev, openaiApiKey: "" }));
-        }
-      }
-
       if (
-        updateData.clearAnthropicApiKey ||
-        updateData.anthropicApiKey !== undefined
+        updateData.clearOpenrouterApiKey ||
+        updateData.openrouterApiKey !== undefined
       ) {
-        setClearAnthropicApiKey(false);
-        if (!keysRevealed) {
-          setFormData((prev) => ({ ...prev, anthropicApiKey: "" }));
+        setClearOpenrouterApiKey(false);
+        if (updateData.clearOpenrouterApiKey) {
+          setKeysRevealed(false);
+          setRevealedSnapshot(null);
+          setVerifyPassword("");
+          setShowRevealedKeys(true);
+          setFormData((prev) => ({ ...prev, openrouterApiKey: "" }));
+        } else if (!keysRevealed) {
+          setFormData((prev) => ({ ...prev, openrouterApiKey: "" }));
         }
       }
     },
@@ -283,15 +286,15 @@ const Profile: React.FC = () => {
 
   React.useEffect(() => {
     loadProfile();
-  }, []);
+  }, [catalog]);
 
   const loadProfile = async () => {
     try {
       skipAutoSaveRef.current = true;
       setLoading(true);
       const profile = await getProfile();
-      const defaultAi = resolveUserDefaultAi(profile);
-      const defaultFromJsonAi = resolveUserDefaultFromJsonAi(profile);
+      const defaultAi = resolveUserDefaultAi(profile, catalog);
+      const defaultFromJsonAi = resolveUserDefaultFromJsonAi(profile, catalog);
       setUser(profile);
       setResumeSettingsForm(resolveResumeSettings(profile.resumeSettings));
       setFormData({
@@ -305,14 +308,12 @@ const Profile: React.FC = () => {
         defaultFromJsonAiModel: defaultFromJsonAi.aiModel,
         defaultFromJsonAiVersion: defaultFromJsonAi.aiVersion,
         defaultGenerateFromJson: profile.defaultGenerateFromJson ?? false,
-        openaiApiKey: "",
-        anthropicApiKey: "",
+        openrouterApiKey: "",
         currentPassword: "",
         newPassword: "",
         confirmPassword: "",
       });
-      setClearOpenaiApiKey(false);
-      setClearAnthropicApiKey(false);
+      setClearOpenrouterApiKey(false);
       setVerifyPassword("");
       setKeysRevealed(false);
       setRevealedSnapshot(null);
@@ -353,39 +354,38 @@ const Profile: React.FC = () => {
     }
   };
 
-  const handleDefaultAiModelChange = (model: AiProvider, version: string) => {
-    setFormData((prev) => {
-      const fromJson = prev.defaultGenerateFromJson;
-      const next = fromJson
-        ? {
-            ...prev,
-            defaultFromJsonAiModel: model,
-            defaultFromJsonAiVersion: version,
-          }
-        : {
-            ...prev,
-            defaultAiModel: model,
-            defaultAiVersion: version,
-          };
+  const handleDefaultAiChange = (model: string, version: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      defaultAiModel: model,
+      defaultAiVersion: version,
+    }));
 
-      if (!skipAutoSaveRef.current) {
-        void persistProfile(
-          fromJson
-            ? {
-                defaultFromJsonAiModel: model,
-                defaultFromJsonAiVersion: version,
-              }
-            : {
-                defaultAiModel: model,
-                defaultAiVersion: version,
-              },
-        ).catch(() => {
-          toast.error("Failed to save default AI model");
-        });
-      }
+    if (!skipAutoSaveRef.current) {
+      void persistProfile({
+        defaultAiModel: model,
+        defaultAiVersion: version,
+      }).catch(() => {
+        toast.error("Failed to save default AI model");
+      });
+    }
+  };
 
-      return next;
-    });
+  const handleDefaultFromJsonAiChange = (model: string, version: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      defaultFromJsonAiModel: model,
+      defaultFromJsonAiVersion: version,
+    }));
+
+    if (!skipAutoSaveRef.current) {
+      void persistProfile({
+        defaultFromJsonAiModel: model,
+        defaultFromJsonAiVersion: version,
+      }).catch(() => {
+        toast.error("Failed to save default manual model");
+      });
+    }
   };
 
   const handleDefaultGenerateFromJsonChange = (
@@ -443,6 +443,47 @@ const Profile: React.FC = () => {
     }
   };
 
+  const loadOpenrouterUsage = React.useCallback(async () => {
+    if (!user?.hasOpenrouterApiKey) {
+      setOpenrouterUsage(null);
+      setUsageError(null);
+      return;
+    }
+
+    try {
+      setLoadingUsage(true);
+      setUsageError(null);
+      const usage = await getOpenrouterUsage();
+      setOpenrouterUsage(usage);
+    } catch {
+      setUsageError("Failed to load OpenRouter usage");
+      setOpenrouterUsage(null);
+    } finally {
+      setLoadingUsage(false);
+    }
+  }, [user?.hasOpenrouterApiKey]);
+
+  React.useEffect(() => {
+    if (activeSection !== "api-keys") {
+      setApiKeysError(null);
+      setUsageError(null);
+    }
+  }, [activeSection]);
+
+  React.useEffect(() => {
+    if (activeSection === "api-keys") {
+      void loadOpenrouterUsage();
+    }
+  }, [activeSection, loadOpenrouterUsage]);
+
+  const formatUsd = (amount: number) =>
+    new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 4,
+    }).format(amount);
+
   const handleHideApiKeys = () => {
     setKeysRevealed(false);
     setRevealedSnapshot(null);
@@ -451,8 +492,7 @@ const Profile: React.FC = () => {
     setApiKeysError(null);
     setFormData((prev) => ({
       ...prev,
-      openaiApiKey: "",
-      anthropicApiKey: "",
+      openrouterApiKey: "",
     }));
   };
 
@@ -467,56 +507,39 @@ const Profile: React.FC = () => {
       setApiKeysError(null);
       const keys = await revealApiKeys(verifyPassword);
       setRevealedSnapshot({
-        openai: keys.openaiApiKey,
-        anthropic: keys.anthropicApiKey,
+        openrouter: keys.openrouterApiKey,
       });
       setFormData((prev) => ({
         ...prev,
-        openaiApiKey: keys.openaiApiKey || "",
-        anthropicApiKey: keys.anthropicApiKey || "",
+        openrouterApiKey: keys.openrouterApiKey || "",
       }));
       setKeysRevealed(true);
       setShowRevealedKeys(true);
-      toast.success("API keys revealed");
+      toast.success("API key revealed");
+      void loadOpenrouterUsage();
     } catch {
-      setApiKeysError("Incorrect password. Could not reveal API keys.");
-      toast.error("Failed to reveal API keys");
+      setApiKeysError("Incorrect password. Could not reveal API key.");
+      toast.error("Failed to reveal API key");
     } finally {
       setRevealingKeys(false);
     }
   };
 
-  const isOpenaiKeyChanged =
-    clearOpenaiApiKey ||
-    (formData.openaiApiKey.length > 0 &&
+  const isOpenrouterKeyChanged =
+    clearOpenrouterApiKey ||
+    (formData.openrouterApiKey.length > 0 &&
       (!revealedSnapshot ||
-        formData.openaiApiKey !== (revealedSnapshot.openai || "")));
+        formData.openrouterApiKey !== (revealedSnapshot.openrouter || "")));
 
-  const isAnthropicKeyChanged =
-    clearAnthropicApiKey ||
-    (formData.anthropicApiKey.length > 0 &&
-      (!revealedSnapshot ||
-        formData.anthropicApiKey !== (revealedSnapshot.anthropic || "")));
-
-  const handleClearOpenaiKey = async () => {
-    setFormData((prev) => ({ ...prev, openaiApiKey: "" }));
-    setClearOpenaiApiKey(true);
+  const handleClearOpenrouterKey = async () => {
+    setFormData((prev) => ({ ...prev, openrouterApiKey: "" }));
+    setClearOpenrouterApiKey(true);
 
     try {
-      await persistProfile({ clearOpenaiApiKey: true });
+      await persistProfile({ clearOpenrouterApiKey: true });
+      setOpenrouterUsage(null);
     } catch {
-      toast.error("Failed to clear OpenAI API key");
-    }
-  };
-
-  const handleClearAnthropicApiKey = async () => {
-    setFormData((prev) => ({ ...prev, anthropicApiKey: "" }));
-    setClearAnthropicApiKey(true);
-
-    try {
-      await persistProfile({ clearAnthropicApiKey: true });
-    } catch {
-      toast.error("Failed to clear Anthropic API key");
+      toast.error("Failed to clear OpenRouter API key");
     }
   };
 
@@ -633,44 +656,42 @@ const Profile: React.FC = () => {
       return;
     }
 
-    if (clearOpenaiApiKey || clearAnthropicApiKey) {
+    if (clearOpenrouterApiKey) {
       return;
     }
 
-    if (!isOpenaiKeyChanged && !isAnthropicKeyChanged) {
+    if (!isOpenrouterKeyChanged) {
       return;
     }
 
     const timer = window.setTimeout(() => {
       const updateData: UpdateProfileDto = {};
 
-      if (formData.openaiApiKey && isOpenaiKeyChanged) {
-        updateData.openaiApiKey = formData.openaiApiKey;
-      }
-
-      if (formData.anthropicApiKey && isAnthropicKeyChanged) {
-        updateData.anthropicApiKey = formData.anthropicApiKey;
+      if (formData.openrouterApiKey && isOpenrouterKeyChanged) {
+        updateData.openrouterApiKey = formData.openrouterApiKey;
       }
 
       if (Object.keys(updateData).length === 0) {
         return;
       }
 
-      void persistProfile(updateData).catch(() => {
-        toast.error("Failed to save API keys");
-      });
+      void persistProfile(updateData)
+        .then(() => {
+          void loadOpenrouterUsage();
+        })
+        .catch(() => {
+          toast.error("Failed to save API key");
+        });
     }, API_KEY_AUTO_SAVE_DELAY_MS);
 
     return () => window.clearTimeout(timer);
   }, [
-    formData.openaiApiKey,
-    formData.anthropicApiKey,
-    clearOpenaiApiKey,
-    clearAnthropicApiKey,
-    isOpenaiKeyChanged,
-    isAnthropicKeyChanged,
+    formData.openrouterApiKey,
+    clearOpenrouterApiKey,
+    isOpenrouterKeyChanged,
     user,
     persistProfile,
+    loadOpenrouterUsage,
   ]);
 
   const activeSectionMeta = PROFILE_SECTIONS.find(
@@ -784,30 +805,40 @@ const Profile: React.FC = () => {
 
       <Box>
         <Typography variant="subtitle1" gutterBottom>
-          Default AI Model
+          Default AI generation
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-          Pre-selected mode, provider and version on the Generate Resume page.
+          Pre-selected model and version for AI resume generation.
+        </Typography>
+        <AiModelSelector
+          aiModel={formData.defaultAiModel}
+          aiVersion={formData.defaultAiVersion}
+          onChange={handleDefaultAiChange}
+        />
+      </Box>
+
+      <Box>
+        <Typography variant="subtitle1" gutterBottom>
+          Default manual (from JSON)
         </Typography>
         <Stack spacing={2}>
           <ResumeCheckboxRow
-            label="Generate from JSON"
+            label="Open Generate Resume in from JSON mode by default"
             checked={formData.defaultGenerateFromJson}
             onChange={handleDefaultGenerateFromJsonChange}
           />
-          <AiModelSelector
-            aiModel={
-              formData.defaultGenerateFromJson
-                ? formData.defaultFromJsonAiModel
-                : formData.defaultAiModel
-            }
-            aiVersion={
-              formData.defaultGenerateFromJson
-                ? formData.defaultFromJsonAiVersion
-                : formData.defaultAiVersion
-            }
-            onChange={handleDefaultAiModelChange}
-          />
+          {formData.defaultGenerateFromJson && (
+            <>
+              <Typography variant="body2" color="text.secondary">
+                Pre-selected model and version when generating from JSON.
+              </Typography>
+              <AiModelSelector
+                aiModel={formData.defaultFromJsonAiModel}
+                aiVersion={formData.defaultFromJsonAiVersion}
+                onChange={handleDefaultFromJsonAiChange}
+              />
+            </>
+          )}
         </Stack>
       </Box>
     </Stack>
@@ -858,9 +889,63 @@ const Profile: React.FC = () => {
   const renderApiKeysSection = () => (
     <Stack spacing={3}>
       <Typography variant="body2" color="text.secondary">
-        Your API keys are encrypted and stored securely. They are used only for
-        your resume generation requests.
+        Your OpenRouter API key is encrypted and stored securely. It is used
+        only for your resume generation requests via OpenRouter.
       </Typography>
+
+      {user!.hasOpenrouterApiKey && (
+        <Paper variant="outlined" sx={{ p: 2 }}>
+          <Stack
+            direction="row"
+            justifyContent="space-between"
+            alignItems="center"
+            sx={{ mb: 1 }}
+          >
+            <Typography variant="subtitle2">API Usage</Typography>
+            <Button
+              size="small"
+              variant="text"
+              onClick={() => {
+                void loadOpenrouterUsage();
+              }}
+              disabled={loadingUsage}
+            >
+              {loadingUsage ? "Refreshing..." : "Refresh"}
+            </Button>
+          </Stack>
+          {usageError && (
+            <Alert severity="warning" sx={{ mb: 1 }}>
+              {usageError}
+            </Alert>
+          )}
+          {openrouterUsage ? (
+            <Stack spacing={0.5}>
+              <Typography variant="body2">
+                Total: {formatUsd(openrouterUsage.usage)}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Today: {formatUsd(openrouterUsage.usageDaily)} · This week:{" "}
+                {formatUsd(openrouterUsage.usageWeekly)} · This month:{" "}
+                {formatUsd(openrouterUsage.usageMonthly)}
+              </Typography>
+              {openrouterUsage.limit !== null && (
+                <Typography variant="body2" color="text.secondary">
+                  Key limit: {formatUsd(openrouterUsage.limit)}
+                  {openrouterUsage.limitRemaining !== null
+                    ? ` · Remaining: ${formatUsd(openrouterUsage.limitRemaining)}`
+                    : ""}
+                </Typography>
+              )}
+            </Stack>
+          ) : (
+            <Typography variant="body2" color="text.secondary">
+              {loadingUsage
+                ? "Loading usage..."
+                : "Usage will appear once your API key is saved."}
+            </Typography>
+          )}
+        </Paper>
+      )}
 
       <Stack
         direction={{ xs: "column", sm: "row" }}
@@ -879,7 +964,7 @@ const Profile: React.FC = () => {
             fullWidth
             variant="outlined"
             size="small"
-            helperText="Required to view saved API keys"
+            helperText="Required to view saved API key"
             disabled={keysRevealed}
           />
         </Box>
@@ -889,13 +974,10 @@ const Profile: React.FC = () => {
             color="secondary"
             size="small"
             onClick={handleRevealApiKeys}
-            disabled={
-              revealingKeys ||
-              (!user!.hasOpenaiApiKey && !user!.hasAnthropicApiKey)
-            }
+            disabled={revealingKeys || !user!.hasOpenrouterApiKey}
             sx={apiKeyActionButtonSx}
           >
-            {revealingKeys ? "Verifying..." : "Show API Keys"}
+            {revealingKeys ? "Verifying..." : "Show API Key"}
           </Button>
         ) : (
           <Button
@@ -905,46 +987,50 @@ const Profile: React.FC = () => {
             onClick={handleHideApiKeys}
             sx={apiKeyActionButtonSx}
           >
-            Hide Keys
+            Hide Key
           </Button>
         )}
       </Stack>
 
       {apiKeysError && <Alert severity="error">{apiKeysError}</Alert>}
 
-      {keysRevealed && (
+      {keysRevealed && user!.hasOpenrouterApiKey && (
         <Alert severity="success">
-          API keys are visible below. Hide them when you are done reviewing.
+          API key is visible below. Hide it when you are done reviewing.
         </Alert>
       )}
 
-      <Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems="flex-start">
+      <Stack
+        direction={{ xs: "column", sm: "row" }}
+        spacing={2}
+        alignItems="flex-start"
+      >
         <Box sx={apiKeyInputWrapSx}>
           <TextField
-            label="OpenAI API Key"
+            label="OpenRouter API Key"
             type={keysRevealed && showRevealedKeys ? "text" : "password"}
-            value={formData.openaiApiKey}
+            value={formData.openrouterApiKey}
             onChange={(e) => {
-              setClearOpenaiApiKey(false);
+              setClearOpenrouterApiKey(false);
               setFormData((prev) => ({
                 ...prev,
-                openaiApiKey: e.target.value,
+                openrouterApiKey: e.target.value,
               }));
             }}
             fullWidth
             variant="outlined"
             size="small"
             placeholder={
-              user!.hasOpenaiApiKey && !clearOpenaiApiKey && !keysRevealed
+              user!.hasOpenrouterApiKey && !clearOpenrouterApiKey && !keysRevealed
                 ? "Key saved (enter new key to replace)"
-                : "sk-..."
+                : "sk-or-v1-..."
             }
-            helperText="Used for GPT resume generation"
+            helperText="Used for all AI models via OpenRouter"
             sx={
-              user!.hasOpenaiApiKey &&
-              !clearOpenaiApiKey &&
+              user!.hasOpenrouterApiKey &&
+              !clearOpenrouterApiKey &&
               !keysRevealed &&
-              !formData.openaiApiKey
+              !formData.openrouterApiKey
                 ? savedApiKeyFieldSx
                 : undefined
             }
@@ -980,81 +1066,9 @@ const Profile: React.FC = () => {
           variant="outlined"
           color="secondary"
           size="small"
-          disabled={!user!.hasOpenaiApiKey && !formData.openaiApiKey}
+          disabled={!user!.hasOpenrouterApiKey && !formData.openrouterApiKey}
           onClick={() => {
-            void handleClearOpenaiKey();
-          }}
-          sx={apiKeyActionButtonSx}
-        >
-          Clear
-        </Button>
-      </Stack>
-
-      <Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems="flex-start">
-        <Box sx={apiKeyInputWrapSx}>
-          <TextField
-            label="Anthropic API Key"
-            type={keysRevealed && showRevealedKeys ? "text" : "password"}
-            value={formData.anthropicApiKey}
-            onChange={(e) => {
-              setClearAnthropicApiKey(false);
-              setFormData((prev) => ({
-                ...prev,
-                anthropicApiKey: e.target.value,
-              }));
-            }}
-            fullWidth
-            variant="outlined"
-            size="small"
-            placeholder={
-              user!.hasAnthropicApiKey && !clearAnthropicApiKey && !keysRevealed
-                ? "Key saved (enter new key to replace)"
-                : "sk-ant-..."
-            }
-            helperText="Used for Claude resume generation"
-            sx={
-              user!.hasAnthropicApiKey &&
-              !clearAnthropicApiKey &&
-              !keysRevealed &&
-              !formData.anthropicApiKey
-                ? savedApiKeyFieldSx
-                : undefined
-            }
-            InputProps={
-              keysRevealed
-                ? {
-                    endAdornment: (
-                      <InputAdornment position="end">
-                        <IconButton
-                          size="small"
-                          onClick={() =>
-                            setShowRevealedKeys((prev) => !prev)
-                          }
-                          edge="end"
-                          aria-label={
-                            showRevealedKeys ? "Hide API key" : "Show API key"
-                          }
-                        >
-                          {showRevealedKeys ? (
-                            <VisibilityOffIcon fontSize="small" />
-                          ) : (
-                            <VisibilityIcon fontSize="small" />
-                          )}
-                        </IconButton>
-                      </InputAdornment>
-                    ),
-                  }
-                : undefined
-            }
-          />
-        </Box>
-        <Button
-          variant="outlined"
-          color="secondary"
-          size="small"
-          disabled={!user!.hasAnthropicApiKey && !formData.anthropicApiKey}
-          onClick={() => {
-            void handleClearAnthropicApiKey();
+            void handleClearOpenrouterKey();
           }}
           sx={apiKeyActionButtonSx}
         >
@@ -1410,6 +1424,10 @@ const Profile: React.FC = () => {
                 onClick={() => {
                   setActiveSection(section.id);
                   setSecurityError(null);
+                  if (section.id !== "api-keys") {
+                    setApiKeysError(null);
+                    setUsageError(null);
+                  }
                 }}
                 sx={{
                   borderRadius: 1,
@@ -1446,7 +1464,7 @@ const Profile: React.FC = () => {
             flexDirection: "column",
           }}
         >
-          <Box sx={{ p: 3, pb: 6 }}>
+          <Box key={activeSection} sx={{ p: 3, pb: 6 }}>
             <Typography variant="h6" gutterBottom>
               {activeSectionMeta.label}
             </Typography>

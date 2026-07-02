@@ -23,10 +23,10 @@ import { toast } from "react-toastify";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import AiModelSelector from "../../components/resumes/AiModelSelector";
 import {
-  type AiProvider,
   resolveUserDefaultAi,
   resolveUserDefaultFromJsonAi,
 } from "../../constants/aiModels";
+import { useAiModels } from "../../components/common/AiModelsContext";
 import { resizableMultilineSx } from "../../constants/textFieldStyles";
 
 const getResumePromptWarning = (
@@ -41,18 +41,11 @@ const getResumePromptWarning = (
   return null;
 };
 
-const getApiKeyWarning = (
-  profile: UserResponse | null,
-  aiModel: AiProvider,
-): string | null => {
+const getApiKeyWarning = (profile: UserResponse | null): string | null => {
   if (!profile) return null;
 
-  if (aiModel === "openai" && !profile.hasOpenaiApiKey) {
-    return "No OpenAI API key configured. Add your OpenAI API key in Profile settings before generating with GPT.";
-  }
-
-  if (aiModel === "claude" && !profile.hasAnthropicApiKey) {
-    return "No Anthropic API key configured. Add your Anthropic API key in Profile settings before generating with Claude.";
+  if (!profile.hasOpenrouterApiKey) {
+    return "No OpenRouter API key configured. Add your OpenRouter API key in Profile settings before generating resumes.";
   }
 
   return null;
@@ -90,6 +83,7 @@ type AiGenerateFormData = yup.InferType<typeof aiGenerateSchema>;
 type FromJsonFormData = yup.InferType<typeof fromJsonSchema>;
 
 const CreateResume: React.FC = () => {
+  const { catalog } = useAiModels();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const fromJsonParam = searchParams.get("fromJson");
@@ -97,8 +91,8 @@ const CreateResume: React.FC = () => {
     () => fromJsonParam === "1",
   );
   const [isSubmitting, setIsSubmitting] = React.useState(false);
-  const [aiModel, setAiModel] = React.useState<AiProvider>("claude");
-  const [aiVersion, setAiVersion] = React.useState("claude-sonnet-4-6");
+  const [aiModel, setAiModel] = React.useState("anthropic");
+  const [aiVersion, setAiVersion] = React.useState("anthropic/claude-sonnet-4.6");
   const [profile, setProfile] = React.useState<UserResponse | null>(null);
   const [submitError, setSubmitError] = React.useState<string | null>(null);
 
@@ -107,8 +101,8 @@ const CreateResume: React.FC = () => {
   });
 
   const apiKeyWarning = React.useMemo(
-    () => getApiKeyWarning(profile, aiModel),
-    [profile, aiModel],
+    () => getApiKeyWarning(profile),
+    [profile],
   );
 
   const resumePromptWarning = React.useMemo(
@@ -134,15 +128,15 @@ const CreateResume: React.FC = () => {
         setGenerateFromJson(useFromJson);
 
         const defaults = useFromJson
-          ? resolveUserDefaultFromJsonAi(loadedProfile)
-          : resolveUserDefaultAi(loadedProfile);
+          ? resolveUserDefaultFromJsonAi(loadedProfile, catalog)
+          : resolveUserDefaultAi(loadedProfile, catalog);
         setAiModel(defaults.aiModel);
         setAiVersion(defaults.aiVersion);
       })
       .catch(() => {
         // Profile warning is optional; submit validation still runs on the server.
       });
-  }, [fromJsonParam]);
+  }, [fromJsonParam, catalog]);
 
   const aiForm = useForm<AiGenerateFormData>({
     resolver: yupResolver(aiGenerateSchema),
@@ -175,7 +169,7 @@ const CreateResume: React.FC = () => {
         roleType: aiValues.roleType,
         jobDescription: aiValues.jobDescription,
       });
-      const fromJsonDefaults = resolveUserDefaultFromJsonAi(profile);
+      const fromJsonDefaults = resolveUserDefaultFromJsonAi(profile, catalog);
       setAiModel(fromJsonDefaults.aiModel);
       setAiVersion(fromJsonDefaults.aiVersion);
     } else {
@@ -186,7 +180,7 @@ const CreateResume: React.FC = () => {
         roleType: jsonValues.roleType,
         jobDescription: jsonValues.jobDescription,
       });
-      const defaults = resolveUserDefaultAi(profile);
+      const defaults = resolveUserDefaultAi(profile, catalog);
       setAiModel(defaults.aiModel);
       setAiVersion(defaults.aiVersion);
     }
@@ -195,7 +189,7 @@ const CreateResume: React.FC = () => {
     setSubmitError(null);
   };
 
-  const handleAiModelChange = (model: AiProvider, version: string) => {
+  const handleAiModelChange = (model: string, version: string) => {
     setAiModel(model);
     setAiVersion(version);
     setSubmitError(null);

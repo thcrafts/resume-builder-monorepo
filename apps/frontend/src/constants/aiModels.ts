@@ -1,137 +1,179 @@
-export type AiProvider = "openai" | "claude";
+import type { AiModelCatalog, AiProviderOption } from "../services/aiModelsService";
 
-export interface AiModelOption {
-  label: string;
-  value: string;
+const LEGACY_PROVIDER_MAP: Record<string, string> = {
+  claude: "anthropic",
+  openai: "openai",
+};
+
+export const FALLBACK_CATALOG: AiModelCatalog = {
+  providers: [],
+  defaults: {
+    aiModel: "anthropic",
+    aiVersion: "anthropic/claude-sonnet-4.6",
+    fromJsonAiModel: "openai",
+    fromJsonAiVersion: "openai/gpt-5.2",
+  },
+};
+
+export function resolveApiModelId(aiModel: string, aiVersion: string): string {
+  if (aiVersion.includes("/")) {
+    return aiVersion;
+  }
+
+  const provider = LEGACY_PROVIDER_MAP[aiModel] ?? aiModel;
+  return `${provider}/${aiVersion}`;
 }
 
-export const OPENAI_MODELS: AiModelOption[] = [
-  { label: "GPT-4.1 Mini", value: "gpt-4.1-mini" },
-  { label: "GPT-4.5", value: "gpt-4.5" },
-  { label: "GPT-5", value: "gpt-5" },
-  { label: "GPT-5 Instant", value: "gpt-5-instant" },
-  { label: "GPT-5 Thinking", value: "gpt-5-thinking" },
-  { label: "GPT-5 Pro", value: "gpt-5-pro" },
-  { label: "GPT-5.1", value: "gpt-5.1" },
-  { label: "GPT-5.1 Instant", value: "gpt-5.1-instant" },
-  { label: "GPT-5.1 Thinking", value: "gpt-5.1-thinking" },
-  { label: "GPT-5.1 Pro", value: "gpt-5.1-pro" },
-  { label: "GPT-5.2", value: "gpt-5.2" },
-  { label: "GPT-5.2 Instant", value: "gpt-5.2-instant" },
-  { label: "GPT-5.2 Thinking", value: "gpt-5.2-thinking" },
-  { label: "GPT-5.2 Pro", value: "gpt-5.2-pro" },
-  { label: "GPT-5.5", value: "gpt-5.5" },
-  { label: "GPT-5.5 Instant", value: "gpt-5.5-instant" },
-  { label: "GPT-5.5 Thinking", value: "gpt-5.5-thinking" },
-  { label: "GPT-5.5 Pro", value: "gpt-5.5-pro" },
-];
+export function normalizeModelSelection(
+  aiModel?: string,
+  aiVersion?: string,
+  catalog?: AiModelCatalog | null,
+): { aiModel: string; aiVersion: string } {
+  const defaults = catalog?.defaults ?? FALLBACK_CATALOG.defaults;
+  const model = aiModel?.trim() || defaults.aiModel;
+  const version = aiVersion?.trim() || defaults.aiVersion;
+  const resolvedVersion = resolveApiModelId(model, version);
+  const provider = resolvedVersion.split("/")[0] || model;
 
-export const CLAUDE_MODELS: AiModelOption[] = [
-  { label: "Claude Sonnet 4.5", value: "claude-sonnet-4-5-20250929" },
-  { label: "Claude Sonnet 4.6", value: "claude-sonnet-4-6" },
-  { label: "Claude Opus 4", value: "claude-opus-4-20250514" },
-  { label: "Claude Opus 4.1", value: "claude-opus-4-1-20250805" },
-  { label: "Claude Opus 4.5", value: "claude-opus-4-5-20251101" },
-  { label: "Claude Opus 4.6", value: "claude-opus-4-6" },
-  { label: "Claude Opus 4.7", value: "claude-opus-4-7" },
-  { label: "Claude Haiku 4.5", value: "claude-haiku-4-5-20251001" },
-];
+  return {
+    aiModel: provider,
+    aiVersion: resolvedVersion,
+  };
+}
 
-export const DEFAULT_AI_PROVIDER: AiProvider = "claude";
-export const DEFAULT_OPENAI_VERSION = "gpt-4.1-mini";
-export const DEFAULT_CLAUDE_VERSION = "claude-sonnet-4-6";
-export const DEFAULT_FROM_JSON_AI_PROVIDER: AiProvider = "openai";
-export const DEFAULT_FROM_JSON_AI_VERSION = "gpt-5.5-thinking";
+export function getProvider(
+  catalog: AiModelCatalog | null | undefined,
+  providerId: string,
+): AiProviderOption | undefined {
+  return catalog?.providers.find((provider) => provider.id === providerId);
+}
 
-export const DEFAULT_AI_VERSION =
-  DEFAULT_AI_PROVIDER === "openai"
-    ? DEFAULT_OPENAI_VERSION
-    : DEFAULT_CLAUDE_VERSION;
+export function getVersionsForProvider(
+  catalog: AiModelCatalog | null | undefined,
+  providerId: string,
+) {
+  return getProvider(catalog, providerId)?.models ?? [];
+}
+
+export function getModelOption(
+  catalog: AiModelCatalog | null | undefined,
+  aiVersion: string,
+) {
+  const resolved = resolveApiModelId("", aiVersion);
+  const providerId = resolved.split("/")[0];
+  return getVersionsForProvider(catalog, providerId).find(
+    (model) => model.id === resolved,
+  );
+}
+
+export function getModelLabel(
+  catalog: AiModelCatalog | null | undefined,
+  aiModel: string,
+  aiVersion: string,
+): string {
+  const normalized = normalizeModelSelection(aiModel, aiVersion, catalog);
+  const match = getModelOption(catalog, normalized.aiVersion);
+  if (match) {
+    return match.label;
+  }
+
+  return normalized.aiVersion;
+}
+
+export function getModelVersionLabel(
+  catalog: AiModelCatalog | null | undefined,
+  aiModel: string,
+  aiVersion: string,
+): string {
+  const normalized = normalizeModelSelection(aiModel, aiVersion, catalog);
+  const match = getModelOption(catalog, normalized.aiVersion);
+  if (match) {
+    return match.versionLabel;
+  }
+
+  const slashIndex = normalized.aiVersion.indexOf("/");
+  return slashIndex >= 0
+    ? normalized.aiVersion.slice(slashIndex + 1)
+    : normalized.aiVersion;
+}
+
+export function getProviderLabel(
+  catalog: AiModelCatalog | null | undefined,
+  providerId: string,
+): string {
+  return getProvider(catalog, providerId)?.label ?? providerId;
+}
 
 export function resolveUserDefaultAi(
   profile?: {
-    defaultAiModel?: AiProvider;
+    defaultAiModel?: string;
     defaultAiVersion?: string;
   } | null,
-): { aiModel: AiProvider; aiVersion: string } {
-  const aiModel =
-    profile?.defaultAiModel === "openai" || profile?.defaultAiModel === "claude"
-      ? profile.defaultAiModel
-      : DEFAULT_AI_PROVIDER;
-  const models = aiModel === "openai" ? OPENAI_MODELS : CLAUDE_MODELS;
-  const fallbackVersion =
-    aiModel === "openai" ? DEFAULT_OPENAI_VERSION : DEFAULT_CLAUDE_VERSION;
-  const candidate = profile?.defaultAiVersion;
-  const aiVersion =
-    candidate && models.some((model) => model.value === candidate)
-      ? candidate
-      : fallbackVersion;
+  catalog?: AiModelCatalog | null,
+): { aiModel: string; aiVersion: string } {
+  const defaults = catalog?.defaults ?? FALLBACK_CATALOG.defaults;
+  const normalized = normalizeModelSelection(
+    profile?.defaultAiModel,
+    profile?.defaultAiVersion,
+    catalog,
+  );
 
-  return { aiModel, aiVersion };
+  const models = getVersionsForProvider(catalog, normalized.aiModel);
+  const candidate = normalized.aiVersion;
+  const aiVersion = models.some((model) => model.id === candidate)
+    ? candidate
+    : models[0]?.id ?? defaults.aiVersion;
+
+  return {
+    aiModel: normalized.aiModel,
+    aiVersion,
+  };
 }
 
 export function resolveUserDefaultFromJsonAi(
   profile?: {
-    defaultFromJsonAiModel?: AiProvider;
+    defaultFromJsonAiModel?: string;
     defaultFromJsonAiVersion?: string;
   } | null,
-): { aiModel: AiProvider; aiVersion: string } {
-  const aiModel =
-    profile?.defaultFromJsonAiModel === "openai" ||
-    profile?.defaultFromJsonAiModel === "claude"
-      ? profile.defaultFromJsonAiModel
-      : DEFAULT_FROM_JSON_AI_PROVIDER;
-  const models = aiModel === "openai" ? OPENAI_MODELS : CLAUDE_MODELS;
-  const fallbackVersion =
-    aiModel === "openai" ? DEFAULT_FROM_JSON_AI_VERSION : DEFAULT_CLAUDE_VERSION;
-  const candidate = profile?.defaultFromJsonAiVersion;
-  const aiVersion =
-    candidate && models.some((model) => model.value === candidate)
-      ? candidate
-      : fallbackVersion;
+  catalog?: AiModelCatalog | null,
+): { aiModel: string; aiVersion: string } {
+  const defaults = catalog?.defaults ?? FALLBACK_CATALOG.defaults;
+  const normalized = normalizeModelSelection(
+    profile?.defaultFromJsonAiModel ?? defaults.fromJsonAiModel,
+    profile?.defaultFromJsonAiVersion ?? defaults.fromJsonAiVersion,
+    catalog,
+  );
 
-  return { aiModel, aiVersion };
-}
+  const models = getVersionsForProvider(catalog, normalized.aiModel);
+  const candidate = normalized.aiVersion;
+  const aiVersion = models.some((model) => model.id === candidate)
+    ? candidate
+    : models[0]?.id ?? defaults.fromJsonAiVersion;
 
-export function getModelLabel(provider: AiProvider, version: string): string {
-  const models = provider === "openai" ? OPENAI_MODELS : CLAUDE_MODELS;
-  const match = models.find((m) => m.value === version);
-  return match?.label ?? version;
-}
-
-export function getModelVersionLabel(
-  provider: AiProvider,
-  version: string,
-): string {
-  const label = getModelLabel(provider, version);
-
-  if (provider === "openai") {
-    return label.replace(/^GPT-?/i, "");
-  }
-
-  if (provider === "claude") {
-    return label.replace(/^Claude\s+/i, "");
-  }
-
-  return label;
-}
-
-export function getProviderLabel(provider: AiProvider): string {
-  return provider === "openai" ? "OpenAI" : "Claude";
+  return {
+    aiModel: normalized.aiModel,
+    aiVersion,
+  };
 }
 
 export function getAiVersionDisplay(
-  aiModel: AiProvider | undefined,
+  catalog: AiModelCatalog | null | undefined,
+  aiModel: string | undefined,
   aiVersion: string | undefined,
   generationSource?: "ai" | "manual",
 ): string {
-  const provider = aiModel || "openai";
-  const version = aiVersion || DEFAULT_OPENAI_VERSION;
-  const label = getModelLabel(provider, version);
-
-  if (generationSource === "manual") {
-    return `Manual: ${label}`;
-  }
+  const normalized = normalizeModelSelection(
+    aiModel,
+    aiVersion,
+    catalog,
+  );
+  const label = getModelVersionLabel(
+    catalog,
+    normalized.aiModel,
+    normalized.aiVersion,
+  );
 
   return label;
 }
+
+export type { AiProviderOption };

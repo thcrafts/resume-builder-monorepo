@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ResumeData } from 'src/resumes/templates';
-import { type AiProvider, resolveApiModelId } from './ai-models';
+import { resolveApiModelId } from './ai-models';
 import { buildResumeJsonSchema } from './resume-json-schema';
 import type { ResumeSettings } from './resume-settings';
 import { resolveResumeSettings } from './resume-settings';
@@ -9,24 +9,21 @@ import {
   DEFAULT_QUESTIONS_PROMPT,
 } from './default-prompts';
 import { cleanText } from './clean-text';
+import { prepareResumeGenerationInstructions } from './prepare-resume-instructions';
 import type { UserApiKeys } from './user-api-keys';
-import { OpenAIService } from '../openai/openai.service';
-import { ClaudeService } from '../claude/claude.service';
+import { OpenRouterService } from '../openrouter/openrouter.service';
 
 export type { UserApiKeys } from './user-api-keys';
 
 @Injectable()
 export class AiService {
-  constructor(
-    private readonly openAIService: OpenAIService,
-    private readonly claudeService: ClaudeService,
-  ) {}
+  constructor(private readonly openRouterService: OpenRouterService) {}
 
   async generateResume(
     jobDescription: string,
     userInstructions: string,
-    aiProvider: AiProvider = 'openai',
-    aiVersion: string = 'gpt-4.1-mini',
+    aiProvider: string = 'anthropic',
+    aiVersion: string = 'anthropic/claude-sonnet-4.6',
     apiKeys?: UserApiKeys,
     resumeSettings?: Partial<ResumeSettings>,
   ): Promise<{ resumeJson: ResumeData; threadId: string }> {
@@ -34,35 +31,23 @@ export class AiService {
       throw new Error('User instructions are required and cannot be empty');
     }
 
-    const fullInstructions = cleanText(userInstructions);
-    const cleanedJobDescription = cleanText(jobDescription);
-    const apiModelId = resolveApiModelId(aiProvider, aiVersion);
     const settings = resolveResumeSettings(resumeSettings);
     const resumeJsonSchema = settings.useDefaultOutputFormat
       ? buildResumeJsonSchema(settings)
       : undefined;
+    const fullInstructions = prepareResumeGenerationInstructions(
+      userInstructions,
+      resumeJsonSchema,
+    );
+    const cleanedJobDescription = cleanText(jobDescription);
+    const apiModelId = resolveApiModelId(aiProvider, aiVersion);
 
-    if (aiProvider === 'claude') {
-      const { resumeJson, conversationId } = await this.claudeService.generateResume(
-        cleanedJobDescription,
-        fullInstructions,
-        apiModelId,
-        apiKeys,
-        resumeJsonSchema,
-      );
-
-      return {
-        resumeJson,
-        threadId: conversationId,
-      };
-    }
-
-    const { resumeJson, responseId } = await this.openAIService.generateResume(
+    const { resumeJson, responseId } = await this.openRouterService.generateResume(
       cleanedJobDescription,
       fullInstructions,
       apiModelId,
       apiKeys,
-      resumeJsonSchema,
+      true,
     );
 
     return {
@@ -74,9 +59,9 @@ export class AiService {
   async generateCoverLetter(
     jobDescription: string,
     resumeJson: Record<string, unknown>,
-    conversationId: string | undefined,
-    aiProvider: AiProvider = 'openai',
-    aiVersion: string = 'gpt-4.1-mini',
+    _conversationId: string | undefined,
+    aiProvider: string = 'anthropic',
+    aiVersion: string = 'anthropic/claude-sonnet-4.6',
     apiKeys?: UserApiKeys,
     customPrompt?: string,
   ): Promise<string> {
@@ -87,18 +72,7 @@ export class AiService {
     );
     const apiModelId = resolveApiModelId(aiProvider, aiVersion);
 
-    if (aiProvider === 'claude') {
-      return this.claudeService.generateCoverLetter(
-        cleanedJobDescription,
-        compactResumeJson,
-        coverLetterInstructions,
-        apiModelId,
-        apiKeys,
-      );
-    }
-
-    return this.openAIService.generateCoverLetter(
-      conversationId,
+    return this.openRouterService.generateCoverLetter(
       cleanedJobDescription,
       compactResumeJson,
       coverLetterInstructions,
@@ -112,8 +86,8 @@ export class AiService {
     resumeJson: Record<string, any>,
     jobDescription: string,
     customPrompt?: string,
-    aiProvider: AiProvider = 'openai',
-    aiVersion: string = 'gpt-4.1-mini',
+    aiProvider: string = 'anthropic',
+    aiVersion: string = 'anthropic/claude-sonnet-4.6',
     apiKeys?: UserApiKeys,
   ): Promise<Array<{ question: string; answer: string }>> {
     const instructions = cleanText(
@@ -132,16 +106,7 @@ export class AiService {
     const fullInstructions = `${instructions} Job Description: ${cleanedJobDescription} Resume Information: ${compactResumeJson}`;
     const apiModelId = resolveApiModelId(aiProvider, aiVersion);
 
-    if (aiProvider === 'claude') {
-      return this.claudeService.parseAndAnswerQuestions(
-        cleanedQuestionsText,
-        fullInstructions,
-        apiModelId,
-        apiKeys,
-      );
-    }
-
-    return this.openAIService.parseAndAnswerQuestions(
+    return this.openRouterService.parseAndAnswerQuestions(
       cleanedQuestionsText,
       fullInstructions,
       apiModelId,

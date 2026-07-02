@@ -33,14 +33,13 @@ export interface UserResponse {
   instructions?: string;
   questionsPrompt?: string;
   coverLetterPrompt?: string;
-  defaultAiModel?: "openai" | "claude";
+  defaultAiModel?: string;
   defaultAiVersion?: string;
   defaultGenerateFromJson?: boolean;
-  defaultFromJsonAiModel?: "openai" | "claude";
+  defaultFromJsonAiModel?: string;
   defaultFromJsonAiVersion?: string;
   resumeSettings?: ResumeSettings;
-  hasOpenaiApiKey?: boolean;
-  hasAnthropicApiKey?: boolean;
+  hasOpenrouterApiKey?: boolean;
 }
 
 export interface CreateUserDto {
@@ -85,23 +84,30 @@ export interface UpdateProfileDto {
   instructions?: string;
   questionsPrompt?: string;
   coverLetterPrompt?: string;
-  defaultAiModel?: "openai" | "claude";
+  defaultAiModel?: string;
   defaultAiVersion?: string;
   defaultGenerateFromJson?: boolean;
-  defaultFromJsonAiModel?: "openai" | "claude";
+  defaultFromJsonAiModel?: string;
   defaultFromJsonAiVersion?: string;
   resumeSettings?: Partial<ResumeSettings>;
-  openaiApiKey?: string;
-  anthropicApiKey?: string;
-  clearOpenaiApiKey?: boolean;
-  clearAnthropicApiKey?: boolean;
+  openrouterApiKey?: string;
+  clearOpenrouterApiKey?: boolean;
   currentPassword?: string;
   newPassword?: string;
 }
 
 export interface RevealedApiKeysResponse {
-  openaiApiKey: string | null;
-  anthropicApiKey: string | null;
+  openrouterApiKey: string | null;
+}
+
+export interface OpenRouterKeyUsage {
+  label: string | null;
+  usage: number;
+  usageDaily: number;
+  usageWeekly: number;
+  usageMonthly: number;
+  limit: number | null;
+  limitRemaining: number | null;
 }
 
 export interface RegisterDto {
@@ -178,6 +184,13 @@ export const revealApiKeys = async (currentPassword: string) => {
   const res = await api.post<RevealedApiKeysResponse>(
     "/api/users/profile/reveal-api-keys",
     { currentPassword },
+  );
+  return res.data;
+};
+
+export const getOpenrouterUsage = async () => {
+  const res = await api.get<OpenRouterKeyUsage>(
+    "/api/users/profile/openrouter-usage",
   );
   return res.data;
 };

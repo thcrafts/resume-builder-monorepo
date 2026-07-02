@@ -24,6 +24,7 @@ import Resumes from "./pages/resumes";
 import CreateResume from "./pages/resumes/CreateResume";
 import LayoutWithoutHeader from "./components/common/LayoutWithoutHeader";
 import NonAdminLayout from "./components/common/NonAdminLayout";
+import { AiModelsProvider } from "./components/common/AiModelsContext";
 import Profile from "./pages/profile";
 
 const router = createBrowserRouter([
@@ -111,7 +112,9 @@ createRoot(document.getElementById("root")!).render(
       <RaceProvider>
         <ThemeModeProvider>
           <ToastPositionProvider>
-            <AppContent />
+            <AiModelsProvider>
+              <AppContent />
+            </AiModelsProvider>
           </ToastPositionProvider>
         </ThemeModeProvider>
       </RaceProvider>

@@ -33,15 +33,19 @@ export interface ResumePdfSettings {
   skillCategories: SkillCategory[];
 }
 
+export const MAX_SKILL_CATEGORIES = 5;
+export const MAX_SKILLS_PER_CATEGORY = 5;
+export const MAX_EXPERIENCE_BULLETS_PER_ROLE = 5;
+
 export const DEFAULT_RESUME_SETTINGS: ResumeSettings = {
   showTitle: true,
   showSubTitle: true,
   showCompanySkills: true,
   skillCategories: [...SKILL_CATEGORIES],
   useDefaultOutputFormat: true,
-  responsibilitiesCount: 3,
-  achievementsCount: 5,
-  skillsPerCategoryCount: 8,
+  responsibilitiesCount: 0,
+  achievementsCount: 0,
+  skillsPerCategoryCount: 5,
   companySkillsCount: 8,
 };
 
@@ -207,5 +211,10 @@ export function filterSkillsForPdf(
     .filter(
       (skill): skill is { category: string; items: string[] } =>
         !!skill && Array.isArray(skill.items) && skill.items.length > 0,
-    );
+    )
+    .slice(0, MAX_SKILL_CATEGORIES)
+    .map((skill) => ({
+      category: skill.category,
+      items: skill.items.slice(0, MAX_SKILLS_PER_CATEGORY),
+    }));
 }

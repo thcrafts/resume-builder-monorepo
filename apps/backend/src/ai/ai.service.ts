@@ -9,6 +9,7 @@ import {
   DEFAULT_QUESTIONS_PROMPT,
 } from './default-prompts';
 import { cleanText } from './clean-text';
+import { normalizeResumeExperienceBullets } from './normalize-resume-json';
 import type { UserApiKeys } from './user-api-keys';
 import { OpenAIService } from '../openai/openai.service';
 import { ClaudeService } from '../claude/claude.service';
@@ -52,7 +53,7 @@ export class AiService {
       );
 
       return {
-        resumeJson,
+        resumeJson: normalizeResumeExperienceBullets(resumeJson),
         threadId: conversationId,
       };
     }
@@ -66,7 +67,7 @@ export class AiService {
     );
 
     return {
-      resumeJson,
+      resumeJson: normalizeResumeExperienceBullets(resumeJson),
       threadId: responseId,
     };
   }

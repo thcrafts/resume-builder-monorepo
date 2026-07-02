@@ -1,5 +1,8 @@
 import {
   DEFAULT_RESUME_SETTINGS,
+  MAX_EXPERIENCE_BULLETS_PER_ROLE,
+  MAX_SKILL_CATEGORIES,
+  MAX_SKILLS_PER_CATEGORY,
   type ResumeSettings,
   resolveResumeSettings,
 } from './resume-settings';
@@ -9,6 +12,18 @@ export function buildResumeJsonSchema(
 ) {
   const settings = resolveResumeSettings(settingsInput ?? DEFAULT_RESUME_SETTINGS);
   const skillCategories = settings.skillCategories;
+  const responsibilitiesMin = Math.min(
+    settings.responsibilitiesCount,
+    MAX_EXPERIENCE_BULLETS_PER_ROLE,
+  );
+  const achievementsMin = Math.min(
+    settings.achievementsCount,
+    Math.max(0, MAX_EXPERIENCE_BULLETS_PER_ROLE - responsibilitiesMin),
+  );
+  const skillsPerCategoryMax = Math.min(
+    settings.skillsPerCategoryCount,
+    MAX_SKILLS_PER_CATEGORY,
+  );
 
   return {
     type: 'object',
@@ -60,13 +75,15 @@ export function buildResumeJsonSchema(
             items: {
               type: 'array',
               items: { type: 'string' },
-              minItems: settings.skillsPerCategoryCount,
+              minItems: 1,
+              maxItems: skillsPerCategoryMax,
             },
           },
           required: ['category', 'items'],
           additionalProperties: false,
         },
-        minItems: skillCategories.length,
+        minItems: 1,
+        maxItems: MAX_SKILL_CATEGORIES,
       },
       experience: {
         type: 'array',
@@ -94,14 +111,16 @@ export function buildResumeJsonSchema(
               items: {
                 type: 'string',
               },
-              minItems: settings.responsibilitiesCount,
+              minItems: responsibilitiesMin,
+              maxItems: MAX_EXPERIENCE_BULLETS_PER_ROLE,
             },
             achievements: {
               type: 'array',
               items: {
                 type: 'string',
               },
-              minItems: settings.achievementsCount,
+              minItems: achievementsMin,
+              maxItems: MAX_EXPERIENCE_BULLETS_PER_ROLE,
             },
             skills: {
               type: 'array',

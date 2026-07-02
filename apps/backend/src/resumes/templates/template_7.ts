@@ -3,9 +3,33 @@ import { existsSync } from 'fs';
 import { join } from 'path';
 import { ResumeData, DEFAULT_RESUME_PDF_SETTINGS, filterSkillsForPdf, getCertificationText, type ResumePdfSettings } from '.';
 
-const titleColor = "#4A4A4A"
-const contentColor = "#2C3E50"
-const defaultColor = "#000000"
+const COLORS = {
+  primary: '#1A1A1A',
+  secondary: '#4A4A4A',
+  body: '#2C3E50',
+  accent: '#2C3E50',
+};
+
+const FONT_SIZES = {
+  name: 24,
+  title: 13,
+  contact: 10,
+  sectionHeader: 12,
+  jobHeader: 11.5,
+  jobMeta: 10.5,
+  subHeader: 10.5,
+  body: 10.5,
+  educationInstitution: 11,
+};
+
+const CONTENT_INDENT = 18;
+const EXPERIENCE_BULLET_GUTTER = 10;
+const EXPERIENCE_ENTRY_GAP = 0.4;
+const EXPERIENCE_BULLET_LINE_GAP = 1;
+const EXPERIENCE_BULLET_PARAGRAPH_GAP = 1;
+const EXPERIENCE_BULLET_ITEM_GAP = 0.08;
+const EXPERIENCE_SUBTITLE_GAP = 0.12;
+const EXPERIENCE_AFTER_HEADER_GAP = 0.18;
 
 const MONTH_ABBREVIATIONS = [
   'Jan',
@@ -263,9 +287,8 @@ export class ResumePDFTemplate7 {
 
     doc
       .font(this.fontBold)
-      .fontSize(22)
-      // .fillColor('#2C3E50')
-      .fillColor(defaultColor)
+      .fontSize(FONT_SIZES.name)
+      .fillColor(COLORS.primary)
       .text(name, this.marginX, this.marginT, {
         width: this.contentWidth,
         align: 'left',
@@ -278,11 +301,14 @@ export class ResumePDFTemplate7 {
     const title = this.data.title || '';
 
     if (title) {
-      // doc.font(this.fontName).fontSize(16).fillColor('#4A4A4A').text(title, {
-      doc.font(this.fontName).fontSize(16).fillColor(defaultColor).text(title, {
-        width: this.contentWidth,
-        align: 'left',
-      });
+      doc
+        .font(this.fontName)
+        .fontSize(FONT_SIZES.title)
+        .fillColor(COLORS.secondary)
+        .text(title, {
+          width: this.contentWidth,
+          align: 'left',
+        });
     }
 
     doc.moveDown(0.5);
@@ -293,45 +319,32 @@ export class ResumePDFTemplate7 {
     const address = contact.address || '';
     const email = contact.email || '';
     const phone = contact.phone || '';
-    const linkedin = contact.linkedin || '';
 
-    // doc.fontSize(12).fillColor('#4A4A4A');
-    doc.fontSize(11).fillColor(defaultColor);
+    doc.fontSize(FONT_SIZES.contact).fillColor(COLORS.secondary);
 
     const startY = doc.y;
-    // doc.font(this.fontName).fillColor('#4A4A4A');
-    doc.font(this.fontName).fillColor(defaultColor);
+    doc.font(this.fontName).fillColor(COLORS.secondary);
     const addressAndPhone = `${address} | ${phone} | `;
     doc.text(addressAndPhone, this.marginX, startY);
 
-    // Draw email with link
     doc
-      // .fillColor('#0066CC')
-      .fillColor(defaultColor)
+      .fillColor(COLORS.secondary)
       .text(email, this.marginX + doc.widthOfString(addressAndPhone), startY, {
         link: `mailto:${email}`,
         underline: false,
       });
 
-
-    // doc.fillColor('#4A4A4A');
-    doc.fillColor(defaultColor);
-    // doc.text(` | ${linkedin}`, this.marginX + doc.widthOfString(addressAndPhone) + doc.widthOfString(email), startY);
-
+    doc.fillColor(COLORS.body);
     doc.moveDown(1);
   }
 
   private _addSectionHeader(doc: any, title: string) {
-    // Check if there's enough space for the section header
-    // Section header needs: title line with background + spacing
-    const headerFontSize = 14;
-    const headerHeight = headerFontSize * 1.5; // Title line with padding
-    const paddingVertical = headerFontSize * 0.15; // Vertical padding for background
-    const spacingAfter = headerFontSize * 0.5; // moveDown(0.5)
+    const headerFontSize = FONT_SIZES.sectionHeader;
+    const headerHeight = headerFontSize * 1.5;
+    const paddingVertical = headerFontSize * 0.15;
+    const spacingAfter = headerFontSize * 0.5;
 
-    // Estimate minimum space needed for content that follows company line
-    // This should be enough for at least a section title (like "Key Qualifications & Responsibilities")
-    const contentFontSize = 11;
+    const contentFontSize = FONT_SIZES.body;
     const sectionTitleHeight = contentFontSize * 1.2; // Section title line
     const sectionTitleSpacing = contentFontSize * 0.3; // moveDown(0.3)
     const minContentLineHeight = contentFontSize * 1.2; // At least one bullet point line
@@ -362,25 +375,17 @@ export class ResumePDFTemplate7 {
     doc
       .font(this.fontBold)
       .fontSize(fontSize)
-      // .fillColor('#2C3E50')
-      .fillColor(defaultColor)
-      .text(
-        titleText,
-        // this.marginX + paddingVertical,
-        this.marginX,
-        startY + paddingVertical,
-        {
-          width: this.contentWidth,
-          align: 'left',
-        },
-      );
+      .fillColor(COLORS.accent)
+      .text(titleText, this.marginX, startY + paddingVertical, {
+        width: this.contentWidth,
+        align: 'left',
+      });
     const lineY = doc.y + 3;
     doc
       .moveTo(this.marginX, lineY)
       .lineTo(this.marginX + this.contentWidth, lineY)
-      // .strokeColor('#2C3E50')
-      .strokeColor('defaultColor')
-      .lineWidth(0.5)
+      .strokeColor(COLORS.accent)
+      .lineWidth(0.75)
       .stroke();
 
     doc.moveDown(0.5);
@@ -473,13 +478,16 @@ export class ResumePDFTemplate7 {
     this._addSectionHeader(doc, 'PROFESSIONAL SUMMARY');
     const summary = (this.data.summary || '').replace(/\n/g, ' ');
 
-    // doc.font(this.fontName).fontSize(11).fillColor('#333333').text(summary, {
-    doc.font(this.fontName).fontSize(11).fillColor(defaultColor).text(summary, {
-      width: this.contentWidth,
-      align: 'left',
-      paragraphGap: 3,
-      lineGap: 3
-    });
+    doc
+      .font(this.fontName)
+      .fontSize(FONT_SIZES.body)
+      .fillColor(COLORS.body)
+      .text(summary, {
+        width: this.contentWidth,
+        align: 'justify',
+        paragraphGap: 2,
+        lineGap: 2,
+      });
 
     doc.moveDown(1);
   }
@@ -495,44 +503,44 @@ export class ResumePDFTemplate7 {
 
     this._addSectionHeader(doc, 'CORE TECHNOLOGIES');
 
-    // doc.font(this.fontName).fontSize(11).fillColor('#333333');
-    doc.font(this.fontName).fontSize(11).fillColor(defaultColor);
+    doc.font(this.fontName).fontSize(FONT_SIZES.body).fillColor(COLORS.body);
 
     for (const skill of skills) {
       const itemsText = skill.items.join(', ');
       const categoryText = `${skill.category}: `;
       const fullText = categoryText + itemsText;
 
-      // Estimate height needed for this skill line
-      const fontSize = 11;
+      const fontSize = FONT_SIZES.body;
       const estimatedHeight = this._estimateTextHeight(
         doc,
         fullText,
         this.contentWidth,
         fontSize,
       );
-      const spacingAfter = fontSize * 0.3; // moveDown(0.3)
+      const spacingAfter = fontSize * 0.3;
       const minSpaceNeeded = estimatedHeight + spacingAfter;
 
       const currentY = doc.y;
       const spaceAvailable = this.pageHeight - this.marginB - currentY;
 
-      // Check if we need a page break before rendering the category
       if (spaceAvailable < minSpaceNeeded) {
         doc.addPage();
       }
 
       doc.font(this.fontBold).text(categoryText, this.marginX, doc.y, {
         width: this.contentWidth,
-        align: 'left',
+        align: 'justify',
         continued: true,
-        lineGap: 3
+        lineGap: 2,
       });
-      doc.font(this.fontName).text(itemsText);
-      doc.moveDown(0.3);
+      doc.font(this.fontName).text(itemsText, {
+        align: 'justify',
+        lineGap: 1,
+      });
+      doc.moveDown(0.15);
     }
 
-    doc.moveDown(1);
+    doc.moveDown(0.6);
   }
 
   private _ensureSpaceForSubtitleSection(
@@ -546,25 +554,27 @@ export class ResumePDFTemplate7 {
       return;
     }
 
-    const titleFontSize = 11;
-    const contentFontSize = 11;
+    const titleFontSize = FONT_SIZES.subHeader;
+    const contentFontSize = FONT_SIZES.body;
     const titleHeight = titleFontSize * 1.2;
-    const titleSpacing = titleFontSize * 0.3;
-    const contentSpacing = contentFontSize * 0.3;
-    const paragraphGap = 2;
+    const titleSpacing = titleFontSize * 0.2;
+    const contentSpacing = contentFontSize * 0.15;
+    const paragraphGap = EXPERIENCE_BULLET_PARAGRAPH_GAP;
     const heightEstimateWidth =
-      options.heightEstimateWidth ?? this.contentWidth;
+      options.heightEstimateWidth ??
+      this.contentWidth - CONTENT_INDENT;
 
     let totalContentHeight = 0;
     doc.font(this.fontName).fontSize(contentFontSize);
+    const bulletGutter = this._getBulletGutter(doc, contentFontSize);
+    const wrappedTextWidth = heightEstimateWidth - bulletGutter;
     for (const item of items) {
       const itemText = String(item).replace(/\n/g, ' ');
-      const bulletText = `• ${itemText}`;
       totalContentHeight +=
         this._estimateTextHeight(
           doc,
-          bulletText,
-          heightEstimateWidth,
+          itemText,
+          wrappedTextWidth,
           contentFontSize,
         ) + paragraphGap;
     }
@@ -590,16 +600,21 @@ export class ResumePDFTemplate7 {
     }
   }
 
+  private _getBulletGutter(doc: any, fontSize: number): number {
+    doc.font(this.fontName).fontSize(fontSize);
+    return Math.ceil(doc.widthOfString('• ')) || EXPERIENCE_BULLET_GUTTER;
+  }
+
   private _addSubTitle(doc: any, subtitle: string) {
     doc
       .font(this.fontBold)
-      .fontSize(11)
-      .fillColor(defaultColor)
-      .text(subtitle, this.marginX, doc.y, {
-        width: this.contentWidth,
+      .fontSize(FONT_SIZES.subHeader)
+      .fillColor(COLORS.accent)
+      .text(subtitle, this.marginX + CONTENT_INDENT, doc.y, {
+        width: this.contentWidth - CONTENT_INDENT,
         align: 'left',
       });
-    doc.moveDown(0.3);
+    doc.moveDown(EXPERIENCE_SUBTITLE_GAP);
   }
 
   private _addBulletItems(
@@ -610,36 +625,43 @@ export class ResumePDFTemplate7 {
       textWidth?: number;
       contentColor?: string;
       lineGap?: number;
+      indent?: boolean;
     } = {},
   ) {
     if (items.length === 0) {
       return;
     }
 
-    const contentFontSize = 11;
-    const bulletX = options.bulletX ?? this.marginX;
-    const textWidth = options.textWidth ?? this.contentWidth;
-    const contentColor = options.contentColor ?? '#333333';
+    const contentFontSize = FONT_SIZES.body;
+    const useIndent = options.indent !== false;
+    const bulletX =
+      options.bulletX ??
+      (useIndent ? this.marginX + CONTENT_INDENT : this.marginX);
+    const textWidth =
+      options.textWidth ??
+      (useIndent
+        ? this.contentWidth - CONTENT_INDENT
+        : this.contentWidth);
+    const contentColor = options.contentColor ?? COLORS.body;
+    const lineGap = options.lineGap ?? EXPERIENCE_BULLET_LINE_GAP;
 
     doc.font(this.fontName).fontSize(contentFontSize).fillColor(contentColor);
+    const bulletGutter = this._getBulletGutter(doc, contentFontSize);
+    const textX = bulletX + bulletGutter;
+    const wrappedTextWidth = textWidth - bulletGutter;
 
     for (const item of items) {
       const itemText = String(item).replace(/\n/g, ' ');
-      const bulletText = `• ${itemText}`;
-      const textOptions: {
-        width: number;
-        align: 'left';
-        paragraphGap: number;
-        lineGap?: number;
-      } = {
-        width: textWidth,
+      const startY = doc.y;
+
+      doc.text('•', bulletX, startY, { lineBreak: false });
+      doc.text(itemText, textX, startY, {
+        width: wrappedTextWidth,
         align: 'left',
-        paragraphGap: 2,
-      };
-      if (options.lineGap !== undefined) {
-        textOptions.lineGap = options.lineGap;
-      }
-      doc.text(bulletText, bulletX, doc.y, textOptions);
+        paragraphGap: EXPERIENCE_BULLET_PARAGRAPH_GAP,
+        lineGap,
+      });
+      doc.moveDown(EXPERIENCE_BULLET_ITEM_GAP);
     }
   }
 
@@ -654,17 +676,22 @@ export class ResumePDFTemplate7 {
     const skillsText = Array.isArray(skillsInCompany)
       ? skillsInCompany.join(', ')
       : String(skillsInCompany);
-    const bulletX = this.marginX + 18;
-    // doc.font(this.fontBoldItalic).fontSize(11).fillColor('#2C3E50');
-    doc.font(this.fontBoldItalic).fontSize(11).fillColor(defaultColor);
+    const bulletX = this.marginX + CONTENT_INDENT;
+    const textWidth = this.contentWidth - CONTENT_INDENT;
+
+    doc
+      .font(this.fontBoldItalic)
+      .fontSize(FONT_SIZES.body)
+      .fillColor(COLORS.body);
     doc.text('Skills: ', bulletX, doc.y, {
-      width: this.contentWidth,
+      width: textWidth,
       align: 'left',
       continued: true,
     });
-    // doc.font(this.fontItalic).fillColor('#333333').text(skillsText);
-    doc.font(this.fontItalic).fillColor(defaultColor).text(skillsText);
-    doc.moveDown(0.3);
+    doc.font(this.fontItalic).fillColor(COLORS.body).text(skillsText, {
+      align: 'left',
+    });
+    doc.moveDown(EXPERIENCE_SUBTITLE_GAP);
   }
 
   private _addExperience(doc: any) {
@@ -672,19 +699,15 @@ export class ResumePDFTemplate7 {
     const experiences = this.data.experience || [];
 
     for (const exp of experiences) {
-      // Calculate space needed for this experience entry
-      // const titleFontSize = 12;
-      const titleFontSize = 12.5;
-      const companyFontSize = 11.5;
-      const titleHeight = titleFontSize * 1.2;
+      const companyFontSize = FONT_SIZES.jobHeader;
+      const jobMetaFontSize = FONT_SIZES.jobMeta;
       const companyHeight = companyFontSize * 1.2;
-      const companyLineHeight = companyFontSize * 1.2; // Line height for company font
-      const spacingAfterCompany = companyLineHeight * 0.5; // moveDown(0.5) uses line height
-      const minContentSpace = companyFontSize * 2.5; // At least 2 lines of content
+      const companyLineHeight = companyFontSize * 1.2;
+      const spacingAfterCompany = companyLineHeight * 0.5;
+      const minContentSpace = FONT_SIZES.body * 2.5;
 
-      // Minimum space needed: title + company + spacing + at least some content
       const minSpaceNeeded =
-        titleHeight + companyHeight + spacingAfterCompany + minContentSpace;
+        companyHeight + spacingAfterCompany + minContentSpace;
 
       const currentY = doc.y;
       const spaceAvailable = this.pageHeight - this.marginB - currentY;
@@ -695,13 +718,8 @@ export class ResumePDFTemplate7 {
       }
 
       const company = exp.company || '';
-      const dateRange = this._formatDateRange(exp.date_range || '');
-      // const location = exp.location || '';
-      const location = exp.job_type || '';
+      const dateRange = this._formatDateRange(exp.date_range || '').trim();
       const companyText = company.trim();
-      const dateLocation = location
-        ? `${dateRange} | ${location}`.trim()
-        : dateRange.trim();
 
       const col1Width = this.contentWidth * 0.5;
       const col2Width = this.contentWidth * 0.5;
@@ -728,49 +746,48 @@ export class ResumePDFTemplate7 {
       doc
         .font(this.fontBoldItalic)
         .fontSize(companyFontSize)
-        .fillColor(defaultColor)
+        .fillColor(COLORS.primary)
         .text(headerPart, this.marginX, lineY, {
           width: col1Width,
           align: 'left',
         });
 
-      doc.text(dateLocation, this.marginX + col1Width, lineY, {
-        width: col2Width,
-        align: 'right',
-      });
+      doc
+        .font(this.fontName)
+        .fontSize(jobMetaFontSize)
+        .fillColor(COLORS.secondary)
+        .text(dateRange, this.marginX + col1Width, lineY, {
+          width: col2Width,
+          align: 'right',
+        });
 
-      doc.moveDown(0.35);
+      doc.moveDown(EXPERIENCE_AFTER_HEADER_GAP);
 
       const responsibilities = exp.responsibilities || [];
       if (responsibilities.length > 0) {
-        this._ensureSpaceForSubtitleSection(doc, responsibilities);
+        this._ensureSpaceForSubtitleSection(doc, responsibilities, {
+          heightEstimateWidth: this.contentWidth - CONTENT_INDENT,
+        });
         if (this.pdfSettings.showSubTitle) {
           this._addSubTitle(doc, 'Key Qualifications & Responsibilities');
         }
         this._addBulletItems(doc, responsibilities, {
-          bulletX: this.marginX,
-          contentColor: defaultColor,
-          lineGap: 3,
+          contentColor: COLORS.body,
+          lineGap: EXPERIENCE_BULLET_LINE_GAP,
         });
       }
 
       const achievements = exp.achievements || [];
       if (achievements.length > 0) {
-        const achievementBullets =
-          responsibilities.length > 0
-            ? [responsibilities[0], ...achievements]
-            : achievements;
-
-        this._ensureSpaceForSubtitleSection(doc, achievementBullets, {
-          heightEstimateWidth: this.contentWidth,
+        this._ensureSpaceForSubtitleSection(doc, achievements, {
+          heightEstimateWidth: this.contentWidth - CONTENT_INDENT,
         });
         if (this.pdfSettings.showSubTitle) {
           this._addSubTitle(doc, 'Key Achievements');
         }
         this._addBulletItems(doc, achievements, {
-          bulletX: this.marginX,
-          contentColor: defaultColor,
-          lineGap: 3,
+          contentColor: COLORS.body,
+          lineGap: EXPERIENCE_BULLET_LINE_GAP,
         });
       }
 
@@ -778,17 +795,15 @@ export class ResumePDFTemplate7 {
         this._addCompanySkills(doc, exp.skills);
       }
 
-      doc.moveDown(0.7);
+      doc.moveDown(EXPERIENCE_ENTRY_GAP);
     }
-    doc.moveDown(0.7);
+    doc.moveDown(0.5);
   }
 
   private _addEducation(doc: any) {
     this._addSectionHeader(doc, 'EDUCATION');
     const educationList = this.data.education || [];
-    const institutionFontSize = 11.5;
-    const detailFontSize = 11.5;
-    const lineGap = 3;
+    const lineGap = 2;
 
     for (const edu of educationList) {
       const institution = (edu.institution || '').trim();
@@ -798,7 +813,8 @@ export class ResumePDFTemplate7 {
         ? `${degree} – ${graduationDate}`
         : degree;
 
-      const minSpaceNeeded = (institutionFontSize + detailFontSize) * 2.4;
+      const minSpaceNeeded =
+        (FONT_SIZES.educationInstitution + FONT_SIZES.body) * 2.4;
       const spaceAvailable = this.pageHeight - this.marginB - doc.y;
 
       if (spaceAvailable < minSpaceNeeded) {
@@ -808,8 +824,8 @@ export class ResumePDFTemplate7 {
       if (institution) {
         doc
           .font(this.fontBoldItalic)
-          .fontSize(institutionFontSize)
-          .fillColor(defaultColor)
+          .fontSize(FONT_SIZES.educationInstitution)
+          .fillColor(COLORS.primary)
           .text(institution, this.marginX, doc.y, {
             width: this.contentWidth,
             align: 'left',
@@ -820,11 +836,11 @@ export class ResumePDFTemplate7 {
       if (degreeLine) {
         doc
           .font(this.fontName)
-          .fontSize(detailFontSize)
-          .fillColor(defaultColor)
+          .fontSize(FONT_SIZES.body)
+          .fillColor(COLORS.body)
           .text(degreeLine, this.marginX, doc.y, {
             width: this.contentWidth,
-            align: 'left',
+            align: 'justify',
             lineGap,
           });
       }
@@ -847,10 +863,12 @@ export class ResumePDFTemplate7 {
       return;
     }
 
-    this._ensureSpaceForSubtitleSection(doc, items);
+    this._ensureSpaceForSubtitleSection(doc, items, {
+      heightEstimateWidth: this.contentWidth - CONTENT_INDENT,
+    });
     this._addSectionHeader(doc, 'CERTIFICATIONS');
     this._addBulletItems(doc, items, {
-      contentColor: defaultColor,
+      contentColor: COLORS.body,
       lineGap: 3,
     });
     doc.moveDown(1);

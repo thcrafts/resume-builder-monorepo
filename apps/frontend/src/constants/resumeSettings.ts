@@ -42,9 +42,9 @@ export const DEFAULT_RESUME_SETTINGS: ResumeSettings = {
   showCompanySkills: true,
   skillCategories: [...SKILL_CATEGORIES],
   useDefaultOutputFormat: true,
-  responsibilitiesCount: 3,
-  achievementsCount: 5,
-  skillsPerCategoryCount: 8,
+  responsibilitiesCount: 0,
+  achievementsCount: 0,
+  skillsPerCategoryCount: 5,
   companySkillsCount: 8,
 };
 

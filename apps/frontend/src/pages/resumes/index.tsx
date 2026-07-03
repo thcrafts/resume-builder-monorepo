@@ -119,9 +119,9 @@ type ChipFilter = StatusChipFilter | "manual" | `provider:${string}`;
 function normalizeResumeProvider(aiModel?: string, aiVersion?: string): string {
   if (!aiModel) {
     if (aiVersion?.startsWith("anthropic/")) {
-      return "openai";
-    } else if (aiVersion?.startsWith("openai/")) {
       return "anthropic";
+    } else if (aiVersion?.startsWith("openai/")) {
+      return "openai";
     }
     return "other";
   }

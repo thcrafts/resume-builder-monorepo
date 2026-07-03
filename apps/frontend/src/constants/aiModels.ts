@@ -181,6 +181,14 @@ export function getVersionsForProvider(
   return getProvider(catalog, providerId)?.models ?? [];
 }
 
+/** First catalog model id for a provider — used when only provider slug is known (filter chips). */
+export function getRepresentativeModelIdForProvider(
+  catalog: AiModelCatalog | null | undefined,
+  providerId: string,
+): string {
+  return getVersionsForProvider(catalog, providerId)[0]?.id ?? providerId;
+}
+
 export function getModelOption(
   catalog: AiModelCatalog | null | undefined,
   aiVersion: string,

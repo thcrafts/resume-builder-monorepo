@@ -61,7 +61,7 @@ const AiVersionBadge: React.FC<AiVersionBadgeProps> = ({
     <Chip
       size="small"
       variant="outlined"
-      icon={<ModelProviderIcon provider={normalized.aiModel} size={16} />}
+      icon={<ModelProviderIcon modelId={normalized.aiVersion} size={16} />}
       label={versionLabel}
       sx={chipSx}
     />

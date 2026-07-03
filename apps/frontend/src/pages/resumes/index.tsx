@@ -68,7 +68,7 @@ import { useAuth } from "../../components/common/AuthContext";
 import { useThemeMode } from "../../components/common/ThemeContext";
 import { useAiModels } from "../../components/common/AiModelsContext";
 import ModelProviderIcon from "../../components/common/ModelProviderIcon";
-import { getProviderLabel, resolveModelSelectionInCatalog } from "../../constants/aiModels";
+import { getProviderLabel, getRepresentativeModelIdForProvider, resolveModelSelectionInCatalog } from "../../constants/aiModels";
 import {
   saveDuplicateResumeDraft,
 } from "../../constants/duplicateResumeDraft";
@@ -1006,7 +1006,14 @@ const Resumes: React.FC = () => {
                   return (
                     <Chip
                       key={providerId}
-                      icon={<ModelProviderIcon provider={providerId} size={16} />}
+                      icon={
+                        <ModelProviderIcon
+                          modelId={getRepresentativeModelIdForProvider(
+                            catalog,
+                            providerId,
+                          )}
+                        />
+                      }
                       label={resumeCounts.providerCounts.get(providerId) ?? 0}
                       size="small"
                       title={getProviderLabel(catalog, providerId)}

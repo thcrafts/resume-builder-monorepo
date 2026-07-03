@@ -12,6 +12,7 @@ import {
 import {
   getProviderLabel,
   getVersionsForProvider,
+  getRepresentativeModelIdForProvider,
   resolveModelSelectionInCatalog,
 } from "../../constants/aiModels";
 import { useAiModels } from "../common/AiModelsContext";
@@ -79,7 +80,7 @@ const AiModelSelector: React.FC<AiModelSelectorProps> = ({
             onChange={(e) => handleModelChange(e.target.value)}
             renderValue={(value) => (
               <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
-                <ModelProviderIcon provider={value} />
+                <ModelProviderIcon modelId={selectedVersion} provider={value} />
                 {getProviderLabel(catalog, value)}
               </Box>
             )}
@@ -87,7 +88,12 @@ const AiModelSelector: React.FC<AiModelSelectorProps> = ({
             {providers.map((provider) => (
               <MenuItem key={provider.id} value={provider.id}>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
-                  <ModelProviderIcon provider={provider.id} />
+                  <ModelProviderIcon
+                    modelId={getRepresentativeModelIdForProvider(
+                      catalog,
+                      provider.id,
+                    )}
+                  />
                   {provider.label}
                 </Box>
               </MenuItem>
@@ -115,7 +121,7 @@ const AiModelSelector: React.FC<AiModelSelectorProps> = ({
             {versions.map((model) => (
               <MenuItem key={model.id} value={model.id}>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
-                  <ModelProviderIcon provider={resolved.aiModel} />
+                  <ModelProviderIcon modelId={model.id} />
                   {model.versionLabel}
                 </Box>
               </MenuItem>

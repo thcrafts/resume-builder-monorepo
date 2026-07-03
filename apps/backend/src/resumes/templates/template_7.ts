@@ -23,7 +23,6 @@ const FONT_SIZES = {
 };
 
 const CONTENT_INDENT = 18;
-const EXPERIENCE_BULLET_GUTTER = 10;
 const EXPERIENCE_ENTRY_GAP = 0.4;
 const EXPERIENCE_BULLET_LINE_GAP = 1;
 const EXPERIENCE_BULLET_PARAGRAPH_GAP = 1;
@@ -566,10 +565,13 @@ export class ResumePDFTemplate7 {
 
     let totalContentHeight = 0;
     doc.font(this.fontName).fontSize(contentFontSize);
-    const bulletGutter = this._getBulletGutter(doc, contentFontSize);
-    const wrappedTextWidth = heightEstimateWidth - bulletGutter;
+    const prefixWidth = doc.widthOfString('• ');
+    const wrappedTextWidth = heightEstimateWidth - prefixWidth;
     for (const item of items) {
-      const itemText = String(item).replace(/\n/g, ' ');
+      const itemText = String(item).replace(/\n/g, ' ').trim();
+      if (!itemText) {
+        continue;
+      }
       totalContentHeight +=
         this._estimateTextHeight(
           doc,
@@ -598,11 +600,6 @@ export class ResumePDFTemplate7 {
         doc.addPage();
       }
     }
-  }
-
-  private _getBulletGutter(doc: any, fontSize: number): number {
-    doc.font(this.fontName).fontSize(fontSize);
-    return Math.ceil(doc.widthOfString('• ')) || EXPERIENCE_BULLET_GUTTER;
   }
 
   private _addSubTitle(doc: any, subtitle: string) {
@@ -646,17 +643,21 @@ export class ResumePDFTemplate7 {
     const lineGap = options.lineGap ?? EXPERIENCE_BULLET_LINE_GAP;
 
     doc.font(this.fontName).fontSize(contentFontSize).fillColor(contentColor);
-    const bulletGutter = this._getBulletGutter(doc, contentFontSize);
-    const textX = bulletX + bulletGutter;
-    const wrappedTextWidth = textWidth - bulletGutter;
+    const bulletPrefix = '• ';
+    const prefixWidth = doc.widthOfString(bulletPrefix);
 
     for (const item of items) {
-      const itemText = String(item).replace(/\n/g, ' ');
-      const startY = doc.y;
+      const itemText = String(item).replace(/\n/g, ' ').trim();
+      if (!itemText) {
+        continue;
+      }
 
-      doc.text('•', bulletX, startY, { lineBreak: false });
-      doc.text(itemText, textX, startY, {
-        width: wrappedTextWidth,
+      doc.text(bulletPrefix, bulletX, doc.y, {
+        continued: true,
+        lineBreak: false,
+      });
+      doc.text(itemText, {
+        width: textWidth - prefixWidth,
         align: 'left',
         paragraphGap: EXPERIENCE_BULLET_PARAGRAPH_GAP,
         lineGap,

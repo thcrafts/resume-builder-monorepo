@@ -1,7 +1,18 @@
 import type { ResumeData } from 'src/resumes/templates';
 import { MAX_EXPERIENCE_BULLETS_PER_ROLE } from './resume-settings';
 
-export const MAX_WORDS_PER_EXPERIENCE_BULLET = 15;
+export const MAX_WORDS_PER_EXPERIENCE_BULLET = 20;
+
+export function ensureSentenceEnding(text: string): string {
+  let result = text.replace(/[,;:\s]+$/, '').trim();
+  if (!result) {
+    return result;
+  }
+  if (!/[.!?]$/.test(result)) {
+    result += '.';
+  }
+  return result;
+}
 
 export function normalizeExperienceBullet(text: string): string {
   let normalized = String(text ?? '').trim();
@@ -14,7 +25,7 @@ export function normalizeExperienceBullet(text: string): string {
     normalized = words.slice(0, MAX_WORDS_PER_EXPERIENCE_BULLET).join(' ');
   }
 
-  return normalized;
+  return ensureSentenceEnding(normalized);
 }
 
 function trimRoleBulletsToMax(

@@ -345,7 +345,8 @@ Set job_type for each role using a realistic value such as Full-time, Contract, 
 
 RESPONSIBILITIES
 Each responsibility must:
-- Be one sentence with at most 15 words
+- Be one complete sentence with 15 to 20 words
+- Must end with a period
 - Must NOT contain the substring "- "
 - Start with a strong action verb
 - Describe ownership, scope, systems, stakeholders, architecture, delivery, or technical responsibility
@@ -355,7 +356,8 @@ Each responsibility must:
 
 ACHIEVEMENTS
 Each achievement must:
-- Be one sentence with at most 15 words
+- Be one complete sentence with 15 to 20 words
+- Must end with a period
 - Must NOT contain the substring "- "
 - Start with a strong action verb
 - Describe measurable business, technical, product, reliability, performance, security, or user impact
@@ -473,7 +475,8 @@ Silently verify:
 - Root-level title and most recent role title use the normalized JD title
 - CORE TECHNOLOGIES uses at most 5 categories and at most 5 required JD skills per category
 - Every experience entry has responsibilities.length + achievements.length less than or equal to 5
-- Every responsibility and achievement uses at most 15 words
+- Every responsibility and achievement is a complete sentence with 15 to 20 words
+- Every responsibility and achievement ends with a period
 - No responsibility or achievement contains "- "
 - Every experience entry includes job_type
 - Every responsibility and achievement starts with a strong action verb

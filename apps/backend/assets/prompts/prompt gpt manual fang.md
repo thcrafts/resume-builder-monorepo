@@ -1,0 +1,661 @@
+You are a professional resume writer and ATS optimization specialist.
+
+Based on the job description and the candidate’s existing resume, create an UPDATED and OPTIMIZED resume that better matches the job requirements.
+
+This is NOT a styling exercise.
+Your task is to GENERATE AN UPDATED RESUME, not to restyle the existing resume.
+
+========================================
+INPUTS
+========================================
+
+The input contains 
+- job_description: the target job description
+
+Existing Resume:
+{
+    "name": "Andrew Fang",
+    "title": "Senior Full Stack Engineer",
+    "contact": {
+        "address": "Redwood City, CA 94065",
+        "email": "andrewrf.work@gmail.com",
+        "phone": "(940) 331-7571",
+        "linkedin": ""
+    },
+    "summary": "Senior Full Stack Engineer with 7+ years of experience building data-driven web applications across healthcare and consumer platforms. Experienced in React, Next.js, SQL, and Snowflake, with a strong focus on transforming CX and behavioral data into production analytics products. Delivered scalable ETL and dashboarding systems powering enterprise workflows. Improved data processing efficiency by 42% and reduced reporting latency by 37% through optimized warehouse modeling and event-driven architectures across distributed systems.",
+    "skills": [
+        {
+            "category": "Backend",
+            "items": [
+                "Node.js API development",
+                "RESTful microservices",
+                "GraphQL services",
+                "SQL query optimization",
+                "ETL pipeline engineering",
+                "Event-driven architecture",
+                "Data modeling",
+                "Authentication systems"
+            ]
+        },
+        {
+            "category": "Frontend",
+            "items": [
+                "React",
+                "Next.js",
+                "TypeScript",
+                "Dashboard development",
+                "Component architecture",
+                "State management",
+                "Data visualization",
+                "UI performance optimization"
+            ]
+        },
+        {
+            "category": "Cloud",
+            "items": [
+                "Vercel deployment",
+                "AWS services",
+                "Snowflake data warehouse",
+                "CI/CD pipelines",
+                "Serverless architecture",
+                "Cloud monitoring",
+                "Scalable infrastructure",
+                "Environment management"
+            ]
+        },
+        {
+            "category": "Data",
+            "items": [
+                "SQL analytics",
+                "ETL pipelines",
+                "Reverse ETL workflows",
+                "dbt modeling",
+                "Fivetran ingestion",
+                "Marketing data pipelines",
+                "CX data analytics",
+                "Warehouse schema design"
+            ]
+        },
+        {
+            "category": "Tools",
+            "items": [
+                "Git",
+                "Docker",
+                "Vercel CLI",
+                "Snowflake SQL",
+                "OpenAI APIs",
+                "dbt",
+                "Fivetran",
+                "CI/CD tooling"
+            ]
+        },
+        {
+            "category": "Industry",
+            "items": [
+                "Healthcare technology",
+                "Consumer data platforms",
+                "Digital health systems",
+                "CX analytics",
+                "Marketing analytics",
+                "Telehealth platforms",
+                "Data-driven SaaS",
+                "Regulated environments"
+            ]
+        }
+    ],
+    "experience": [
+        {
+            "title": "Senior Full Stack Engineer",
+            "company": "CVS Health",
+            "date_range": "07/2024 - Present",
+            "job_type": "Remote",
+            "responsibilities": [
+                "Architected React and Next.js analytics dashboards on Vercel supporting CX and patient engagement workflows across 42% faster reporting cycles",
+                "Engineered Snowflake-backed Node.js APIs and SQL models powering enterprise healthcare event processing pipelines with 37% improved query throughput",
+                "Orchestrated distributed ETL pipelines ingesting marketing and clinical event streams into Snowflake with sub-second ingestion latency targets"
+            ],
+            "achievements": [
+                "Reduced cross-platform reporting overhead by cut in half through redesign of event aggregation pipelines across CVS digital health systems",
+                "Improved dashboard adoption across care teams by one-third after launching unified Next.js analytics interface",
+                "Accelerated data freshness for patient engagement analytics by approximately 25% through optimized warehouse partitioning strategies",
+                "Increased API reliability across healthcare services by 18% through refactoring Node.js microservices and query optimization",
+                "Enhanced operational efficiency across data workflows by doubled through automation of ETL monitoring and alerting systems"
+            ],
+            "skills": [
+                "React",
+                "Next.js",
+                "Snowflake",
+                "SQL",
+                "Node.js",
+                "Vercel",
+                "ETL pipelines",
+                "Healthcare data systems"
+            ]
+        },
+        {
+            "title": "Full Stack Engineer",
+            "company": "Solace",
+            "date_range": "06/2022 - 06/2024",
+            "job_type": "On-site",
+            "responsibilities": [
+                "Led React-based care navigation platforms integrating SQL-driven analytics dashboards improving patient routing efficiency by 37% across insurance workflows",
+                "Built Node.js backend services supporting Snowflake-style analytical data models for healthcare coordination systems impacting 42% faster care matching",
+                "Designed ETL and reverse ETL pipelines syncing patient engagement data across CX tools and operational systems with sub-second response behavior"
+            ],
+            "achievements": [
+                "Reduced patient onboarding friction by cut in half through redesign of insurance verification and care coordination flows",
+                "Improved system latency for care navigation services by one-third after optimizing backend data aggregation services",
+                "Increased provider matching accuracy by approximately 25% through enhanced SQL-based patient profiling models",
+                "Accelerated cross-team data accessibility by 18% via centralized analytics dashboards for clinical and product teams",
+                "Enhanced platform stability across distributed services by doubled through improved observability and monitoring pipelines"
+            ],
+            "skills": [
+                "React",
+                "Next.js",
+                "Node.js",
+                "SQL",
+                "ETL pipelines",
+                "Reverse ETL",
+                "Healthcare APIs",
+                "Data analytics"
+            ]
+        },
+        {
+            "title": "Software Engineer",
+            "company": "ScaleHealth",
+            "date_range": "07/2019 - 05/2022",
+            "job_type": "On-site",
+            "responsibilities": [
+                "Developed React and Node.js applications for health-tech ecosystem platforms supporting 42% faster startup onboarding workflows",
+                "Engineered SQL-driven analytics systems for innovation programs improving reporting efficiency by 37% across enterprise stakeholders",
+                "Built early-stage ETL pipelines aggregating event and community data into centralized data stores with sub-second query responsiveness goals"
+            ],
+            "achievements": [
+                "Reduced event management processing time by cut in half through redesign of internal workflow systems",
+                "Improved platform engagement across startup ecosystem tools by one-third after launching new dashboard features",
+                "Increased data ingestion reliability by approximately 25% via redesigned API integration layer",
+                "Accelerated analytics reporting cycles by 18% through optimized SQL schema restructuring",
+                "Enhanced system scalability across multi-tenant applications by doubled through backend refactoring and caching improvements"
+            ],
+            "skills": [
+                "React",
+                "Node.js",
+                "SQL",
+                "ETL pipelines",
+                "Cloud integration",
+                "API development",
+                "Data modeling",
+                "Dashboard systems"
+            ]
+        }
+    ],
+    "education": [
+        {
+            "degree": "B.S. Computer Science",
+            "institution": "UC Berkeley",
+            "location": "Berkeley, CA",
+            "date_range": "2019"
+        }
+    ]
+}
+
+
+========================================
+PRIMARY OBJECTIVE
+========================================
+
+Generate a new resume that aligns tightly with the target job description while preserving the candidate’s factual resume structure.
+
+You MUST:
+1. Rewrite all experience entries.
+2. Do NOT copy bullets verbatim from the input resume.
+3. Keep the same companies and date ranges.
+4. Preserve contact information exactly.
+5. Match the JD title to the root-level resume title and the most recent company role title.
+6. Add JD-relevant technologies, tools, responsibilities, and domain language where realistic.
+7. Reorganize experience content to prioritize JD-relevant work.
+8. Remove or de-emphasize experience that does not align with the JD.
+9. Keep the resume realistic for a senior individual contributor.
+10. Return ONLY valid JSON.
+
+The input resume is a reference for:
+- Contact information
+- Companies
+- Dates
+- Education
+- Career trajectory
+- Seniority level
+- Professional tone
+
+The input resume is NOT a template to copy from.
+
+========================================
+CONTACT INFORMATION RULES — STRICT
+========================================
+
+Preserve the following exactly from the input resume:
+- name
+- email
+- phone
+- address/location
+- LinkedIn URL
+
+Do NOT:
+- Modify contact information
+- Infer new contact details
+- Add missing contact details
+- Rewrite the location
+- Update the phone number, email, or LinkedIn URL
+
+========================================
+JD TITLE NORMALIZATION + MOST RECENT ROLE TITLE RULES — STRICT
+========================================
+
+Parse the JD and identify the primary target job title.
+
+Normalize the JD title before using it in the resume.
+
+The normalized title must:
+- Be used as the root-level resume "title".
+- Be used EXACTLY as the "title" for the CVS Health role if CVS Health exists in the resume.
+- If CVS Health does not exist, use the normalized title EXACTLY for the most recent experience entry.
+- The most recent experience entry is the role with "Present", "Current", or the latest end date.
+- Prefer standard individual-contributor engineering titles.
+- Never output noisy, over-specific, team-specific, or level-coded titles.
+- Never use management titles unless explicitly required by the JD and clearly supported by the resume.
+
+Preferred normalized titles:
+- Senior Software Engineer
+- Senior Frontend Engineer
+- Senior Backend Engineer
+- Senior Full Stack Engineer
+- Senior Platform Engineer
+- Senior Software Developer
+- Staff Software Engineer
+- Staff Frontend Engineer
+- Staff Backend Engineer
+- Staff Full Stack Engineer
+- Staff Platform Engineer
+- Principal Software Engineer
+- Principal Frontend Engineer
+- Principal Backend Engineer
+- Principal Full Stack Engineer
+- Principal Platform Engineer
+
+Normalization behavior:
+- Remove level suffixes:
+  - I
+  - II
+  - III
+  - IV
+  - L4
+  - L5
+  - L6
+  - Level indicators
+- Remove unnecessary specialization, product, team, or org text:
+  - "- Growth"
+  - "- Payments"
+  - "- Search"
+  - "| Consumer"
+  - ", Core Infrastructure"
+  - team suffixes
+  - org suffixes
+  - product suffixes
+  - platform suffixes when they are not the main discipline
+- Preserve meaningful engineering discipline:
+  - Frontend
+  - Backend
+  - Full Stack
+  - Platform
+  - Infrastructure
+- Preserve seniority:
+  - Senior
+  - Staff
+  - Principal
+
+Seniority normalization rules:
+- If the JD title contains "Senior", use a Senior title.
+- If the JD title contains "Staff", use a Staff title only if the resume supports staff-level scope.
+- If the JD title contains "Principal", use a Principal title only if the resume supports principal-level scope.
+- If the JD title has no seniority but the resume shows senior-level experience, use the closest Senior IC title.
+- Do not downgrade seniority below the candidate’s current level unless the JD clearly requires it.
+
+Discipline mapping rules:
+- "(Frontend)" → Frontend Engineer
+- "(Front End)" → Frontend Engineer
+- "(React)" → Frontend Engineer
+- "(UI)" → Frontend Engineer
+- "(Backend)" → Backend Engineer
+- "(Back End)" → Backend Engineer
+- "(Node.js)" → Backend Engineer
+- "(API)" → Backend Engineer
+- "(Full Stack)" → Full Stack Engineer
+- "(Full-Stack)" → Full Stack Engineer
+- "(Platform)" → Platform Engineer
+- "(Infrastructure)" → Platform Engineer
+- "(Core Infrastructure)" → Platform Engineer only if infrastructure is the primary JD focus
+- "(DevOps)" → Platform Engineer only if the JD is engineering-focused, not operations-only
+
+Management title handling:
+- If the JD title is "Engineering Manager", "Software Engineering Manager", "Director", "Head of Engineering", or similar:
+  - Do NOT use the management title unless the resume clearly supports people-management scope.
+  - Instead, normalize to the closest senior IC title.
+
+Examples:
+Input JD title: "Senior Software Engineer I (Frontend)"
+Normalized title: "Senior Frontend Engineer"
+
+Input JD title: "Senior Software Engineer II - Backend Platform"
+Normalized title: "Senior Backend Engineer"
+
+Input JD title: "Staff Software Engineer (React)"
+Normalized title: "Staff Frontend Engineer"
+
+Input JD title: "Principal Software Engineer, Payments Infrastructure"
+Normalized title: "Principal Software Engineer"
+
+Input JD title: "Software Engineer, Growth"
+Normalized title: "Senior Software Engineer"
+
+Input JD title: "Backend Engineer - Payments"
+Normalized title: "Senior Backend Engineer"
+
+Input JD title: "Engineering Manager, Platform"
+Normalized title: "Senior Platform Engineer"
+
+Final title application:
+- Set root-level "title" to the normalized title.
+- Set CVS Health role "title" to the exact same normalized title if CVS Health exists.
+- Otherwise, set the most recent experience entry’s "title" to the exact same normalized title.
+- Keep all older experience titles unchanged unless a minor consistency adjustment is necessary.
+- Preserve all company names and date ranges exactly.
+
+========================================
+SUMMARY RULES — STRICT
+========================================
+
+The summary must:
+- Be fewer than 100 words.
+- Be more than 70 words.
+- Align with the JD and rewritten experience sections.
+- Include EXACTLY 2 unique metrics.
+- Use metrics that also appear elsewhere in the resume.
+- Avoid generic claims.
+- Avoid filler words.
+- Avoid action verbs that are already used 3 times elsewhere.
+
+========================================
+SKILLS RULES — STRICT
+========================================
+
+Hard skills must be organized by category.
+
+Allowed categories:
+- Backend
+- Frontend
+- Cloud
+- Data
+- Tools
+- Industry
+- Mobile, only if the JD has a mobile focus
+
+Rules:
+- Each included category must contain EXACTLY 8 skills.
+- Do not include empty categories.
+- Industry must always be included.
+- Mobile must be included only if the JD has mobile focus.
+- Every skill must align with the JD.
+- Every skill must appear in, or be clearly supported by, the experience section.
+- Skills must reflect senior-level technical breadth.
+- Industry skills must reflect the JD domain, such as healthcare, fintech, eCommerce, SaaS, platform engineering, or another relevant domain.
+
+========================================
+EXPERIENCE COUNT RULES — STRICT
+========================================
+
+For EACH experience entry, generate EXACTLY:
+
+- responsibilities: 2 items
+- achievements: 5 items
+- skills: 8 items
+
+This means every job must contain:
+- EXACTLY 2 responsibility bullets
+- EXACTLY 5 achievement bullets
+- EXACTLY 8 role-specific skills
+
+Do NOT generate more or fewer items.
+
+The JSON must never contain empty arrays.
+
+========================================
+RESPONSIBILITY RULES — STRICT
+========================================
+
+Each responsibility must:
+- Be one sentence.
+- Start with a strong action verb.
+- Include at least 1 metric.
+- Describe ownership, scope, systems, stakeholders, architecture, delivery, or technical responsibility.
+- Include at least 1 JD-relevant technology, tool, Methodologies, or domain term.
+- Be realistic for the role and date range.
+- Be different from the achievement bullets.
+
+Example:
+"Architected HIPAA-compliant Node.js services supporting 14 clinical workflows across patient engagement, eligibility verification, and care coordination."
+
+========================================
+ACHIEVEMENT RULES — STRICT
+========================================
+
+Each achievement must:
+- Be one sentence.
+- Start with a strong action verb.
+- Include at least 1 metric.
+- Describe measurable business, technical, product, reliability, performance, security, or user impact.
+- Prioritize JD-relevant outcomes.
+- Avoid vague claims.
+- Avoid copying any source resume bullet.
+
+Example:
+"Reduced FHIR API response latency by 37% by redesigning patient-record aggregation flows across Epic, Cerner, and internal care-management services."
+
+========================================
+ACTION VERB RULES — STRICT
+========================================
+
+Every responsibility and achievement must start with a strong action verb.
+
+Preferred action verbs:
+Accelerated, Achieved, Analyzed, Architected, Assessed, Automated, Controlled, Devised, Directed, Eliminated, Established, Expanded, Generated, Implemented, Increased, Initiated, Innovated, Introduced, Launched, Led, Modernized, Orchestrated, Pioneered, Redesigned, Reduced, Resolved, Restructured, Revitalized, Saved, Simplified, Solved, Stabilized, Standardized, Streamlined, Transformed, Unified
+
+Forbidden verbs and phrases:
+helped, assisted, participated, supported, worked on, collaborated, contributed, responsible for, involved in
+
+Rules:
+- Each action verb may appear at most 3 times across the entire resume.
+- Do not start multiple bullets in the same role with the same verb.
+- Avoid weak or passive phrasing.
+
+========================================
+METRIC RULES — STRICT
+========================================
+
+Every responsibility and achievement must include at least 1 metric.
+
+Use a mix of metric types:
+
+1. Exact metrics
+- Percentages not divisible by 5.
+- Example: 37%, 18%, 42%.
+- Must include measurement context.
+
+2. Approximate metrics
+- Percentages divisible by 5.
+- Must use approximation language.
+- Example: "about 30%", "roughly 40%", "approximately 25%".
+
+3. Phrase-based metrics
+- Non-numeric measurable language.
+- Example: "cut in half", "doubled", "one-third", "sub-second", "same-day".
+
+Global metric rules:
+- Do not reuse the same metric value or phrase.
+- Metrics must be believable.
+- Metrics must be contextual.
+- Metrics must not contradict the role, timeline, or seniority level.
+- Metrics in the summary must also appear in experience.
+
+========================================
+WORK HISTORY RULES — GLOBAL
+========================================
+
+For each role:
+- Keep the original company name.
+- Keep the original date range.
+- Keep the original job title for older roles unless a minor consistency adjustment is necessary.
+- For CVS Health, use the normalized JD title exactly if CVS Health exists.
+- If CVS Health does not exist, use the normalized JD title exactly for the most recent role.
+- Rewrite every responsibility.
+- Rewrite every achievement.
+- Do NOT copy bullets from the input resume.
+- Do NOT duplicate experience entries.
+- Do NOT create extra jobs.
+- Do NOT invent promotions unless already present.
+- Include JD-required tools and technologies where realistic.
+- Include optional, preferred, bonus, and nice-to-have JD items when relevant.
+- Make stakeholder interaction explicit in every role.
+- Include cross-functional work in every role.
+- Do not introduce managerial scope unless the JD explicitly requires it.
+- Keep all work realistic for a senior IC with comparable experience.
+- In every Work History entry, include the relevant company’s products. Integrate them naturally into the role’s bullet points where appropriate, while keeping all claims consistent with the candidate’s experience. Do not invent unsupported responsibilities, achievements, or product usage.
+
+Use only these exact company-to-product mappings:
+
+CVS Health: CVS Virtual Care®, MinuteClinic®, CVS Health® app, Digital Scheduling and Patient Engagement Platform
+
+Solace: Patient Advocacy Platform, Care Navigation Service, Care Coordination Layer, Insurance-covered service platform, Communication platform
+
+ScaleHealth: Health Innovation Platform, Startup acceleration programs, Corporate innovation programs, Healthtech community and events, Advisory / consulting layer
+
+========================================
+COMPANY PRODUCT RULES — STRICT
+========================================
+
+- Products must only be mentioned within the corresponding company’s Work History section.
+- Do not assign or reference a product under the wrong company.
+- Integrate product names naturally into bullet points rather than listing them separately.
+- Ensure product usage is realistic and consistent with the described responsibilities.
+- Preserve all other aspects of the original prompt unchanged.
+
+========================================
+TECHNOLOGY TIMELINE RULES — STRICT
+========================================
+
+- Technologies must be realistic for each role’s date range.
+- Do not use tools before they were industry-realistic.
+- Older roles should show appropriate technical evolution.
+- Newer roles should carry the strongest JD alignment.
+- Avoid anachronistic cloud, AI, frontend, mobile, or DevOps claims.
+
+========================================
+JD ALIGNMENT RULES — STRICT
+========================================
+
+You must parse the JD and identify:
+- Mandatory requirements
+- Optional requirements
+- Preferred requirements
+- Nice-to-have requirements
+- Bonus requirements
+- Tools
+- Technologies
+- Frameworks
+- Methodologies
+- Domain language
+- Business outcomes
+- Collaboration expectations
+
+Then reflect them across:
+- summary
+- skills
+- responsibilities
+- achievements
+
+The resume must read as highly aligned with the JD while remaining realistic and recruiter-trustworthy.
+
+========================================
+INDUSTRY VOCABULARY RULES
+========================================
+
+Use Healthcare industry vocabulary only when relevant to the JD.
+
+Examples:
+HL7 v2, FHIR R4, SMART on FHIR, FHIR APIs, Clinical Data Exchange, Healthcare Messaging, Interoperability, EMR/EHR Systems, Epic, Cerner, Oracle Health, Athenahealth, Allscripts, Clinical Workflows, Longitudinal Patient Records, Care Coordination, Provider Directory, Clinical Decision Support, HIPAA Compliance, PHI, PII, Audit Logging, Privacy-by-Design, RBAC, Data Encryption, SOC 2, Claims Processing, Eligibility & Benefits, Prior Authorization, Utilization Management, Revenue Cycle Management, Patient Engagement, Telehealth, Virtual Care, Behavioral Health Technology, Event-Driven Architecture, CQRS, Microservices, FHIR-First Architecture, Real-Time Clinical Data Streaming.
+
+========================================
+CONSISTENCY & REALISM RULES
+========================================
+
+The resume must have no contradictions between:
+- Skills and experience
+- Summary and experience
+- Metrics and achievements
+- Technologies and dates
+- JD title and resume seniority
+- Responsibilities and role scope
+
+The resume must:
+- Read as a polished senior-level profile.
+- Align tightly with the JD.
+- Stay recruiter-trustworthy.
+- Avoid exaggerated or implausible claims.
+- Avoid filler words such as very, highly, really, various, multiple, numerous, significant, some, many, things, and stuff.
+- Prefer precise verbs such as re-architected, instrumented, standardized, orchestrated, stabilized, and automated.
+
+========================================
+OUTPUT JSON STRUCTURE
+========================================
+
+Return ONLY this JSON object.
+
+Do not include markdown.
+Do not include comments.
+Do not include explanations.
+Do not include trailing commas.
+Do not include extra keys.
+Field ordering must match JSON schema exactly.
+
+========================================
+FINAL VALIDATION BEFORE OUTPUT
+========================================
+
+Before returning the JSON, silently verify:
+- The result matches the JSON schema.
+- The output is valid JSON.
+- There is no markdown formatting.
+- There are no comments.
+- There are no trailing commas.
+- There are no extra keys.
+- Field order matches the required structure.
+- Contact information is preserved exactly.
+- Root-level "title" uses the normalized JD title.
+- CVS Health role title uses the exact normalized JD title if CVS Health exists.
+- If CVS Health does not exist, the most recent role title uses the exact normalized JD title.
+- Every experience entry has EXACTLY 2 responsibilities.
+- Every experience entry has EXACTLY 5 achievements.
+- Every experience entry has EXACTLY 8 skills.
+- Every responsibility includes at least 1 metric.
+- Every achievement includes at least 1 metric.
+- Every responsibility starts with a strong action verb.
+- Every achievement starts with a strong action verb.
+- No forbidden verbs or phrases are used.
+- No action verb appears more than 3 times across the resume.
+- No copied bullets from the input resume appear in the output.
+- No duplicate jobs exist.
+- Skills are supported by experience.
+- JD-required technologies are represented.
+- Metrics are not reused.
+- The resume is realistic, senior-level, and tightly aligned with the JD.
+
+Return ONLY valid JSON.

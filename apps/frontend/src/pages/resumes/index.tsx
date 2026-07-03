@@ -54,7 +54,7 @@ import {
   deleteResume,
   bulkDeleteResumes,
   downloadResume,
-  downloadResumeJSON,
+  // downloadResumeJSON,
   generateCoverLetter,
   retryResume,
   type ResumeResponse,
@@ -552,40 +552,37 @@ const Resumes: React.FC = () => {
     }
   };
 
-  const handleDownloadResumeJSON = async (id: string) => {
-    try {
-      const response = await downloadResumeJSON(id);
-      const jsonBlob = response.data;
-
-      // Extract filename from Content-Disposition header
-      const contentDisposition = response.headers["content-disposition"];
-      let filename = "resume.json"; // Default fallback
-
-      if (contentDisposition) {
-        const filenameMatch = contentDisposition.match(
-          /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/,
-        );
-        if (filenameMatch && filenameMatch[1]) {
-          filename = filenameMatch[1].replace(/['"]/g, "");
-        }
-      }
-
-      // Create download link and trigger download
-      // Use the exact filename from server so Chrome replaces the file
-      const url = window.URL.createObjectURL(jsonBlob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = filename; // Use the filename from server
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-
-      toast.success("Resume JSON downloaded successfully!");
-    } catch {
-      toast.error("Failed to download resume JSON");
-    }
-  };
+  // const handleDownloadResumeJSON = async (id: string) => {
+  //   try {
+  //     const response = await downloadResumeJSON(id);
+  //     const jsonBlob = response.data;
+  //
+  //     const contentDisposition = response.headers["content-disposition"];
+  //     let filename = "resume.json";
+  //
+  //     if (contentDisposition) {
+  //       const filenameMatch = contentDisposition.match(
+  //         /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/,
+  //       );
+  //       if (filenameMatch && filenameMatch[1]) {
+  //         filename = filenameMatch[1].replace(/['"]/g, "");
+  //       }
+  //     }
+  //
+  //     const url = window.URL.createObjectURL(jsonBlob);
+  //     const link = document.createElement("a");
+  //     link.href = url;
+  //     link.download = filename;
+  //     document.body.appendChild(link);
+  //     link.click();
+  //     document.body.removeChild(link);
+  //     window.URL.revokeObjectURL(url);
+  //
+  //     toast.success("Resume JSON downloaded successfully!");
+  //   } catch {
+  //     toast.error("Failed to download resume JSON");
+  //   }
+  // };
 
   const handleGenerateCoverLetter = async (id: string) => {
     setGeneratingCoverLetterId(id);
@@ -1087,7 +1084,7 @@ const Resumes: React.FC = () => {
                 <TableCell align="center">AI Version</TableCell>
                 <TableCell align="center">Status</TableCell>
                 <TableCell align="center">Date</TableCell>
-                <TableCell align="center" colSpan={6}>
+                <TableCell align="center" colSpan={5}>
                   Actions
                 </TableCell>
               </TableRow>
@@ -1182,7 +1179,7 @@ const Resumes: React.FC = () => {
                       <DownloadIcon />
                     </IconButton>
                   </TableCell>
-                  <TableCell align="center">
+                  {/* <TableCell align="center">
                     <IconButton
                       size="small"
                       color="secondary"
@@ -1192,7 +1189,7 @@ const Resumes: React.FC = () => {
                     >
                       <CodeIcon />
                     </IconButton>
-                  </TableCell>
+                  </TableCell> */}
                   <TableCell align="center">
                     <IconButton
                       size="small"

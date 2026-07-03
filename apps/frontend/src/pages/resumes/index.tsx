@@ -35,10 +35,12 @@ import {
   Clear as ClearIcon,
   Download as DownloadIcon,
   Code as CodeIcon,
-  Description as DescriptionIcon,
+  InsertDriveFile as InsertDriveFileIcon,
+  Task as TaskIcon,
   QuestionAnswer as QuestionAnswerIcon,
   Visibility as VisibilityIcon,
   ContentCopy as ContentCopyIcon,
+  EditDocument as EditIcon,
   Settings as SettingsIcon,
   Logout as LogoutIcon,
   LightMode as LightModeIcon,
@@ -48,6 +50,7 @@ import {
 import { Link, useNavigate } from "react-router";
 import {
   getResumes,
+  getResume,
   deleteResume,
   bulkDeleteResumes,
   downloadResume,
@@ -65,7 +68,10 @@ import { useAuth } from "../../components/common/AuthContext";
 import { useThemeMode } from "../../components/common/ThemeContext";
 import { useAiModels } from "../../components/common/AiModelsContext";
 import ModelProviderIcon from "../../components/common/ModelProviderIcon";
-import { getProviderLabel } from "../../constants/aiModels";
+import { getProviderLabel, resolveModelSelectionInCatalog } from "../../constants/aiModels";
+import {
+  saveDuplicateResumeDraft,
+} from "../../constants/duplicateResumeDraft";
 import { chipWithIconSx } from "../../styles/chipWithIcon";
 import { getProfile } from "../../services/userService";
 import { socket } from "./socket";
@@ -175,6 +181,9 @@ const Resumes: React.FC = () => {
   const [retryingResumeId, setRetryingResumeId] = React.useState<string | null>(
     null,
   );
+  const [editingResumeId, setEditingResumeId] = React.useState<
+    string | null
+  >(null);
   const [questionsResumeId, setQuestionsResumeId] = React.useState<
     string | null
   >(null);
@@ -187,9 +196,6 @@ const Resumes: React.FC = () => {
   const [userName, setUserName] = React.useState("");
   const [avatarMenuAnchor, setAvatarMenuAnchor] =
     React.useState<null | HTMLElement>(null);
-
-  const [connected, setConnected] = React.useState(socket.connected);
-  const [error, setError] = React.useState("");
 
   const navigate = useNavigate();
   const { logout } = useAuth();
@@ -303,16 +309,6 @@ const Resumes: React.FC = () => {
   }, [resumes]);
 
   React.useEffect(() => {
-    function onConnect() {
-      console.log("connected...")
-      setConnected(true);
-    }
-
-    function onDisconnect() {
-      console.log("disconnected...")
-      setConnected(false);
-    }
-
     type GenerateDonePayload = {
       id: string;
       message?: string;
@@ -362,19 +358,14 @@ const Resumes: React.FC = () => {
       }
     }
 
-    socket.on("connect", onConnect);
-    socket.on("disconnect", onDisconnect);
     socket.on("generate:done", onGenerateDone);
     socket.on("generate:failed", onGenerateFailed);
 
-    // optional: useful debug
     socket.on("connect_error", (e) => {
-      setError(e?.message ?? "Socket connection error");
+      toast.error(e?.message ?? "Socket connection error");
     });
 
     return () => {
-      socket.off("connect", onConnect);
-      socket.off("disconnect", onDisconnect);
       socket.off("generate:done", onGenerateDone);
       socket.off("generate:failed", onGenerateFailed);
       socket.off("connect_error");
@@ -682,6 +673,49 @@ const Resumes: React.FC = () => {
       toast.error(message);
     } finally {
       setRetryingResumeId(null);
+    }
+  };
+
+  const handleEditResume = async (resume: ResumeResponse) => {
+    if (resume.status !== "completed") {
+      toast.warning("Only completed resumes can be edited");
+      return;
+    }
+
+    setEditingResumeId(resume._id);
+    try {
+      let resumeJson = resume.resumeJson;
+
+      if (!resumeJson) {
+        const fullResume = await getResume(resume._id);
+        resumeJson = fullResume.resumeJson;
+      }
+
+      if (!resumeJson || typeof resumeJson !== "object") {
+        toast.error("Resume JSON is not available");
+        return;
+      }
+
+      const normalized = resolveModelSelectionInCatalog(
+        resume.aiModel,
+        resume.aiVersion,
+        catalog,
+      );
+
+      saveDuplicateResumeDraft({
+        companyName: resume.companyName,
+        roleType: resume.roleType,
+        jobDescription: resume.jobDescription,
+        aiModel: normalized.aiModel,
+        aiVersion: normalized.aiVersion,
+        jsonContent: JSON.stringify(resumeJson, null, 2),
+      });
+
+      navigate("/resumes/new?fromJson=1");
+    } catch {
+      toast.error("Failed to load resume for editing");
+    } finally {
+      setEditingResumeId(null);
     }
   };
 
@@ -1046,7 +1080,7 @@ const Resumes: React.FC = () => {
                 <TableCell align="center">AI Version</TableCell>
                 <TableCell align="center">Status</TableCell>
                 <TableCell align="center">Date</TableCell>
-                <TableCell align="center" colSpan={5}>
+                <TableCell align="center" colSpan={6}>
                   Actions
                 </TableCell>
               </TableRow>
@@ -1176,8 +1210,10 @@ const Resumes: React.FC = () => {
                     >
                       {generatingCoverLetterId === resume._id ? (
                         <CircularProgress size={20} color="inherit" />
+                      ) : resume.coverLetter?.trim() ? (
+                        <TaskIcon />
                       ) : (
-                        <DescriptionIcon />
+                        <InsertDriveFileIcon />
                       )}
                     </IconButton>
                   </TableCell>
@@ -1197,6 +1233,24 @@ const Resumes: React.FC = () => {
                       }
                     >
                       <QuestionAnswerIcon />
+                    </IconButton>
+                  </TableCell>
+                  <TableCell align="center">
+                    <IconButton
+                      size="small"
+                      color="info"
+                      onClick={() => handleEditResume(resume)}
+                      title="Edit in Generate from JSON"
+                      disabled={
+                        resume.status !== "completed" ||
+                        editingResumeId === resume._id
+                      }
+                    >
+                      {editingResumeId === resume._id ? (
+                        <CircularProgress size={20} color="inherit" />
+                      ) : (
+                        <EditIcon />
+                      )}
                     </IconButton>
                   </TableCell>
                   <TableCell align="center">

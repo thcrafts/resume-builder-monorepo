@@ -11,18 +11,3 @@ export function resolveApiModelId(aiModel: string, aiVersion: string): string {
   const provider = LEGACY_PROVIDER_MAP[aiModel] ?? aiModel;
   return `${provider}/${aiVersion}`;
 }
-
-export function normalizeModelSelection(
-  aiModel?: string,
-  aiVersion?: string,
-): { aiModel: string; aiVersion: string } {
-  const model = aiModel?.trim() || 'anthropic';
-  const version = aiVersion?.trim() || 'anthropic/claude-sonnet-4.6';
-  const resolvedVersion = resolveApiModelId(model, version);
-  const provider = resolvedVersion.split('/')[0] || model;
-
-  return {
-    aiModel: provider,
-    aiVersion: resolvedVersion,
-  };
-}

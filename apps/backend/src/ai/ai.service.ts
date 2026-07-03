@@ -13,8 +13,6 @@ import { prepareResumeGenerationInstructions } from './prepare-resume-instructio
 import type { UserApiKeys } from './user-api-keys';
 import { OpenRouterService } from '../openrouter/openrouter.service';
 
-export type { UserApiKeys } from './user-api-keys';
-
 @Injectable()
 export class AiService {
   constructor(private readonly openRouterService: OpenRouterService) {}

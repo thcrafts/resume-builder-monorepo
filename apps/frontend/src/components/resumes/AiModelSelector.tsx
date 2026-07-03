@@ -12,7 +12,7 @@ import {
 import {
   getProviderLabel,
   getVersionsForProvider,
-  normalizeModelSelection,
+  resolveModelSelectionInCatalog,
 } from "../../constants/aiModels";
 import { useAiModels } from "../common/AiModelsContext";
 import ModelProviderIcon from "../common/ModelProviderIcon";
@@ -31,13 +31,10 @@ const AiModelSelector: React.FC<AiModelSelectorProps> = ({
   disabled = false,
 }) => {
   const { catalog, loading, error } = useAiModels();
-  const normalized = normalizeModelSelection(aiModel, aiVersion, catalog);
+  const resolved = resolveModelSelectionInCatalog(aiModel, aiVersion, catalog);
   const providers = catalog.providers;
-  const versions = getVersionsForProvider(catalog, normalized.aiModel);
-  const selectedVersion =
-    versions.find((model) => model.id === normalized.aiVersion)?.id ??
-    versions[0]?.id ??
-    normalized.aiVersion;
+  const versions = getVersionsForProvider(catalog, resolved.aiModel);
+  const selectedVersion = resolved.aiVersion;
 
   const handleModelChange = (newProvider: string) => {
     const providerVersions = getVersionsForProvider(catalog, newProvider);
@@ -46,7 +43,7 @@ const AiModelSelector: React.FC<AiModelSelectorProps> = ({
     );
     const nextVersion = keepCurrent
       ? selectedVersion
-      : providerVersions[0]?.id ?? normalized.aiVersion;
+      : providerVersions[0]?.id ?? resolved.aiVersion;
     onChange(newProvider, nextVersion);
   };
 
@@ -78,7 +75,7 @@ const AiModelSelector: React.FC<AiModelSelectorProps> = ({
           <Select
             labelId="ai-model-label"
             label="Model"
-            value={normalized.aiModel}
+            value={resolved.aiModel}
             onChange={(e) => handleModelChange(e.target.value)}
             renderValue={(value) => (
               <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
@@ -108,7 +105,7 @@ const AiModelSelector: React.FC<AiModelSelectorProps> = ({
             labelId="ai-version-label"
             label="Version"
             value={selectedVersion}
-            onChange={(e) => onChange(normalized.aiModel, e.target.value)}
+            onChange={(e) => onChange(resolved.aiModel, e.target.value)}
             MenuProps={{
               PaperProps: {
                 sx: { maxHeight: 360 },
@@ -118,7 +115,7 @@ const AiModelSelector: React.FC<AiModelSelectorProps> = ({
             {versions.map((model) => (
               <MenuItem key={model.id} value={model.id}>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
-                  <ModelProviderIcon provider={normalized.aiModel} />
+                  <ModelProviderIcon provider={resolved.aiModel} />
                   {model.versionLabel}
                 </Box>
               </MenuItem>

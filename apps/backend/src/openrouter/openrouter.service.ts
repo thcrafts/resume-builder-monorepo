@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import OpenAI from 'openai';
 import { ResumeData } from 'src/resumes/templates';
 import { cleanText } from '../ai/clean-text';
 import { parseQuestionsResponse } from '../ai/parse-questions-response';
@@ -7,6 +6,19 @@ import type { UserApiKeys } from '../ai/user-api-keys';
 
 const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
 const OPENROUTER_APP_TITLE = 'Resume Builder';
+
+interface ChatCompletionMessage {
+  content?: string | null;
+}
+
+interface ChatCompletionChoice {
+  message?: ChatCompletionMessage;
+}
+
+interface ChatCompletion {
+  id: string;
+  choices: ChatCompletionChoice[];
+}
 
 export interface OpenRouterKeyUsage {
   label: string | null;
@@ -77,7 +89,7 @@ export class OpenRouterService {
   private async createChatCompletion(
     apiKeys: UserApiKeys,
     body: Record<string, unknown>,
-  ): Promise<OpenAI.Chat.Completions.ChatCompletion> {
+  ): Promise<ChatCompletion> {
     const response = await fetch(`${OPENROUTER_BASE_URL}/chat/completions`, {
       method: 'POST',
       headers: {
@@ -89,15 +101,13 @@ export class OpenRouterService {
       body: JSON.stringify(body),
     });
 
-    const payload = (await response.json()) as
-      | OpenAI.Chat.Completions.ChatCompletion
-      | OpenRouterErrorBody;
+    const payload = (await response.json()) as ChatCompletion | OpenRouterErrorBody;
 
     if (!response.ok) {
       throw this.buildApiError(response.status, payload as OpenRouterErrorBody);
     }
 
-    return payload as OpenAI.Chat.Completions.ChatCompletion;
+    return payload as ChatCompletion;
   }
 
   private extractJsonText(outputText: string): string {
@@ -107,9 +117,7 @@ export class OpenRouterService {
       : trimmed;
   }
 
-  private getMessageContent(
-    response: OpenAI.Chat.Completions.ChatCompletion,
-  ): string {
+  private getMessageContent(response: ChatCompletion): string {
     const content = response.choices[0]?.message?.content;
     if (!content?.trim()) {
       throw new Error('No output text received from OpenRouter');

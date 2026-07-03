@@ -3,7 +3,7 @@ import { Chip } from "@mui/material";
 import { Code as CodeIcon } from "@mui/icons-material";
 import {
   FALLBACK_CATALOG,
-  getAiVersionDisplay,
+  getCompactModelVersionLabel,
   normalizeModelSelection,
 } from "../../constants/aiModels";
 import { useAiModels } from "../common/AiModelsContext";
@@ -30,11 +30,10 @@ const AiVersionBadge: React.FC<AiVersionBadgeProps> = ({
     aiVersion,
     activeCatalog,
   );
-  const versionLabel = getAiVersionDisplay(
+  const versionLabel = getCompactModelVersionLabel(
     activeCatalog,
     normalized.aiModel,
     normalized.aiVersion,
-    generationSource,
   );
 
   if (generationSource === "manual") {

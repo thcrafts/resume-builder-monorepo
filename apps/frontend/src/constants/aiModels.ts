@@ -1,9 +1,70 @@
-import type { AiModelCatalog, AiProviderOption } from "../services/aiModelsService";
+import type { AiModelCatalog, AiProviderOption, AiModelOption } from "../services/aiModelsService";
 
 const LEGACY_PROVIDER_MAP: Record<string, string> = {
   claude: "anthropic",
   openai: "openai",
 };
+
+const MODEL_FAMILY_PREFIXES: Record<string, string[]> = {
+  anthropic: ["Anthropic", "Claude"],
+  openai: ["OpenAI", "ChatGPT", "GPT"],
+  google: ["Google", "Gemini"],
+  meta: ["Meta", "Llama"],
+  "meta-llama": ["Meta", "Llama"],
+  mistralai: ["Mistral"],
+  mistral: ["Mistral"],
+  deepseek: ["DeepSeek"],
+  cohere: ["Cohere", "Command"],
+  perplexity: ["Perplexity"],
+  qwen: ["Qwen", "Alibaba"],
+  "x-ai": ["xAI", "Grok"],
+  xai: ["xAI", "Grok"],
+  microsoft: ["Microsoft", "Phi"],
+  nvidia: ["NVIDIA"],
+  amazon: ["Amazon", "Nova", "AWS"],
+};
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function stripLeadingModelPrefix(label: string, prefixes: string[]): string {
+  let compact = label.trim();
+
+  for (const prefix of prefixes) {
+    if (!prefix.trim()) {
+      continue;
+    }
+
+    const pattern = new RegExp(`^${escapeRegExp(prefix.trim())}(?:[\\s-]+|:)`, "i");
+    if (pattern.test(compact)) {
+      compact = compact.replace(pattern, "").trim();
+      break;
+    }
+  }
+
+  return compact || label.trim();
+}
+
+function getCompactPrefixes(
+  catalog: AiModelCatalog | null | undefined,
+  providerId: string,
+): string[] {
+  const normalizedProvider = providerId.toLowerCase();
+  const mappedProvider =
+    LEGACY_PROVIDER_MAP[normalizedProvider] ?? normalizedProvider;
+  const providerLabel = getProviderLabel(catalog, providerId);
+
+  return [
+    ...new Set(
+      [
+        ...(MODEL_FAMILY_PREFIXES[mappedProvider] ?? []),
+        ...(MODEL_FAMILY_PREFIXES[normalizedProvider] ?? []),
+        providerLabel,
+      ].filter(Boolean),
+    ),
+  ];
+}
 
 export const FALLBACK_CATALOG: AiModelCatalog = {
   providers: [],
@@ -41,6 +102,71 @@ export function normalizeModelSelection(
   };
 }
 
+function normalizeModelSlug(value: string): string {
+  const withoutProvider = value.includes("/")
+    ? value.split("/").slice(1).join("/")
+    : value;
+
+  return withoutProvider
+    .toLowerCase()
+    .replace(/\./g, "-")
+    .replace(/_/g, "-")
+    .replace(/-+/g, "-");
+}
+
+function findCatalogModelMatch(
+  catalog: AiModelCatalog | null | undefined,
+  providerId: string,
+  candidateId: string,
+): AiModelOption | undefined {
+  const models = getVersionsForProvider(catalog, providerId);
+  if (models.length === 0) {
+    return undefined;
+  }
+
+  const exact = models.find((model) => model.id === candidateId);
+  if (exact) {
+    return exact;
+  }
+
+  const candidateSlug = normalizeModelSlug(candidateId);
+  return models.find((model) => normalizeModelSlug(model.id) === candidateSlug);
+}
+
+export function resolveModelSelectionInCatalog(
+  aiModel?: string,
+  aiVersion?: string,
+  catalog?: AiModelCatalog | null,
+): { aiModel: string; aiVersion: string } {
+  const normalized = normalizeModelSelection(aiModel, aiVersion, catalog);
+  const defaults = catalog?.defaults ?? FALLBACK_CATALOG.defaults;
+  const match = findCatalogModelMatch(
+    catalog,
+    normalized.aiModel,
+    normalized.aiVersion,
+  );
+
+  if (match) {
+    return {
+      aiModel: normalized.aiModel,
+      aiVersion: match.id,
+    };
+  }
+
+  const providerModels = getVersionsForProvider(catalog, normalized.aiModel);
+  if (providerModels.length > 0) {
+    return {
+      aiModel: normalized.aiModel,
+      aiVersion: providerModels[0].id,
+    };
+  }
+
+  return {
+    aiModel: normalized.aiModel || defaults.aiModel,
+    aiVersion: normalized.aiVersion || defaults.aiVersion,
+  };
+}
+
 export function getProvider(
   catalog: AiModelCatalog | null | undefined,
   providerId: string,
@@ -58,26 +184,14 @@ export function getVersionsForProvider(
 export function getModelOption(
   catalog: AiModelCatalog | null | undefined,
   aiVersion: string,
+  aiModel?: string,
 ) {
-  const resolved = resolveApiModelId("", aiVersion);
-  const providerId = resolved.split("/")[0];
-  return getVersionsForProvider(catalog, providerId).find(
-    (model) => model.id === resolved,
-  );
-}
-
-export function getModelLabel(
-  catalog: AiModelCatalog | null | undefined,
-  aiModel: string,
-  aiVersion: string,
-): string {
   const normalized = normalizeModelSelection(aiModel, aiVersion, catalog);
-  const match = getModelOption(catalog, normalized.aiVersion);
-  if (match) {
-    return match.label;
-  }
-
-  return normalized.aiVersion;
+  return findCatalogModelMatch(
+    catalog,
+    normalized.aiModel,
+    normalized.aiVersion,
+  );
 }
 
 export function getModelVersionLabel(
@@ -86,7 +200,11 @@ export function getModelVersionLabel(
   aiVersion: string,
 ): string {
   const normalized = normalizeModelSelection(aiModel, aiVersion, catalog);
-  const match = getModelOption(catalog, normalized.aiVersion);
+  const match = getModelOption(
+    catalog,
+    normalized.aiVersion,
+    normalized.aiModel,
+  );
   if (match) {
     return match.versionLabel;
   }
@@ -95,6 +213,24 @@ export function getModelVersionLabel(
   return slashIndex >= 0
     ? normalized.aiVersion.slice(slashIndex + 1)
     : normalized.aiVersion;
+}
+
+export function getCompactModelVersionLabel(
+  catalog: AiModelCatalog | null | undefined,
+  aiModel: string,
+  aiVersion: string,
+): string {
+  const normalized = normalizeModelSelection(aiModel, aiVersion, catalog);
+  const versionLabel = getModelVersionLabel(
+    catalog,
+    normalized.aiModel,
+    normalized.aiVersion,
+  );
+
+  return stripLeadingModelPrefix(
+    versionLabel,
+    getCompactPrefixes(catalog, normalized.aiModel),
+  );
 }
 
 export function getProviderLabel(
@@ -119,10 +255,12 @@ export function resolveUserDefaultAi(
   );
 
   const models = getVersionsForProvider(catalog, normalized.aiModel);
-  const candidate = normalized.aiVersion;
-  const aiVersion = models.some((model) => model.id === candidate)
-    ? candidate
-    : models[0]?.id ?? defaults.aiVersion;
+  const match = findCatalogModelMatch(
+    catalog,
+    normalized.aiModel,
+    normalized.aiVersion,
+  );
+  const aiVersion = match?.id ?? models[0]?.id ?? defaults.aiVersion;
 
   return {
     aiModel: normalized.aiModel,
@@ -145,10 +283,12 @@ export function resolveUserDefaultFromJsonAi(
   );
 
   const models = getVersionsForProvider(catalog, normalized.aiModel);
-  const candidate = normalized.aiVersion;
-  const aiVersion = models.some((model) => model.id === candidate)
-    ? candidate
-    : models[0]?.id ?? defaults.fromJsonAiVersion;
+  const match = findCatalogModelMatch(
+    catalog,
+    normalized.aiModel,
+    normalized.aiVersion,
+  );
+  const aiVersion = match?.id ?? models[0]?.id ?? defaults.fromJsonAiVersion;
 
   return {
     aiModel: normalized.aiModel,
@@ -160,7 +300,6 @@ export function getAiVersionDisplay(
   catalog: AiModelCatalog | null | undefined,
   aiModel: string | undefined,
   aiVersion: string | undefined,
-  generationSource?: "ai" | "manual",
 ): string {
   const normalized = normalizeModelSelection(
     aiModel,

@@ -7,16 +7,6 @@ export type User = {
   name: string;
 };
 
-export type AccountFunds = {
-  availableToBetBalance: number;
-  exposure: number;
-  retainedCommission: number;
-  exposureLimit: number;
-  discountRate: number;
-  pointsBalance: number;
-  wallet: "UK";
-};
-
 export interface UserResponse {
   _id: string;
   email: string;
@@ -137,21 +127,10 @@ export default {
     );
     return res.data;
   },
-  loadAccountFunds: async (refresh: boolean = false) => {
-    const res = await api.get<AccountFunds>(
-      `/api/account-funds/${refresh ? "true" : "false"}`
-    );
-    return res.data;
-  },
 };
 
 export const getUsers = async () => {
   const res = await api.get<Array<UserResponse>>("/api/users");
-  return res.data;
-};
-
-export const getUser = async (id: string) => {
-  const res = await api.get<UserResponse>(`/api/users/${id}`);
   return res.data;
 };
 

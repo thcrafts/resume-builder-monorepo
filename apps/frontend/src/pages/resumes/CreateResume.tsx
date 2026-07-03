@@ -25,8 +25,13 @@ import AiModelSelector from "../../components/resumes/AiModelSelector";
 import {
   resolveUserDefaultAi,
   resolveUserDefaultFromJsonAi,
+  resolveModelSelectionInCatalog,
 } from "../../constants/aiModels";
 import { useAiModels } from "../../components/common/AiModelsContext";
+import {
+  clearDuplicateResumeDraft,
+  loadDuplicateResumeDraft,
+} from "../../constants/duplicateResumeDraft";
 import { resizableMultilineSx } from "../../constants/textFieldStyles";
 
 const getResumePromptWarning = (
@@ -88,7 +93,7 @@ const CreateResume: React.FC = () => {
   const [searchParams] = useSearchParams();
   const fromJsonParam = searchParams.get("fromJson");
   const [generateFromJson, setGenerateFromJson] = React.useState(
-    () => fromJsonParam === "1",
+    () => fromJsonParam === "1" || !!loadDuplicateResumeDraft(),
   );
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [aiModel, setAiModel] = React.useState("anthropic");
@@ -96,9 +101,7 @@ const CreateResume: React.FC = () => {
   const [profile, setProfile] = React.useState<UserResponse | null>(null);
   const [submitError, setSubmitError] = React.useState<string | null>(null);
 
-  const [formData, setFormData] = React.useState({
-    industry: "default",
-  });
+  const industry = "default";
 
   const apiKeyWarning = React.useMemo(
     () => getApiKeyWarning(profile),
@@ -113,10 +116,55 @@ const CreateResume: React.FC = () => {
   const isAiGenerateDisabled =
     isSubmitting || !!apiKeyWarning || !!resumePromptWarning;
 
+  const aiForm = useForm<AiGenerateFormData>({
+    resolver: yupResolver(aiGenerateSchema),
+    defaultValues: {
+      companyName: "",
+      roleType: "",
+      jobDescription: "",
+    },
+  });
+
+  const jsonForm = useForm<FromJsonFormData>({
+    resolver: yupResolver(fromJsonSchema),
+    defaultValues: {
+      companyName: "",
+      roleType: "",
+      jobDescription: "",
+      jsonContent: "",
+    },
+  });
+
   React.useEffect(() => {
+    const duplicateDraft = loadDuplicateResumeDraft();
+
     getProfile()
       .then((loadedProfile) => {
         setProfile(loadedProfile);
+
+        if (duplicateDraft) {
+          clearDuplicateResumeDraft();
+          const resolved = resolveModelSelectionInCatalog(
+            duplicateDraft.aiModel,
+            duplicateDraft.aiVersion,
+            catalog,
+          );
+          setGenerateFromJson(true);
+          setAiModel(resolved.aiModel);
+          setAiVersion(resolved.aiVersion);
+          jsonForm.reset({
+            companyName: duplicateDraft.companyName,
+            roleType: duplicateDraft.roleType,
+            jobDescription: duplicateDraft.jobDescription,
+            jsonContent: duplicateDraft.jsonContent,
+          });
+          aiForm.reset({
+            companyName: duplicateDraft.companyName,
+            roleType: duplicateDraft.roleType,
+            jobDescription: duplicateDraft.jobDescription,
+          });
+          return;
+        }
 
         const useFromJson =
           fromJsonParam === "1"
@@ -138,27 +186,23 @@ const CreateResume: React.FC = () => {
       });
   }, [fromJsonParam, catalog]);
 
-  const aiForm = useForm<AiGenerateFormData>({
-    resolver: yupResolver(aiGenerateSchema),
-    defaultValues: {
-      companyName: "",
-      roleType: "",
-      jobDescription: "",
-    },
-  });
+  React.useEffect(() => {
+    if (catalog.providers.length === 0) {
+      return;
+    }
 
-  const jsonForm = useForm<FromJsonFormData>({
-    resolver: yupResolver(fromJsonSchema),
-    defaultValues: {
-      companyName: "",
-      roleType: "",
-      jobDescription: "",
-      jsonContent: "",
-    },
-  });
+    const resolved = resolveModelSelectionInCatalog(aiModel, aiVersion, catalog);
+    if (
+      resolved.aiModel !== aiModel ||
+      resolved.aiVersion !== aiVersion
+    ) {
+      setAiModel(resolved.aiModel);
+      setAiVersion(resolved.aiVersion);
+    }
+  }, [catalog, aiModel, aiVersion]);
 
   const handleGenerateFromJsonChange = (
-    event: React.ChangeEvent<HTMLInputElement>,
+    _event: React.ChangeEvent<HTMLInputElement>,
     checked: boolean,
   ) => {
     if (checked) {
@@ -216,7 +260,7 @@ const CreateResume: React.FC = () => {
         companyName: data.companyName,
         roleType: data.roleType,
         jobDescription: data.jobDescription,
-        industry: formData.industry,
+        industry,
         aiModel,
         aiVersion,
       };

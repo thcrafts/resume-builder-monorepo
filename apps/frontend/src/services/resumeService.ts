@@ -2,12 +2,6 @@
 import ApiClient from "./apiClient";
 import { fetchBlobDownload, fetchBlobPost } from "./blobDownload";
 
-export interface CreateResumeDto {
-  companyName: string;
-  roleType: string;
-  jsonContent: string; // Send as string, backend will parse it
-}
-
 export interface GenerateResumeDto {
   companyName: string;
   roleType: string;
@@ -37,10 +31,6 @@ export interface ResumeResponse {
 }
 
 const api = ApiClient.getInstance();
-
-export const createResume = async (data: CreateResumeDto) => {
-  return fetchBlobPost("/api/resumes", data);
-};
 
 export interface GenerateResumeResponse {
   resume: {
@@ -241,10 +231,6 @@ export const downloadResume = async (id: string) => {
 
 export const downloadResumeJSON = async (id: string) => {
   return fetchBlobDownload(`/api/resumes/${id}/download-json`);
-};
-
-export const downloadCoverLetter = async (id: string) => {
-  return fetchBlobDownload(`/api/resumes/${id}/download-cover-letter`);
 };
 
 export const generateCoverLetter = async (id: string) => {

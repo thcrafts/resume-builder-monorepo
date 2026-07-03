@@ -116,9 +116,14 @@ const manualChipSelectedSx = {
 type StatusChipFilter = "completed" | "in_progress" | "failed";
 type ChipFilter = StatusChipFilter | "manual" | `provider:${string}`;
 
-function normalizeResumeProvider(aiModel?: string): string {
+function normalizeResumeProvider(aiModel?: string, aiVersion?: string): string {
   if (!aiModel) {
-    return "unknown";
+    if (aiVersion?.startsWith("anthropic/")) {
+      return "openai";
+    } else if (aiVersion?.startsWith("openai/")) {
+      return "anthropic";
+    }
+    return "other";
   }
   if (aiModel === "claude") {
     return "anthropic";
@@ -145,7 +150,7 @@ const matchesChipFilter = (resume: ResumeResponse, filter: ChipFilter) => {
         const providerId = filter.slice("provider:".length);
         return (
           resume.generationSource !== "manual" &&
-          normalizeResumeProvider(resume.aiModel) === providerId
+          normalizeResumeProvider(resume.aiModel, resume.aiVersion) === providerId
         );
       }
       return true;
@@ -424,7 +429,7 @@ const Resumes: React.FC = () => {
         continue;
       }
 
-      const providerId = normalizeResumeProvider(resume.aiModel);
+      const providerId = normalizeResumeProvider(resume.aiModel, resume.aiVersion);
       providerCounts.set(
         providerId,
         (providerCounts.get(providerId) ?? 0) + 1,
@@ -495,24 +500,24 @@ const Resumes: React.FC = () => {
         transition: "all 0.15s ease",
         ...(isManual
           ? {
-              "& .MuiChip-icon": {
-                marginLeft: 0,
-                marginRight: 0,
-              },
-              "& .MuiChip-icon svg": {
-                marginRight: 0,
-              },
-            }
+            "& .MuiChip-icon": {
+              marginLeft: 0,
+              marginRight: 0,
+            },
+            "& .MuiChip-icon svg": {
+              marginRight: 0,
+            },
+          }
           : {}),
         ...(isSelected
           ? isManual
             ? manualChipSelectedSx
             : sourceChipSelectedSx
           : {
-              "&:hover": {
-                bgcolor: "action.hover",
-              },
-            }),
+            "&:hover": {
+              bgcolor: "action.hover",
+            },
+          }),
       },
     };
   };
@@ -905,129 +910,129 @@ const Resumes: React.FC = () => {
 
       {/* Filters Section */}
       <Paper sx={{ p: 2, mb: 2 }}>
-          <Typography variant="h6" gutterBottom>
-            Filters
-          </Typography>
-          <Grid container spacing={2} alignItems="flex-end">
-            <Grid size={{ xs: 12, sm: 6, md: "grow" }}>
-              <TextField
-                label="Company Name"
-                value={filters.companyName || ""}
-                onChange={(e) =>
-                  handleFilterChange("companyName", e.target.value)
-                }
-                fullWidth
-                size="small"
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6, md: "grow" }}>
-              <TextField
-                label="Role Type"
-                value={filters.roleType || ""}
-                onChange={(e) => handleFilterChange("roleType", e.target.value)}
-                fullWidth
-                size="small"
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6, md: "grow" }}>
-              <TextField
-                label="Start Date"
-                type="date"
-                value={filters.startDate || ""}
-                onChange={(e) =>
-                  handleFilterChange("startDate", e.target.value)
-                }
-                fullWidth
-                size="small"
-                InputLabelProps={{ shrink: true }}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6, md: "grow" }}>
-              <TextField
-                label="End Date"
-                type="date"
-                value={filters.endDate || ""}
-                onChange={(e) => handleFilterChange("endDate", e.target.value)}
-                fullWidth
-                size="small"
-                InputLabelProps={{ shrink: true }}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: "auto" }}>
-              <Button
-                variant="outlined"
-                startIcon={<ClearIcon />}
-                onClick={handleClearFilters}
-                color="secondary"
-                size="small"
-                sx={{ height: 40 }}
-              >
-                Clear
-              </Button>
-            </Grid>
+        <Typography variant="h6" gutterBottom>
+          Filters
+        </Typography>
+        <Grid container spacing={2} alignItems="flex-end">
+          <Grid size={{ xs: 12, sm: 6, md: "grow" }}>
+            <TextField
+              label="Company Name"
+              value={filters.companyName || ""}
+              onChange={(e) =>
+                handleFilterChange("companyName", e.target.value)
+              }
+              fullWidth
+              size="small"
+            />
           </Grid>
-          <Stack spacing={1} sx={{ mt: 2 }}>
-            <Typography variant="body2" color="text.secondary">
-              {loading
-                ? "Loading resumes..."
-                : chipFilter
-                  ? `${filteredResumes.length} of ${resumeCounts.total} resume${resumeCounts.total !== 1 ? "s" : ""}`
-                  : `${resumeCounts.total} resume${resumeCounts.total !== 1 ? "s" : ""}`}
-            </Typography>
-            {!loading && resumeCounts.total > 0 && (
-              <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
+          <Grid size={{ xs: 12, sm: 6, md: "grow" }}>
+            <TextField
+              label="Role Type"
+              value={filters.roleType || ""}
+              onChange={(e) => handleFilterChange("roleType", e.target.value)}
+              fullWidth
+              size="small"
+            />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6, md: "grow" }}>
+            <TextField
+              label="Start Date"
+              type="date"
+              value={filters.startDate || ""}
+              onChange={(e) =>
+                handleFilterChange("startDate", e.target.value)
+              }
+              fullWidth
+              size="small"
+              InputLabelProps={{ shrink: true }}
+            />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6, md: "grow" }}>
+            <TextField
+              label="End Date"
+              type="date"
+              value={filters.endDate || ""}
+              onChange={(e) => handleFilterChange("endDate", e.target.value)}
+              fullWidth
+              size="small"
+              InputLabelProps={{ shrink: true }}
+            />
+          </Grid>
+          <Grid size={{ xs: 12, sm: "auto" }}>
+            <Button
+              variant="outlined"
+              startIcon={<ClearIcon />}
+              onClick={handleClearFilters}
+              color="secondary"
+              size="small"
+              sx={{ height: 40 }}
+            >
+              Clear
+            </Button>
+          </Grid>
+        </Grid>
+        <Stack spacing={1} sx={{ mt: 2 }}>
+          <Typography variant="body2" color="text.secondary">
+            {loading
+              ? "Loading resumes..."
+              : chipFilter
+                ? `${filteredResumes.length} of ${resumeCounts.total} resume${resumeCounts.total !== 1 ? "s" : ""}`
+                : `${resumeCounts.total} resume${resumeCounts.total !== 1 ? "s" : ""}`}
+          </Typography>
+          {!loading && resumeCounts.total > 0 && (
+            <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
+              <Chip
+                label={`${resumeCounts.completed} completed`}
+                size="small"
+                color="success"
+                {...getChipProps("completed")}
+              />
+              {resumeCounts.inProgress > 0 && (
                 <Chip
-                  label={`${resumeCounts.completed} completed`}
+                  label={`${resumeCounts.inProgress} in progress`}
                   size="small"
-                  color="success"
-                  {...getChipProps("completed")}
+                  color="info"
+                  {...getChipProps("in_progress")}
                 />
-                {resumeCounts.inProgress > 0 && (
-                  <Chip
-                    label={`${resumeCounts.inProgress} in progress`}
-                    size="small"
-                    color="info"
-                    {...getChipProps("in_progress")}
-                  />
-                )}
-                {resumeCounts.failed > 0 && (
-                  <Chip
-                    label={`${resumeCounts.failed} failed`}
-                    size="small"
-                    color="error"
-                    {...getChipProps("failed")}
-                  />
-                )}
-                {providerFilters.map((providerId) => {
-                  const filter = `provider:${providerId}` as const;
-                  return (
-                    <Chip
-                      key={providerId}
-                      icon={
-                        <ModelProviderIcon
-                          modelId={getRepresentativeModelIdForProvider(
-                            catalog,
-                            providerId,
-                          )}
-                        />
-                      }
-                      label={resumeCounts.providerCounts.get(providerId) ?? 0}
-                      size="small"
-                      title={getProviderLabel(catalog, providerId)}
-                      {...getSourceChipProps(filter)}
-                    />
-                  );
-                })}
+              )}
+              {resumeCounts.failed > 0 && (
                 <Chip
-                  icon={<CodeIcon sx={{ fontSize: 16, mr: 0 }} />}
-                  label={resumeCounts.manual}
+                  label={`${resumeCounts.failed} failed`}
                   size="small"
-                  {...getSourceChipProps("manual")}
+                  color="error"
+                  {...getChipProps("failed")}
                 />
-              </Stack>
-            )}
-          </Stack>
-        </Paper>
+              )}
+              {providerFilters.map((providerId) => {
+                const filter = `provider:${providerId}` as const;
+                return (
+                  <Chip
+                    key={providerId}
+                    icon={
+                      <ModelProviderIcon
+                        modelId={getRepresentativeModelIdForProvider(
+                          catalog,
+                          providerId,
+                        )}
+                      />
+                    }
+                    label={resumeCounts.providerCounts.get(providerId) ?? 0}
+                    size="small"
+                    title={getProviderLabel(catalog, providerId)}
+                    {...getSourceChipProps(filter)}
+                  />
+                );
+              })}
+              <Chip
+                icon={<CodeIcon sx={{ fontSize: 16, mr: 0 }} />}
+                label={resumeCounts.manual}
+                size="small"
+                {...getSourceChipProps("manual")}
+              />
+            </Stack>
+          )}
+        </Stack>
+      </Paper>
 
       {loading ? (
         <Typography>Loading...</Typography>

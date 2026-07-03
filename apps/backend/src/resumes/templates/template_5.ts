@@ -610,7 +610,10 @@ export class ResumePDFTemplate5 {
         if (this.pdfSettings.showSubTitle) {
           this._addSubTitle(doc, 'Key Qualifications & Responsibilities');
         }
-        this._addBulletItems(doc, responsibilities, {
+        // All responsibilities
+        // this._addBulletItems(doc, responsibilities, {
+        // Only one responsibilities
+        this._addBulletItems(doc, [responsibilities[0]], {
           bulletX: this.marginX,
           contentColor: defaultColor,
           lineGap: 3,
@@ -630,11 +633,25 @@ export class ResumePDFTemplate5 {
         if (this.pdfSettings.showSubTitle) {
           this._addSubTitle(doc, 'Key Achievements');
         }
-        this._addBulletItems(doc, achievements, {
-          bulletX: this.marginX,
-          contentColor: defaultColor,
-          lineGap: 3,
-        });
+        if (experiences.indexOf(exp) === experiences.length - 1) {
+          this._addBulletItems(doc, achievements.slice(0, -2), {
+            bulletX: this.marginX,
+            contentColor: defaultColor,
+            lineGap: 3,
+          });
+        } else if (experiences.indexOf(exp) === experiences.length - 2) {
+          this._addBulletItems(doc, achievements.slice(0, -1), {
+            bulletX: this.marginX,
+            contentColor: defaultColor,
+            lineGap: 3,
+          });
+        } else {
+          this._addBulletItems(doc, achievements, {
+            bulletX: this.marginX,
+            contentColor: defaultColor,
+            lineGap: 3,
+          });
+        }
       }
 
       if (this.pdfSettings.showCompanySkills) {

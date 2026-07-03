@@ -1,6 +1,8 @@
 import * as React from "react";
 import {
+  Alert,
   Box,
+  Button,
   CircularProgress,
   FormControl,
   InputLabel,
@@ -9,14 +11,17 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
+import { Link } from "react-router";
 import {
   getProviderLabel,
   getVersionsForProvider,
   getRepresentativeModelIdForProvider,
   resolveModelSelectionInCatalog,
 } from "../../constants/aiModels";
+import { getApiKeyWarning } from "../../constants/profileWarnings";
 import { useAiModels } from "../common/AiModelsContext";
 import ModelProviderIcon from "../common/ModelProviderIcon";
+import { getProfile, type UserResponse } from "../../services/userService";
 
 interface AiModelSelectorProps {
   aiModel: string;
@@ -32,10 +37,24 @@ const AiModelSelector: React.FC<AiModelSelectorProps> = ({
   disabled = false,
 }) => {
   const { catalog, loading, error } = useAiModels();
+  const [profile, setProfile] = React.useState<UserResponse | null>(null);
+  const [profileLoaded, setProfileLoaded] = React.useState(false);
   const resolved = resolveModelSelectionInCatalog(aiModel, aiVersion, catalog);
   const providers = catalog.providers;
   const versions = getVersionsForProvider(catalog, resolved.aiModel);
   const selectedVersion = resolved.aiVersion;
+  const apiKeyWarning = getApiKeyWarning(profile);
+
+  React.useEffect(() => {
+    getProfile()
+      .then(setProfile)
+      .catch(() => {
+        setProfile(null);
+      })
+      .finally(() => {
+        setProfileLoaded(true);
+      });
+  }, []);
 
   const handleModelChange = (newProvider: string) => {
     const providerVersions = getVersionsForProvider(catalog, newProvider);
@@ -61,11 +80,22 @@ const AiModelSelector: React.FC<AiModelSelectorProps> = ({
 
   return (
     <Stack spacing={1} sx={{ mt: 1, pt: 1 }}>
-      {error && (
+      {error && profileLoaded && apiKeyWarning ? (
+        <Alert
+          severity="warning"
+          action={
+            <Button color="inherit" size="small" component={Link} to="/settings">
+              Go to Settings
+            </Button>
+          }
+        >
+          {apiKeyWarning}
+        </Alert>
+      ) : error && profileLoaded && !apiKeyWarning ? (
         <Typography variant="body2" color="warning.main">
           {error}. Showing limited model list.
         </Typography>
-      )}
+      ) : null}
       <Stack direction="row" spacing={2} alignItems="center">
         <FormControl
           size="small"

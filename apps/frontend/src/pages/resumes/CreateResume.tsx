@@ -22,6 +22,7 @@ import { getProfile, type UserResponse } from "../../services/userService";
 import { toast } from "react-toastify";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import AiModelSelector from "../../components/resumes/AiModelSelector";
+import { getApiKeyWarning } from "../../constants/profileWarnings";
 import {
   resolveUserDefaultAi,
   resolveUserDefaultFromJsonAi,
@@ -41,16 +42,6 @@ const getResumePromptWarning = (
 
   if (!profile.instructions?.trim()) {
     return "No resume prompt configured. Add your resume prompt in Profile settings before generating a resume.";
-  }
-
-  return null;
-};
-
-const getApiKeyWarning = (profile: UserResponse | null): string | null => {
-  if (!profile) return null;
-
-  if (!profile.hasOpenrouterApiKey) {
-    return "No OpenRouter API key configured. Add your OpenRouter API key in Profile settings before generating resumes.";
   }
 
   return null;

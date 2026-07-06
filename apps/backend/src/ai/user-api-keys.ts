@@ -1,4 +1,3 @@
 export interface UserApiKeys {
-  openai?: string | null;
-  anthropic?: string | null;
+  openrouter?: string | null;
 }

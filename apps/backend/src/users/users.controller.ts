@@ -38,6 +38,12 @@ export class UsersController {
     return this.usersService.revealApiKeys(req.user._id, body.currentPassword);
   }
 
+  @UseGuards(JwtAuthGuard)
+  @Get('profile/openrouter-usage')
+  async getOpenrouterUsage(@Request() req) {
+    return this.usersService.getOpenrouterUsage(req.user._id);
+  }
+
   @UseGuards(JwtAuthGuard, AdminGuard)
   @Get()
   async findAll() {

@@ -184,4 +184,3 @@ export function buildResumeJsonSchema(
   };
 }
 
-export const RESUME_JSON_SCHEMA = buildResumeJsonSchema(DEFAULT_RESUME_SETTINGS);

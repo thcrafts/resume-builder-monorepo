@@ -610,7 +610,10 @@ export class ResumePDFTemplate5 {
         if (this.pdfSettings.showSubTitle) {
           this._addSubTitle(doc, 'Key Qualifications & Responsibilities');
         }
-        this._addBulletItems(doc, responsibilities, {
+        // All responsibilities
+        // this._addBulletItems(doc, responsibilities, {
+        // Only one responsibilities
+        this._addBulletItems(doc, [responsibilities[0]], {
           bulletX: this.marginX,
           contentColor: defaultColor,
           lineGap: 3,
@@ -630,11 +633,25 @@ export class ResumePDFTemplate5 {
         if (this.pdfSettings.showSubTitle) {
           this._addSubTitle(doc, 'Key Achievements');
         }
-        this._addBulletItems(doc, achievements, {
-          bulletX: this.marginX,
-          contentColor: defaultColor,
-          lineGap: 3,
-        });
+        if (experiences.indexOf(exp) === experiences.length - 1) {
+          this._addBulletItems(doc, achievements.slice(0, -2), {
+            bulletX: this.marginX,
+            contentColor: defaultColor,
+            lineGap: 3,
+          });
+        } else if (experiences.indexOf(exp) === experiences.length - 2) {
+          this._addBulletItems(doc, achievements.slice(0, -1), {
+            bulletX: this.marginX,
+            contentColor: defaultColor,
+            lineGap: 3,
+          });
+        } else {
+          this._addBulletItems(doc, achievements, {
+            bulletX: this.marginX,
+            contentColor: defaultColor,
+            lineGap: 3,
+          });
+        }
       }
 
       if (this.pdfSettings.showCompanySkills) {
@@ -673,39 +690,54 @@ export class ResumePDFTemplate5 {
         doc.addPage();
       }
 
-      // Render degree title
-      doc
-        .font(this.fontBold)
-        .fontSize(degreeFontSize)
-        .fillColor(defaultColor)
-        .text(edu.degree || '', this.marginX, doc.y, {
-          width: this.contentWidth,
-          align: 'left'
-        });
-
       const institution = edu.institution || '';
       const dateRange = edu.date_range || '';
       const location = edu.location || '';
       const institutionText = institution.trim();
 
+      // Bachelor of Science in Computer Science
+      // University of Kansas — Lawrence, KS
+      // 08/2012 - 05/2016
+      // doc
+      //   .font(this.fontBold)
+      //   .fontSize(degreeFontSize)
+      //   .fillColor(defaultColor)
+      //   .text(edu.degree || '', this.marginX, doc.y, {
+      //     width: this.contentWidth,
+      //     align: 'left'
+      //   });
+      // doc
+      //   .font(this.fontName)
+      //   .fontSize(institutionFontSize)
+      //   .fillColor(defaultColor)
+      //   .text(`${institutionText} — ${location}`, this.marginX, doc.y, {
+      //     width: this.contentWidth,
+      //     align: 'left',
+      //     lineGap: 2
+      //   });
+      // doc
+      //   .font(this.fontName)
+      //   .fontSize(dateFontSize)
+      //   .fillColor(defaultColor)
+      //   .text(`${dateRange}`, this.marginX, doc.y, {
+      //     width: this.contentWidth,
+      //     align: 'left',
+      //   });
+
+
+      // UC Berkeley — B.S. Computer Science, 2018
       doc
-        .font(this.fontName)
+        .font(this.fontBold)
         .fontSize(institutionFontSize)
         .fillColor(defaultColor)
-        .text(`${institutionText} — ${location}`, this.marginX, doc.y, {
+        .text(`${institutionText} — ${edu.degree}, `, this.marginX, doc.y, {
           width: this.contentWidth,
           align: 'left',
-          lineGap: 2
+          lineGap: 2,
+          continued: true
         });
-
-      doc
-        .font(this.fontName)
-        .fontSize(dateFontSize)
-        .fillColor(defaultColor)
-        .text(`${dateRange}`, this.marginX, doc.y, {
-          width: this.contentWidth,
-          align: 'left',
-        });
+      doc.font(this.fontName)
+        .text(`${dateRange}`);
       doc.moveDown(1);
     }
   }

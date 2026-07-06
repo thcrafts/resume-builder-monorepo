@@ -1,28 +1,32 @@
 import * as React from "react";
 import {
+  Alert,
   Box,
+  Button,
+  CircularProgress,
   FormControl,
   InputLabel,
-  Select,
   MenuItem,
+  Select,
   Stack,
-  ToggleButton,
-  ToggleButtonGroup,
+  Typography,
 } from "@mui/material";
-import { OpenAI, Claude } from "@lobehub/icons";
+import { Link } from "react-router";
 import {
-  type AiProvider,
-  OPENAI_MODELS,
-  CLAUDE_MODELS,
-  DEFAULT_OPENAI_VERSION,
-  DEFAULT_CLAUDE_VERSION,
-  getModelVersionLabel,
+  getProviderLabel,
+  getVersionsForProvider,
+  getRepresentativeModelIdForProvider,
+  resolveModelSelectionInCatalog,
 } from "../../constants/aiModels";
+import { getApiKeyWarning } from "../../constants/profileWarnings";
+import { useAiModels } from "../common/AiModelsContext";
+import ModelProviderIcon from "../common/ModelProviderIcon";
+import { getProfile, type UserResponse } from "../../services/userService";
 
 interface AiModelSelectorProps {
-  aiModel: AiProvider;
+  aiModel: string;
   aiVersion: string;
-  onChange: (aiModel: AiProvider, aiVersion: string) => void;
+  onChange: (aiModel: string, aiVersion: string) => void;
   disabled?: boolean;
 }
 
@@ -32,78 +36,129 @@ const AiModelSelector: React.FC<AiModelSelectorProps> = ({
   onChange,
   disabled = false,
 }) => {
-  const models = aiModel === "openai" ? OPENAI_MODELS : CLAUDE_MODELS;
+  const { catalog, loading, error } = useAiModels();
+  const [profile, setProfile] = React.useState<UserResponse | null>(null);
+  const [profileLoaded, setProfileLoaded] = React.useState(false);
+  const resolved = resolveModelSelectionInCatalog(aiModel, aiVersion, catalog);
+  const providers = catalog.providers;
+  const versions = getVersionsForProvider(catalog, resolved.aiModel);
+  const selectedVersion = resolved.aiVersion;
+  const apiKeyWarning = getApiKeyWarning(profile);
 
-  const handleProviderChange = (
-    _event: React.MouseEvent<HTMLElement>,
-    newProvider: AiProvider | null,
-  ) => {
-    if (!newProvider) return;
+  React.useEffect(() => {
+    getProfile()
+      .then(setProfile)
+      .catch(() => {
+        setProfile(null);
+      })
+      .finally(() => {
+        setProfileLoaded(true);
+      });
+  }, []);
 
-    const defaultVersion =
-      newProvider === "openai"
-        ? DEFAULT_OPENAI_VERSION
-        : DEFAULT_CLAUDE_VERSION;
-    onChange(newProvider, defaultVersion);
+  const handleModelChange = (newProvider: string) => {
+    const providerVersions = getVersionsForProvider(catalog, newProvider);
+    const keepCurrent = providerVersions.some(
+      (model) => model.id === selectedVersion,
+    );
+    const nextVersion = keepCurrent
+      ? selectedVersion
+      : providerVersions[0]?.id ?? resolved.aiVersion;
+    onChange(newProvider, nextVersion);
   };
 
+  if (loading && providers.length === 0) {
+    return (
+      <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 1, pt: 1 }}>
+        <CircularProgress size={18} />
+        <Typography variant="body2" color="text.secondary">
+          Loading models...
+        </Typography>
+      </Stack>
+    );
+  }
+
   return (
-    <Stack direction="row" spacing={2} alignItems="center" sx={{ mt: 1, pt: 1 }}>
-      <ToggleButtonGroup
-        value={aiModel}
-        exclusive
-        onChange={handleProviderChange}
-        disabled={disabled}
-        size="small"
-        sx={{
-          flexShrink: 0,
-          width: "fit-content",
-          "& .MuiToggleButton-root": {
-            textTransform: "none",
-            px: 2,
-            gap: 0.75,
-          },
-          "& .MuiToggleButton-root.Mui-selected": {
-            backgroundColor: "primary.main",
-            color: "primary.contrastText",
-            "&:hover": {
-              backgroundColor: "primary.dark",
-            },
-          },
-        }}
-      >
-        <ToggleButton value="openai">
-          <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
-            <OpenAI size={16} />
-            GPT
-          </Box>
-        </ToggleButton>
-        <ToggleButton value="claude">
-          <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
-            <Claude.Color size={16} />
-            Claude
-          </Box>
-        </ToggleButton>
-      </ToggleButtonGroup>
-      <FormControl
-        size="small"
-        disabled={disabled}
-        sx={{ width: 200, flexShrink: 0 }}
-      >
-        <InputLabel id="ai-version-label">Model Version</InputLabel>
-        <Select
-          labelId="ai-version-label"
-          label="Model Version"
-          value={aiVersion}
-          onChange={(e) => onChange(aiModel, e.target.value)}
+    <Stack spacing={1} sx={{ mt: 1, pt: 1 }}>
+      {error && profileLoaded && apiKeyWarning ? (
+        <Alert
+          severity="warning"
+          action={
+            <Button color="inherit" size="small" component={Link} to="/settings">
+              Go to Settings
+            </Button>
+          }
         >
-          {models.map((model) => (
-            <MenuItem key={model.value} value={model.value}>
-              {getModelVersionLabel(aiModel, model.value)}
-            </MenuItem>
-          ))}
-        </Select>
-      </FormControl>
+          {apiKeyWarning}
+        </Alert>
+      ) : error && profileLoaded && !apiKeyWarning ? (
+        <Typography variant="body2" color="warning.main">
+          {error}. Showing limited model list.
+        </Typography>
+      ) : null}
+      <Stack direction="row" spacing={2} alignItems="center">
+        <FormControl
+          size="small"
+          disabled={disabled || providers.length === 0}
+          sx={{ width: 200, flexShrink: 0 }}
+        >
+          <InputLabel id="ai-model-label">Model</InputLabel>
+          <Select
+            labelId="ai-model-label"
+            label="Model"
+            value={resolved.aiModel}
+            onChange={(e) => handleModelChange(e.target.value)}
+            renderValue={(value) => (
+              <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+                <ModelProviderIcon modelId={selectedVersion} provider={value} />
+                {getProviderLabel(catalog, value)}
+              </Box>
+            )}
+          >
+            {providers.map((provider) => (
+              <MenuItem key={provider.id} value={provider.id}>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+                  <ModelProviderIcon
+                    modelId={getRepresentativeModelIdForProvider(
+                      catalog,
+                      provider.id,
+                    )}
+                  />
+                  {provider.label}
+                </Box>
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+
+        <FormControl
+          size="small"
+          disabled={disabled || versions.length === 0}
+          sx={{ width: 280, flexShrink: 0 }}
+        >
+          <InputLabel id="ai-version-label">Version</InputLabel>
+          <Select
+            labelId="ai-version-label"
+            label="Version"
+            value={selectedVersion}
+            onChange={(e) => onChange(resolved.aiModel, e.target.value)}
+            MenuProps={{
+              PaperProps: {
+                sx: { maxHeight: 360 },
+              },
+            }}
+          >
+            {versions.map((model) => (
+              <MenuItem key={model.id} value={model.id}>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+                  <ModelProviderIcon modelId={model.id} />
+                  {model.versionLabel}
+                </Box>
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+      </Stack>
     </Stack>
   );
 };

@@ -22,11 +22,17 @@ import { getProfile, type UserResponse } from "../../services/userService";
 import { toast } from "react-toastify";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import AiModelSelector from "../../components/resumes/AiModelSelector";
+import { getApiKeyWarning } from "../../constants/profileWarnings";
 import {
-  type AiProvider,
   resolveUserDefaultAi,
   resolveUserDefaultFromJsonAi,
+  resolveModelSelectionInCatalog,
 } from "../../constants/aiModels";
+import { useAiModels } from "../../components/common/AiModelsContext";
+import {
+  clearDuplicateResumeDraft,
+  loadDuplicateResumeDraft,
+} from "../../constants/duplicateResumeDraft";
 import { resizableMultilineSx } from "../../constants/textFieldStyles";
 
 const getResumePromptWarning = (
@@ -36,23 +42,6 @@ const getResumePromptWarning = (
 
   if (!profile.instructions?.trim()) {
     return "No resume prompt configured. Add your resume prompt in Profile settings before generating a resume.";
-  }
-
-  return null;
-};
-
-const getApiKeyWarning = (
-  profile: UserResponse | null,
-  aiModel: AiProvider,
-): string | null => {
-  if (!profile) return null;
-
-  if (aiModel === "openai" && !profile.hasOpenaiApiKey) {
-    return "No OpenAI API key configured. Add your OpenAI API key in Profile settings before generating with GPT.";
-  }
-
-  if (aiModel === "claude" && !profile.hasAnthropicApiKey) {
-    return "No Anthropic API key configured. Add your Anthropic API key in Profile settings before generating with Claude.";
   }
 
   return null;
@@ -90,25 +79,24 @@ type AiGenerateFormData = yup.InferType<typeof aiGenerateSchema>;
 type FromJsonFormData = yup.InferType<typeof fromJsonSchema>;
 
 const CreateResume: React.FC = () => {
+  const { catalog } = useAiModels();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const fromJsonParam = searchParams.get("fromJson");
   const [generateFromJson, setGenerateFromJson] = React.useState(
-    () => fromJsonParam === "1",
+    () => fromJsonParam === "1" || !!loadDuplicateResumeDraft(),
   );
   const [isSubmitting, setIsSubmitting] = React.useState(false);
-  const [aiModel, setAiModel] = React.useState<AiProvider>("claude");
-  const [aiVersion, setAiVersion] = React.useState("claude-sonnet-4-6");
+  const [aiModel, setAiModel] = React.useState("anthropic");
+  const [aiVersion, setAiVersion] = React.useState("anthropic/claude-sonnet-4.6");
   const [profile, setProfile] = React.useState<UserResponse | null>(null);
   const [submitError, setSubmitError] = React.useState<string | null>(null);
 
-  const [formData, setFormData] = React.useState({
-    industry: "default",
-  });
+  const industry = "default";
 
   const apiKeyWarning = React.useMemo(
-    () => getApiKeyWarning(profile, aiModel),
-    [profile, aiModel],
+    () => getApiKeyWarning(profile),
+    [profile],
   );
 
   const resumePromptWarning = React.useMemo(
@@ -118,31 +106,6 @@ const CreateResume: React.FC = () => {
 
   const isAiGenerateDisabled =
     isSubmitting || !!apiKeyWarning || !!resumePromptWarning;
-
-  React.useEffect(() => {
-    getProfile()
-      .then((loadedProfile) => {
-        setProfile(loadedProfile);
-
-        const useFromJson =
-          fromJsonParam === "1"
-            ? true
-            : fromJsonParam === "0"
-              ? false
-              : !!loadedProfile.defaultGenerateFromJson;
-
-        setGenerateFromJson(useFromJson);
-
-        const defaults = useFromJson
-          ? resolveUserDefaultFromJsonAi(loadedProfile)
-          : resolveUserDefaultAi(loadedProfile);
-        setAiModel(defaults.aiModel);
-        setAiVersion(defaults.aiVersion);
-      })
-      .catch(() => {
-        // Profile warning is optional; submit validation still runs on the server.
-      });
-  }, [fromJsonParam]);
 
   const aiForm = useForm<AiGenerateFormData>({
     resolver: yupResolver(aiGenerateSchema),
@@ -163,8 +126,74 @@ const CreateResume: React.FC = () => {
     },
   });
 
+  React.useEffect(() => {
+    const duplicateDraft = loadDuplicateResumeDraft();
+
+    getProfile()
+      .then((loadedProfile) => {
+        setProfile(loadedProfile);
+
+        if (duplicateDraft) {
+          clearDuplicateResumeDraft();
+          const resolved = resolveModelSelectionInCatalog(
+            duplicateDraft.aiModel,
+            duplicateDraft.aiVersion,
+            catalog,
+          );
+          setGenerateFromJson(true);
+          setAiModel(resolved.aiModel);
+          setAiVersion(resolved.aiVersion);
+          jsonForm.reset({
+            companyName: duplicateDraft.companyName,
+            roleType: duplicateDraft.roleType,
+            jobDescription: duplicateDraft.jobDescription,
+            jsonContent: duplicateDraft.jsonContent,
+          });
+          aiForm.reset({
+            companyName: duplicateDraft.companyName,
+            roleType: duplicateDraft.roleType,
+            jobDescription: duplicateDraft.jobDescription,
+          });
+          return;
+        }
+
+        const useFromJson =
+          fromJsonParam === "1"
+            ? true
+            : fromJsonParam === "0"
+              ? false
+              : !!loadedProfile.defaultGenerateFromJson;
+
+        setGenerateFromJson(useFromJson);
+
+        const defaults = useFromJson
+          ? resolveUserDefaultFromJsonAi(loadedProfile, catalog)
+          : resolveUserDefaultAi(loadedProfile, catalog);
+        setAiModel(defaults.aiModel);
+        setAiVersion(defaults.aiVersion);
+      })
+      .catch(() => {
+        // Profile warning is optional; submit validation still runs on the server.
+      });
+  }, [fromJsonParam, catalog]);
+
+  React.useEffect(() => {
+    if (catalog.providers.length === 0) {
+      return;
+    }
+
+    const resolved = resolveModelSelectionInCatalog(aiModel, aiVersion, catalog);
+    if (
+      resolved.aiModel !== aiModel ||
+      resolved.aiVersion !== aiVersion
+    ) {
+      setAiModel(resolved.aiModel);
+      setAiVersion(resolved.aiVersion);
+    }
+  }, [catalog, aiModel, aiVersion]);
+
   const handleGenerateFromJsonChange = (
-    event: React.ChangeEvent<HTMLInputElement>,
+    _event: React.ChangeEvent<HTMLInputElement>,
     checked: boolean,
   ) => {
     if (checked) {
@@ -175,7 +204,7 @@ const CreateResume: React.FC = () => {
         roleType: aiValues.roleType,
         jobDescription: aiValues.jobDescription,
       });
-      const fromJsonDefaults = resolveUserDefaultFromJsonAi(profile);
+      const fromJsonDefaults = resolveUserDefaultFromJsonAi(profile, catalog);
       setAiModel(fromJsonDefaults.aiModel);
       setAiVersion(fromJsonDefaults.aiVersion);
     } else {
@@ -186,7 +215,7 @@ const CreateResume: React.FC = () => {
         roleType: jsonValues.roleType,
         jobDescription: jsonValues.jobDescription,
       });
-      const defaults = resolveUserDefaultAi(profile);
+      const defaults = resolveUserDefaultAi(profile, catalog);
       setAiModel(defaults.aiModel);
       setAiVersion(defaults.aiVersion);
     }
@@ -195,7 +224,7 @@ const CreateResume: React.FC = () => {
     setSubmitError(null);
   };
 
-  const handleAiModelChange = (model: AiProvider, version: string) => {
+  const handleAiModelChange = (model: string, version: string) => {
     setAiModel(model);
     setAiVersion(version);
     setSubmitError(null);
@@ -222,7 +251,7 @@ const CreateResume: React.FC = () => {
         companyName: data.companyName,
         roleType: data.roleType,
         jobDescription: data.jobDescription,
-        industry: formData.industry,
+        industry,
         aiModel,
         aiVersion,
       };

@@ -34,7 +34,7 @@ const NonAdminLayout: React.FC = () => {
   }
 
   if (user?.role === "admin") {
-    return <Navigate to="/markets" replace />;
+    return <Navigate to="/users" replace />;
   }
 
   return <Outlet />;

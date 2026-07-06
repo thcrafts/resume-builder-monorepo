@@ -1,6 +1,6 @@
 import { type Response } from 'express';
 
-export function applyNoCacheHeaders(res: Response): void {
+function applyNoCacheHeaders(res: Response): void {
   res.setHeader(
     'Cache-Control',
     'no-store, no-cache, must-revalidate, private, max-age=0',

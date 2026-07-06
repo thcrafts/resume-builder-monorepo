@@ -109,10 +109,7 @@ export class ResumesController {
     res.setHeader('X-Accel-Buffering', 'no'); // Disable nginx buffering
 
     try {
-      await this.resumesService.validateApiKeyForGeneration(
-        req.user._id,
-        generateResumeDto.aiModel,
-      );
+      await this.resumesService.validateApiKeyForGeneration(req.user._id);
 
       // Create resume record with in_progress status first
       const resumeRecord = await this.resumesService.createInProgress(

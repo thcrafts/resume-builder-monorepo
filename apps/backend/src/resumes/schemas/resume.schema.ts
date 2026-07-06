@@ -26,14 +26,9 @@ export class Resume {
   @Prop({ required: true })
   jobDescription: string;
 
-  @Prop({
-    required: false,
-    enum: ['openai', 'claude'],
-    default: 'openai',
-  })
   aiModel?: string;
 
-  @Prop({ required: false, default: 'gpt-4.1-mini' })
+  @Prop({ required: false, default: 'anthropic/claude-sonnet-4.6' })
   aiVersion?: string;
 
   @Prop({

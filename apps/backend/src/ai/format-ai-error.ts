@@ -1,3 +1,18 @@
+function extractProviderDetail(raw: string): string | null {
+  const providerMatch = raw.match(/Provider:\s*([^—]+)/i);
+  const detailsMatch = raw.match(/Details:\s*(.+)$/i);
+
+  if (detailsMatch?.[1]) {
+    return detailsMatch[1].trim();
+  }
+
+  if (providerMatch?.[1]) {
+    return providerMatch[1].trim();
+  }
+
+  return null;
+}
+
 export function formatAiProviderError(error: unknown): string {
   const raw =
     error instanceof Error
@@ -6,12 +21,12 @@ export function formatAiProviderError(error: unknown): string {
         ? error
         : 'Failed to generate resume';
 
-  if (
-    /403[\s\S]*["']type["']\s*:\s*["']forbidden["'][\s\S]*request not allowed/i.test(
-      raw,
-    )
-  ) {
-    return 'Claude API blocked (403): location not allowed.';
+  if (/400[\s\S]*provider returned error/i.test(raw)) {
+    const detail = extractProviderDetail(raw);
+    if (detail) {
+      return `OpenRouter provider error: ${detail}`;
+    }
+    return 'OpenRouter rejected the request for this model. Try a different model version or disable strict JSON output in resume settings.';
   }
 
   if (
@@ -22,7 +37,7 @@ export function formatAiProviderError(error: unknown): string {
   }
 
   if (/401[\s\S]*authentication_error/i.test(raw)) {
-    return 'Invalid or expired API key. Update your API key in Profile settings.';
+    return 'Invalid or expired API key. Update your OpenRouter API key in Profile settings.';
   }
 
   if (/429[\s\S]*rate_limit/i.test(raw)) {

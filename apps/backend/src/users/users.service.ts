@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 
 import { Model, QueryFilter } from 'mongoose';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -11,22 +15,25 @@ import {
   resolveResumeSettings,
   type ResumeSettings,
 } from '../ai/resume-settings';
+import {
+  OpenRouterService,
+  type OpenRouterKeyUsage,
+} from '../openrouter/openrouter.service';
 
-const API_KEY_FIELDS =
-  '+encryptedOpenaiApiKey +encryptedAnthropicApiKey';
+const API_KEY_FIELDS = '+encryptedOpenrouterApiKey';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectModel(User.name) private userModel: Model<User>,
     private readonly encryptionService: EncryptionService,
+    private readonly openRouterService: OpenRouterService,
   ) {}
 
   private toPublicUser(user: UserDocument) {
     const {
       password: _password,
-      encryptedOpenaiApiKey,
-      encryptedAnthropicApiKey,
+      encryptedOpenrouterApiKey,
       ...rest
     } = user.toObject();
 
@@ -35,8 +42,7 @@ export class UsersService {
       resumeSettings: resolveResumeSettings(
         rest.resumeSettings as Partial<ResumeSettings> | undefined,
       ),
-      hasOpenaiApiKey: !!encryptedOpenaiApiKey,
-      hasAnthropicApiKey: !!encryptedAnthropicApiKey,
+      hasOpenrouterApiKey: !!encryptedOpenrouterApiKey,
     };
   }
 
@@ -44,20 +50,11 @@ export class UsersService {
     user: UserDocument,
     updateUserDto: UpdateUserDto,
   ): void {
-    if (updateUserDto.clearOpenaiApiKey) {
-      user.encryptedOpenaiApiKey = undefined;
-    } else if (updateUserDto.openaiApiKey !== undefined) {
-      const trimmed = updateUserDto.openaiApiKey.trim();
-      user.encryptedOpenaiApiKey = trimmed
-        ? this.encryptionService.encrypt(trimmed)
-        : undefined;
-    }
-
-    if (updateUserDto.clearAnthropicApiKey) {
-      user.encryptedAnthropicApiKey = undefined;
-    } else if (updateUserDto.anthropicApiKey !== undefined) {
-      const trimmed = updateUserDto.anthropicApiKey.trim();
-      user.encryptedAnthropicApiKey = trimmed
+    if (updateUserDto.clearOpenrouterApiKey) {
+      user.encryptedOpenrouterApiKey = undefined;
+    } else if (updateUserDto.openrouterApiKey !== undefined) {
+      const trimmed = updateUserDto.openrouterApiKey.trim();
+      user.encryptedOpenrouterApiKey = trimmed
         ? this.encryptionService.encrypt(trimmed)
         : undefined;
     }
@@ -97,8 +94,7 @@ export class UsersService {
   }
 
   async getApiKeysForUser(userId: string): Promise<{
-    openai: string | null;
-    anthropic: string | null;
+    openrouter: string | null;
   }> {
     const user = await this.userModel
       .findById(userId)
@@ -110,11 +106,8 @@ export class UsersService {
     }
 
     return {
-      openai: user.encryptedOpenaiApiKey
-        ? this.encryptionService.decrypt(user.encryptedOpenaiApiKey)
-        : null,
-      anthropic: user.encryptedAnthropicApiKey
-        ? this.encryptionService.decrypt(user.encryptedAnthropicApiKey)
+      openrouter: user.encryptedOpenrouterApiKey
+        ? this.encryptionService.decrypt(user.encryptedOpenrouterApiKey)
         : null,
     };
   }
@@ -302,12 +295,21 @@ export class UsersService {
     }
 
     return {
-      openaiApiKey: user.encryptedOpenaiApiKey
-        ? this.encryptionService.decrypt(user.encryptedOpenaiApiKey)
-        : null,
-      anthropicApiKey: user.encryptedAnthropicApiKey
-        ? this.encryptionService.decrypt(user.encryptedAnthropicApiKey)
+      openrouterApiKey: user.encryptedOpenrouterApiKey
+        ? this.encryptionService.decrypt(user.encryptedOpenrouterApiKey)
         : null,
     };
+  }
+
+  async getOpenrouterUsage(id: string): Promise<OpenRouterKeyUsage> {
+    const keys = await this.getApiKeysForUser(id);
+
+    if (!keys.openrouter?.trim()) {
+      throw new BadRequestException(
+        'No OpenRouter API key configured. Add your OpenRouter API key in Profile settings.',
+      );
+    }
+
+    return this.openRouterService.getKeyUsage({ openrouter: keys.openrouter });
   }
 }

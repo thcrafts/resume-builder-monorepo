@@ -73,24 +73,12 @@ export class ResumesService {
     return this.getStoredResumeJson(resume);
   }
 
-  async validateApiKeyForGeneration(
-    userId: string,
-    aiModel: 'openai' | 'claude',
-  ): Promise<void> {
+  async validateApiKeyForGeneration(userId: string): Promise<void> {
     const keys = await this.usersService.getApiKeysForUser(userId);
 
-    if (aiModel === 'claude') {
-      if (!keys.anthropic?.trim()) {
-        throw new BadRequestException(
-          'No Anthropic API key configured. Add your Anthropic API key in Profile settings.',
-        );
-      }
-      return;
-    }
-
-    if (!keys.openai?.trim()) {
+    if (!keys.openrouter?.trim()) {
       throw new BadRequestException(
-        'No OpenAI API key configured. Add your OpenAI API key in Profile settings.',
+        'No OpenRouter API key configured. Add your OpenRouter API key in Profile settings.',
       );
     }
   }
@@ -135,10 +123,7 @@ export class ResumesService {
       throw new BadRequestException('Manual resumes cannot be retried');
     }
 
-    await this.validateApiKeyForGeneration(
-      userId,
-      (resume.aiModel as 'openai' | 'claude') || 'openai',
-    );
+    await this.validateApiKeyForGeneration(userId);
 
     await this.resumeModel
       .updateOne(
@@ -282,7 +267,7 @@ export class ResumesService {
   }
 
   /**
-   * Generate a resume using OpenAI API based on job description and instructions
+   * Generate a resume using OpenRouter based on job description and instructions
    * This method assumes the resume record already exists with in_progress status
    */
   async generateResume(
@@ -2852,28 +2837,23 @@ CANDIDATE_BACKGROUND:
 - Frontend Developer | Metro Market Gurus | 08/2013 – 01/2016 | Full-time`
     }
 
-    // Call OpenAI API to generate the resume JSON (includes cover_letter)
+    // Call OpenRouter to generate the resume JSON
     const apiKeys = await this.usersService.getApiKeysForUser(userId);
     const resumeSettings = await this.usersService.getResumeSettings(userId);
     const { resumeJson, threadId } = await this.aiService.generateResume(
       resume.jobDescription,
       instructions,
-      (resume.aiModel as 'openai' | 'claude') || 'openai',
-      resume.aiVersion || 'gpt-4.1-mini',
+      resume.aiModel || 'anthropic',
+      resume.aiVersion || 'anthropic/claude-sonnet-4.6',
       apiKeys,
       resumeSettings,
     );
 
-    // Extract cover letter from resume JSON and remove it from the JSON
-    // (cover_letter is part of the generated JSON but not part of the resume structure)
-    let coverLetter: string | undefined;
     if (resumeJson.cover_letter) {
-      coverLetter = resumeJson.cover_letter;
-      // Remove cover_letter from resumeJson before saving
       delete resumeJson.cover_letter;
     }
 
-    // Update the resume with generated data (including cover letter)
+    // Update the resume with generated data (cover letter is generated on demand)
     const { resume: updatedResume, pdfBuffer, userName: savedUserName } =
       await this.updateResumeWithGeneratedData(
         resumeId,
@@ -2882,7 +2862,6 @@ CANDIDATE_BACKGROUND:
         resumeJson,
         userTemplate,
         threadId,
-        coverLetter,
       );
 
     console.log(`\n=====================================================================================\nGenerated successfully at ${new Date()}: \nName: ${userName}, Company: ${resume.companyName}, Title: ${resumeJson.title}`);
@@ -3036,14 +3015,14 @@ CANDIDATE_BACKGROUND:
 
     const apiKeys = await this.usersService.getApiKeysForUser(userId);
 
-    // Call OpenAI service with optional custom prompt
+    // Call OpenRouter with optional custom prompt
     return await this.aiService.parseAndAnswerQuestions(
       questionsText,
       resumeJson,
       jobDescription,
       questionsPrompt,
-      (aiModel as 'openai' | 'claude') || 'openai',
-      aiVersion || 'gpt-4.1-mini',
+      aiModel || 'anthropic',
+      aiVersion || 'anthropic/claude-sonnet-4.6',
       apiKeys,
     );
   }
@@ -3301,9 +3280,9 @@ CANDIDATE_BACKGROUND:
       }
 
       const resumeJson = await this.getResumeJson(id, userId);
-      const aiModel = (resume.aiModel as 'openai' | 'claude') || 'openai';
+      const aiModel = resume.aiModel || 'anthropic';
 
-      await this.validateApiKeyForGeneration(userId, aiModel);
+      await this.validateApiKeyForGeneration(userId);
 
       const apiKeys = await this.usersService.getApiKeysForUser(userId);
       const coverLetterText = await this.aiService.generateCoverLetter(
@@ -3311,7 +3290,7 @@ CANDIDATE_BACKGROUND:
         resumeJson as unknown as Record<string, unknown>,
         resume.conversationId,
         aiModel,
-        resume.aiVersion || 'gpt-4.1-mini',
+        resume.aiVersion || 'anthropic/claude-sonnet-4.6',
         apiKeys,
         user.coverLetterPrompt,
       );

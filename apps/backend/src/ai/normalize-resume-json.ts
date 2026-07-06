@@ -1,7 +1,7 @@
 import type { ResumeData } from 'src/resumes/templates';
 import { MAX_EXPERIENCE_BULLETS_PER_ROLE } from './resume-settings';
 
-export const MAX_WORDS_PER_EXPERIENCE_BULLET = 20;
+export const MAX_WORDS_PER_EXPERIENCE_BULLET = 28;
 
 export function ensureSentenceEnding(text: string): string {
   let result = text.replace(/[,;:\s]+$/, '').trim();

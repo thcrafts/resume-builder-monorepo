@@ -6,7 +6,7 @@ import {
 } from './normalize-resume-json';
 
 describe('normalizeExperienceBullet', () => {
-  it('strips leading list markers and allows up to 20 words', () => {
+  it('strips leading list markers and allows up to 28 words', () => {
     const input =
       '- Led cross functional teams to deliver scalable Node.js APIs for enterprise clients worldwide today';
     const result = normalizeExperienceBullet(input);
@@ -31,7 +31,9 @@ describe('normalizeExperienceBullet', () => {
 
     expect(result.endsWith('.')).toBe(true);
     expect(result).toContain('production launch.');
-    expect(result.split(' ').length).toBeLessThanOrEqual(20);
+    expect(result.split(' ').length).toBeLessThanOrEqual(
+      MAX_WORDS_PER_EXPERIENCE_BULLET,
+    );
   });
 });
 
@@ -44,7 +46,7 @@ describe('ensureSentenceEnding', () => {
 });
 
 describe('normalizeResumeExperienceBullets', () => {
-  it('trims combined responsibilities and achievements to five bullets', () => {
+  it('trims combined responsibilities and achievements to six bullets', () => {
     const resume = normalizeResumeExperienceBullets({
       skills: [],
       experience: [
@@ -57,9 +59,9 @@ describe('normalizeResumeExperienceBullets', () => {
 
     const role = resume.experience?.[0];
     expect(role?.responsibilities).toEqual(['One.', 'Two.', 'Three.']);
-    expect(role?.achievements).toEqual(['Four.', 'Five.']);
+    expect(role?.achievements).toEqual(['Four.', 'Five.', 'Six.']);
     expect(
       (role?.responsibilities?.length ?? 0) + (role?.achievements?.length ?? 0),
-    ).toBe(5);
+    ).toBe(6);
   });
 });

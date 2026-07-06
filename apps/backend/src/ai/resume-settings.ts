@@ -35,7 +35,7 @@ export interface ResumePdfSettings {
 
 export const MAX_SKILL_CATEGORIES = 5;
 export const MAX_SKILLS_PER_CATEGORY = 5;
-export const MAX_EXPERIENCE_BULLETS_PER_ROLE = 5;
+export const MAX_EXPERIENCE_BULLETS_PER_ROLE = 6;
 
 export const DEFAULT_RESUME_SETTINGS: ResumeSettings = {
   showTitle: true,

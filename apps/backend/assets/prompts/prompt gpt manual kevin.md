@@ -14,162 +14,159 @@ The job description is provided in the user message. Use it as the tailoring tar
 
 Existing Resume Content:
 {
-  "name": "Tyler Harden",
+  "name": "Amir Heshame",
+  "title": "Senior Software Engineer",
   "contact": {
-    "email": "tyler.harden.dev@gmail.com",
-    "phone": "(646) 481-8561",
-    "title": "Senior Full Stack Engineer",
-    "linkedin" : "https://www.linkedin.com/in/tylerxharden"
-  },  
-  "skills": {
-    "Data": [
-      "SQL",
-      "Database schema design",
-      "Data modeling",
-      "Query optimization",
-      "ETL processes",
-      "Data caching",
-      "Analytics integration"
-    ],
-    "Cloud": [
-      "AWS",
-      "Azure",
-      "Google Cloud Platform",
-      "Cloud infrastructure provisioning",
-      "Infrastructure as Code",
-      "Serverless architecture",
-      "Cloud security fundamentals",
-      "Load balancing",
-      "Auto-scaling"
-    ],
-    "Tools": [
-      "Docker",
-      "Kubernetes",
-      "CI/CD pipelines",
-      "Git",
-      "Linux administration",
-      "Infrastructure as Code tools",
-      "Production monitoring tools",
-      "CDN",
-      "Caching technologies"
-    ],
-    "Backend": [
-      "Node.js",
-      "Express.js",
-      "REST API development",
-      "SQL database design",
-      "Microservices architecture",
-      "Authentication and authorization",
-      "Server-side rendering",
-      "Caching strategies"
-    ],
-    "Frontend": [
-      "React",
-      "Redux",
-      "JavaScript ES6+",
-      "HTML5",
-      "CSS3",
-      "Responsive design",
-      "Progressive Web Apps",
-      "Webpack",
-      "Babel"
-    ],
-    "Industry": [
-      "Full-stack web applications",
-      "Cloud infrastructure",
-      "Production web applications",
-      "Operational readiness",
-      "Disaster recovery",
-      "Performance tuning",
-      "Digital products",
-      "AI-powered development"
-    ]
+    "address": "Cairo, Egypt",
+    "email": "amiralshamy1228@gmail.com",
+    "linkedin": "https://www.linkedin.com/in/amirheshame"
   },
-  "summary": "Full Stack Engineer with 10+ years of experience building and maintaining full-stack web applications and developing REST APIs. Proven expertise in provisioning and maintaining cloud infrastructure on AWS and Azure, implementing CI/CD pipelines, and using Docker and Kubernetes for containerization. Skilled in production system monitoring, troubleshooting, and performance tuning to ensure operational readiness and disaster recovery. Strong background in SQL database design, Linux administration, and security fundamentals, delivering scalable, reliable AI-powered digital products with end-to-end project ownership and stakeholder collaboration.",
-  "location": "New York, NY, 10065",
-  "projects": [],
-  "education": [
+  "summary": "Senior Software Engineer with 8+ years of experience building scalable backend systems, distributed architectures, and API-driven platforms across fintech, enterprise, and healthcare domains. Strong expertise in Python, Node.js, TypeScript, and C#, with hands-on experience designing microservices, event-driven systems, and cloud-native systems on AWS and Azure. Experienced in optimizing system performance, improving reliability, and building production-grade distributed systems. Increasing experience integrating AI/LLM capabilities including RAG pipelines and structured generation workflows.",
+  "skills": [
     {
-      "gpa": "3.7",
-      "degree": "B.S. in Computer Science",
-      "school": "Havard Extension School",
-      "location": "Cambridge, MA",
-      "graduationDate": "2019"
+      "category": "Languages",
+      "items": [
+        "Python",
+        "Node.js",
+        "TypeScript",
+        "C#",
+        "SQL"
+      ]
     },
     {
-      "gpa": "3.7",
-      "degree": "Computer Science",
-      "school": "Wesleyan University",
-      "location": "Middletown, CT",
-      "graduationDate": "2015"
+      "category": "Backend",
+      "items": [
+        "REST APIs",
+        "Microservices Architecture",
+        "Event-Driven Systems",
+        "System Design"
+      ]
+    },
+    {
+      "category": "Databases",
+      "items": [
+        "PostgreSQL",
+        "MySQL",
+        "Distributed Data Systems",
+        "Query Optimization",
+        "Indexing Strategies"
+      ]
+    },
+    {
+      "category": "Cloud & DevOps",
+      "items": [
+        "AWS",
+        "Azure",
+        "Docker",
+        "Kubernetes",
+        "CI/CD Pipelines"
+      ]
+    },
+    {
+      "category": "AI / LLM",
+      "items": [
+        "LLM Integration",
+        "Retrieval-Augmented Generation (RAG)",
+        "Structured Generation",
+        "Evaluation Pipelines"
+      ]
     }
   ],
   "experience": [
     {
-      "title": "",
-      "company": "Microsoft",
-      "endDate": "Present",
-      "location": "New York, NY",
-      "startDate": "Jun 2022",
-      "achievements": [
-        "Architected and implemented scalable backend services using Node.js and C++ within Microsoft's AI platform, improving processing throughput by 30% for internal AI workflows.",
-        "Designed and developed a prompt editor UI with Angular and TypeScript, enhancing model configuration efficiency and reducing user errors by 25% across AI fine-tuning teams.",
-        "Optimized distributed search infrastructure supporting RAG systems, decreasing query latency by 40% and increasing reliability for enterprise AI applications.",
-        "Integrated Python-based tokenization pipelines into Microsoft's AI platform workflows, streamlining data preprocessing and reducing pipeline runtime by 20%.",
-        "Orchestrated microservice APIs deployed on Kubernetes clusters, enabling seamless cross-functional collaboration with product, design, data, and security teams to meet compliance and trust and safety requirements.",
-        "Standardized code quality and mentored junior engineers on full-stack development best practices, resulting in a 15% reduction in production bugs and faster feature delivery cycles."
+      "title": "Senior Software Engineer",
+      "company": "Plaid",
+      "date_range": "07/2024 - Present",
+      "job_type": "Full-time",
+      "responsibilities": [
+        "Design and build scalable backend services for financial data infrastructure.",
+        "Develop secure APIs for financial data integration and platform services.",
+        "Improve system reliability, observability, and production monitoring.",
+        "Collaborate with product, security, and platform engineering teams.",
+        "Support incident response and production debugging in distributed systems."
+      ],
+      "achievements": [],
+      "skills": [
+        "Distributed Systems",
+        "Python",
+        "TypeScript",
+        "AWS",
+        "Microservices",
+        "System Design"
       ]
     },
     {
-      "title": "",
-      "company": "EveryAction",
-      "endDate": "May 2022",
-      "location": "New York, NY",
-      "startDate": "Jun 2019",
-      "achievements": [
-        "Engineered and maintained core backend APIs in C++ and Python, increasing data throughput for nonprofit CRM workflows by 40% and reducing API response times by 28%.",
-        "Designed and deployed real-time data pipelines using Kafka, enabling high-volume fundraising and engagement analytics with 99.98% data accuracy across distributed systems.",
-        "Modernized legacy infrastructure by orchestrating a Linux migration, improving system reliability and uptime for over 2,000 nonprofit organizations using the EveryAction platform.",
-        "Optimized reporting infrastructure and user workflow automation, leveraging Python and JavaScript to decrease report generation latency by 35% and streamline compliance processes.",
-        "Architected microservice-based backend modules, integrating with frontend frameworks and enhancing scalability to support a 3x increase in concurrent campaign events.",
-        "Instrumented performance monitoring and automated production support, proactively resolving incidents and reducing critical downtime by 50% through close coordination with QA and infrastructure teams.",
-        "Partnered with product, data, and business stakeholders to refine API design and data models, accelerating new feature delivery cycles by 25% while ensuring robust security and compliance."
+      "title": "Software Engineer",
+      "company": "AbbVie",
+      "date_range": "07/2020 - 05/2024",
+      "job_type": "Full-time",
+      "responsibilities": [
+        "Developed and maintained backend services and enterprise web applications.",
+        "Built REST APIs and microservices deployed in cloud environments.",
+        "Worked with AWS and Azure infrastructure for scalable systems.",
+        "Implemented CI/CD pipelines and automated testing frameworks.",
+        "Collaborated with cross-functional teams including product and QA."
+      ],
+      "achievements": [],
+      "skills": [
+        "Python",
+        "Node.js",
+        "AWS",
+        "Azure",
+        "REST APIs",
+        "Microservices"
       ]
     },
     {
-      "title": "Founder & Lead Developer",
-      "company": "FrontierNode",
-      "endDate": "Jun 2019",
-      "location": "| Washington DC-Baltimore Area",
-      "startDate": "Aug 2016",
-      "achievements": [
-        "Architected and implemented FrontierNode's full-stack platform using React, Redux, Node.js, and MongoDB, scaling user base to over 1,000 within two years.",
-        "Designed and deployed microservice APIs with Node.js to support investor feedback workflows, increasing investor review submissions by 120%.",
-        "Optimized frontend performance with Webpack and React, reducing load times by 40%, enhancing user engagement and retention.",
-        "Orchestrated cloud deployment and continuous integration pipelines, ensuring 99.9% uptime and rapid iteration cycles for product-market fit validation.",
-        "Led cross-functional coordination with users, investors, and technical contributors to refine product features, driving a 35% increase in active user sessions.",
-        "Engineered scalable backend services and database schemas to support dynamic company profiles and real-time user interactions, enabling organic growth and platform stability."
+      "title": "Software Engineer",
+      "company": "NCR Corporation",
+      "date_range": "01/2017 - 06/2020",
+      "job_type": "Full-time",
+      "responsibilities": [
+        "Developed backend services for retail and payment systems.",
+        "Worked with TypeScript, Python, MySQL, and REST APIs.",
+        "Supported production systems and resolved live incidents.",
+        "Contributed to internal tooling and transaction processing improvements.",
+        "Participated in Agile development and deployment cycles."
+      ],
+      "achievements": [],
+      "skills": [
+        "TypeScript",
+        "Python",
+        "MySQL",
+        "REST APIs",
+        "Production Systems"
       ]
     },
     {
-      "title": "Software Engineer Intern",
-      "company": "RapidAPI Startup",
-      "endDate": "Mar 2016",
-      "location": "San Francisco, United States",
-      "startDate": "Jul 2015",
-      "achievements": [
-        "Engineered full-stack features using Node.js and Angular to enhance API marketplace usability, increasing developer engagement by 25% within three months.",
-        "Developed backend services with Node.js and MongoDB to streamline API key management workflows, reducing latency by 30% in production systems.",
-        "Optimized frontend workflows for API discovery and testing, improving developer productivity metrics by 20% through iterative product collaboration.",
-        "Integrated database systems with MongoDB to support scalable API usage monitoring, enabling real-time analytics for over 10,000 active users.",
-        "Orchestrated cross-functional coordination with product and engineering teams to iterate on developer usability features, accelerating release cycles by 15%.",
-        "Instrumented API integration workflows within the RapidAPI ecosystem, enhancing third-party service connectivity and boosting platform adoption by 18%.",
-        "Stabilized production systems by refining backend API endpoints, reducing error rates by 22% and improving overall platform reliability."
+      "title": "Full Stack Web Developer Intern",
+      "company": "NileCode Systems",
+      "date_range": "04/2016 - 01/2017",
+      "job_type": "Internship",
+      "responsibilities": [
+        "Built web applications using PHP, JavaScript, ASP.NET, and Node.js.",
+        "Developed frontend interfaces and backend APIs.",
+        "Optimized database queries and improved performance.",
+        "Worked in Agile teams with senior developers."
+      ],
+      "achievements": [],
+      "skills": [
+        "JavaScript",
+        "PHP",
+        "ASP.NET",
+        "Node.js",
+        "MySQL"
       ]
     }
   ],
-  "certifications": [],
-  "additionalExperience": []
+  "education": [
+    {
+      "degree": "BSc in Computer Software Engineering",
+      "institution": "Suez Canal University",
+      "location": "Egypt",
+      "date_range": "2012 - 2016"
+    }
+  ]
 }
 
 INPUT NORMALIZATION
@@ -202,7 +199,8 @@ Never invent:
 - new numeric metrics not present in source material
 
 Always rewrite:
-- summary, skills, responsibilities, and achievements
+- summary, skills, and experience bullets (achievements)
+- Set responsibilities to an empty array for every role
 - Do NOT copy bullets verbatim from the input resume
 
 Preserve contact information exactly. Do not modify, infer, or add contact details.
@@ -334,36 +332,42 @@ Category selection:
 
 EXPERIENCE COUNTS
 For EACH experience entry:
-- responsibilities.length + achievements.length must NOT exceed 5
-- Use a realistic split such as 2 responsibilities and 3 achievements, or 3 responsibilities and 2 achievements
-- At least 1 combined bullet is required per role
+- Generate 3 to 6 experience bullets per role
+- Store every bullet in achievements
+- Set responsibilities to an empty array []
 - Include 8 role-specific company skills when company skills are enabled
 
-Do NOT exceed the combined bullet limit of 5 per role. The JSON must never contain empty responsibility and achievement arrays together.
+Do NOT split bullets across responsibilities and achievements. The responsibilities array must always be empty.
 
 Set job_type for each role using a realistic value such as Full-time, Contract, or Internship based on the source resume context.
 
-RESPONSIBILITIES
-Each responsibility must:
-- Be one complete sentence with 15 to 20 words
-- Must end with a period
-- Must NOT contain the substring "- "
+EXPERIENCE BULLETS
+Write each role using a balanced mix of responsibilities and achievements, with a strong emphasis on measurable impact.
+
+Each job must include 3 to 6 concise bullets that:
 - Start with a strong action verb
-- Describe ownership, scope, systems, stakeholders, architecture, delivery, or technical responsibility
+- Clearly describe what was built or owned (responsibility)
+- Name the technologies, tools, or methods used
+- Include the business or technical outcome whenever possible (achievement)
+- Prioritize quantifiable results such as performance improvements, cost reductions, scale, reliability, or delivery speed
+- Avoid generic statements like "responsible for" without impact
+- Add unique value across the role by covering different aspects such as system design, implementation, optimization, collaboration, or leadership
+
+Each bullet must:
+- Be one complete sentence with 18 to 28 words
+- End with a period
+- Must NOT contain the substring "- "
+- Include at least 1 quantifiable numeric value as an integer or decimal (examples: 28%, 1.5x, 99.98%, 2000, 37ms, $500K)
+- Follow this flow when possible: action verb → ownership/scope → technologies → numeric measurable outcome
 - Include at least 1 JD-relevant technology, tool, methodology, or domain term
 - Be realistic for the role and date range
-- Be different from the achievement bullets in the same role
-
-ACHIEVEMENTS
-Each achievement must:
-- Be one complete sentence with 15 to 20 words
-- Must end with a period
-- Must NOT contain the substring "- "
-- Start with a strong action verb
-- Describe measurable business, technical, product, reliability, performance, security, or user impact
-- Prioritize JD-relevant outcomes
-- Avoid vague claims
+- Be distinct from every other bullet in the same role
 - Avoid copying any source resume bullet
+
+Example structure:
+"Architected scalable Node.js microservices for internal AI workflows, integrating Kubernetes and Redis to raise processing throughput by 30% while improving reliability for enterprise model-training teams."
+
+The overall experience section for each role must demonstrate both scope of ownership and real-world results.
 
 ACTION VERBS
 Preferred verbs:
@@ -378,11 +382,21 @@ Rules:
 - Avoid weak or passive phrasing
 
 METRIC POLICY
+Every achievement bullet MUST include at least one quantifiable numeric value as an integer or decimal number.
+
+Allowed numeric formats:
+- Percentages: 28%, 37.5%, 99.98%
+- Counts and scale: 2000, 10000+, 3x
+- Time and performance: 37ms, 1.2s, 40% faster
+- Money when supported by source: $500K, $1.2M
+
+Rules:
 1. Reuse metrics from the source resume when rewriting a related accomplishment.
-2. You may rephrase a source metric ("30% throughput" → "raised throughput about 30%") but do not change the number.
-3. If no source metric exists for a bullet, use qualitative measurable language such as "cut release cycle time materially", "improved reliability across production workflows", or "reduced manual steps in the approval flow".
-4. Do NOT invent precise percentages or counts.
-5. Metrics must be believable, contextual, and consistent with role, timeline, and seniority.
+2. You may rephrase a source metric ("30% throughput" → "raised throughput by 30%") but do not change the number.
+3. Every achievement bullet must contain at least one numeric digit. Do not use only qualitative impact language.
+4. Do NOT invent new numeric metrics not present in the source material for that role.
+5. If a role has fewer source metrics than bullets, redistribute and rephrase existing source metrics across bullets rather than inventing new numbers.
+6. Metrics must be believable, contextual, and consistent with role, timeline, and seniority.
 
 CONSISTENCY AND REALISM
 The resume must have no contradictions between skills and experience, summary and experience, technologies and dates, JD title and resume seniority, and responsibilities and role scope.
@@ -437,14 +451,12 @@ Do not include markdown, comments, explanations, trailing commas, or extra keys.
       "company": "Company Name",
       "date_range": "MM/YYYY - MM/YYYY or MM/YYYY - Present",
       "job_type": "Full-time",
-      "responsibilities": [
-        "Responsibility 1",
-        "Responsibility 2"
-      ],
+      "responsibilities": [],
       "achievements": [
-        "Achievement 1",
-        "Achievement 2",
-        "Achievement 3"
+        "Built and owned a scalable backend service using Node.js and PostgreSQL, reducing API latency by 28% while supporting high-volume payment workflows across production systems.",
+        "Designed event-driven microservices with Kafka and Docker on AWS, improving deployment speed by 35% and enabling faster release cycles for product teams.",
+        "Optimized database queries and caching layers with Redis, cutting infrastructure costs by 22% and increasing concurrent user capacity by 3x across production systems.",
+        "Partnered with product, security, and data stakeholders to deliver compliance-ready features, accelerating feature delivery by 25% while maintaining 99.9% platform uptime."
       ],
       "skills": [
         "skill 1",
@@ -474,19 +486,22 @@ Silently verify:
 - Contact information is preserved exactly
 - Root-level title and most recent role title use the normalized JD title
 - CORE TECHNOLOGIES uses at most 5 categories and at most 5 required JD skills per category
-- Every experience entry has responsibilities.length + achievements.length less than or equal to 5
-- Every responsibility and achievement is a complete sentence with 15 to 20 words
-- Every responsibility and achievement ends with a period
-- No responsibility or achievement contains "- "
+- Every experience entry has responsibilities as an empty array
+- Every experience entry has 3 to 6 achievement bullets
+- Every achievement bullet is a complete sentence with 18 to 28 words
+- Every achievement bullet ends with a period
+- No achievement bullet contains "- "
 - Every experience entry includes job_type
-- Every responsibility and achievement starts with a strong action verb
+- Every achievement bullet starts with a strong action verb
+- Every achievement bullet combines ownership, technologies, and a numeric measurable outcome
+- Every achievement bullet contains at least one integer or decimal numeric value
 - No forbidden weak openers are used
 - No action verb appears more than 3 times across the resume
 - No copied bullets from the input resume appear in the output
 - No duplicate jobs exist
 - Skills are supported by experience
 - JD-required technologies are represented where supported
-- No invented numeric metrics
+- Every achievement bullet includes a numeric value sourced or rephrased from the input resume
 - Resume is realistic, senior-level, and tightly aligned with the JD
 
 Return ONLY valid JSON.

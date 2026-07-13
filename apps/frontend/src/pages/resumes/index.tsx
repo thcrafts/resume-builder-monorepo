@@ -47,7 +47,7 @@ import {
   DarkMode as DarkModeIcon,
   Refresh as RefreshIcon,
 } from "@mui/icons-material";
-import { Link, useNavigate } from "react-router";
+import { Link, useNavigate, useOutletContext } from "react-router";
 import {
   getResumes,
   getResume,
@@ -73,7 +73,8 @@ import {
   saveDuplicateResumeDraft,
 } from "../../constants/duplicateResumeDraft";
 import { chipWithIconSx } from "../../styles/chipWithIcon";
-import { getProfile } from "../../services/userService";
+import type { ProtectedLayoutContext } from "../../components/common/NonAdminLayout";
+import { getAxiosErrorStatus } from "../../utils/authSession";
 import { socket } from "./socket";
 
 const getLocalDateString = (date = new Date()) => {
@@ -197,18 +198,18 @@ const Resumes: React.FC = () => {
   const [selectedJobDescription, setSelectedJobDescription] =
     React.useState<string>("");
   const [logoutDialogOpen, setLogoutDialogOpen] = React.useState(false);
-  const [userEmail, setUserEmail] = React.useState("");
-  const [userName, setUserName] = React.useState("");
   const [avatarMenuAnchor, setAvatarMenuAnchor] =
     React.useState<null | HTMLElement>(null);
 
   const navigate = useNavigate();
   const { logout } = useAuth();
   const { mode, setMode } = useThemeMode();
+  const { user } = useOutletContext<ProtectedLayoutContext>();
 
-  const avatarInitial = userEmail
-    ? userEmail.charAt(0).toUpperCase()
-    : "?";
+  const userEmail = user.email;
+  const userName = user.name || "";
+
+  const avatarInitial = userEmail.charAt(0).toUpperCase();
 
   const displayName = userName.trim()
     ? userName.trim().split(" ")[0]
@@ -236,17 +237,6 @@ const Resumes: React.FC = () => {
     setMode(nextMode);
     handleAvatarMenuClose();
   };
-
-  React.useEffect(() => {
-    getProfile()
-      .then((profile) => {
-        setUserEmail(profile.email);
-        setUserName(profile.name || "");
-      })
-      .catch(() => {
-        // Avatar falls back to "?" if profile cannot be loaded
-      });
-  }, []);
 
   const loadResumes = React.useCallback(
     async (
@@ -276,7 +266,10 @@ const Resumes: React.FC = () => {
           Object.keys(activeFilters).length > 0 ? activeFilters : undefined,
         );
         setResumes(data);
-      } catch {
+      } catch (error: unknown) {
+        if (getAxiosErrorStatus(error) === 401) {
+          return;
+        }
         if (!options?.silent) {
           toast.error("Failed to load resumes");
         }

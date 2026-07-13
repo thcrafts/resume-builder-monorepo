@@ -1,9 +1,9 @@
 import axios, { type AxiosInstance } from "axios";
+import { notifySessionExpired } from "../utils/sessionExpiredHandler";
 
 class ApiClient {
   private static instance: ApiClient;
   private axiosInstance: AxiosInstance;
-  private static logoutHandler?: () => void;
 
   private constructor() {
     this.axiosInstance = axios.create({
@@ -12,10 +12,9 @@ class ApiClient {
       headers: {
         "Content-Type": "application/json",
       },
-      withCredentials: true, // optional if you deal with cookies/sessions
+      withCredentials: true,
     });
 
-    // Optional: Add interceptors here
     this.axiosInstance.interceptors.request.use((config) => {
       const token = localStorage.getItem("access_token");
       if (token) {
@@ -28,17 +27,11 @@ class ApiClient {
       (response) => response,
       (error) => {
         if (error.response?.status === 401) {
-          console.warn("Unauthorized - redirecting to login...");
-          // e.g., handle logout or redirect
-          ApiClient.logoutHandler?.();
+          notifySessionExpired();
         }
         return Promise.reject(error);
       }
     );
-  }
-
-  public static registerLogoutHandler(handler: () => void) {
-    ApiClient.logoutHandler = handler;
   }
 
   public static getInstance(): AxiosInstance {

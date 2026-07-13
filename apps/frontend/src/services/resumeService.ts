@@ -1,6 +1,7 @@
 // src/services/resumeService.ts
 import ApiClient from "./apiClient";
 import { fetchBlobDownload, fetchBlobPost } from "./blobDownload";
+import { notifySessionExpired } from "../utils/sessionExpiredHandler";
 
 export interface GenerateResumeDto {
   companyName: string;
@@ -65,6 +66,9 @@ export const generateResumeStream = async (
   });
 
   if (!response.ok) {
+    if (response.status === 401) {
+      notifySessionExpired();
+    }
     const errorText = await response.text();
     let message = `HTTP error! status: ${response.status}`;
     try {

@@ -1,3 +1,5 @@
+import { notifySessionExpired } from "../utils/sessionExpiredHandler";
+
 export type BlobDownloadResponse = {
   data: Blob;
   headers: Record<string, string>;
@@ -13,6 +15,12 @@ function normalizeHeaders(headers: Headers): Record<string, string> {
     normalized[key.toLowerCase()] = value;
   });
   return normalized;
+}
+
+function handleUnauthorizedResponse(response: Response): void {
+  if (response.status === 401) {
+    notifySessionExpired();
+  }
 }
 
 export async function fetchBlobDownload(
@@ -38,6 +46,7 @@ export async function fetchBlobDownload(
   });
 
   if (!response.ok) {
+    handleUnauthorizedResponse(response);
     throw new Error(`Download failed (${response.status})`);
   }
 
@@ -69,6 +78,7 @@ export async function fetchBlobPost(
   });
 
   if (!response.ok) {
+    handleUnauthorizedResponse(response);
     throw new Error(`Download failed (${response.status})`);
   }
 

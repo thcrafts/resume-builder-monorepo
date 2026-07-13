@@ -1,10 +1,22 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
-import ApiClient from "../../services/apiClient";
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
+import { toast } from "react-toastify";
+import { isTokenExpired } from "../../utils/authSession";
+import {
+  registerSessionExpiredHandler,
+  resetSessionExpiredHandling,
+} from "../../utils/sessionExpiredHandler";
 
 interface AuthContextType {
   token: string | null;
   login: (token: string) => void;
   logout: () => void;
+  handleSessionExpired: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -16,24 +28,39 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     localStorage.getItem("access_token") ?? null
   );
 
-  // Save token to localStorage when login
+  const logout = useCallback(() => {
+    setToken(null);
+    localStorage.removeItem("access_token");
+    resetSessionExpiredHandling();
+  }, []);
+
+  const handleSessionExpired = useCallback(() => {
+    logout();
+    toast.error("Your session has expired. Please log in again.");
+    window.location.replace("/login");
+  }, [logout]);
+
   const login = (newToken: string) => {
+    resetSessionExpiredHandling();
     setToken(newToken);
     localStorage.setItem("access_token", newToken);
   };
 
-  // Remove token when logout
-  const logout = () => {
-    setToken(null);
-    localStorage.removeItem("access_token");
-  };
+  useEffect(() => {
+    registerSessionExpiredHandler(handleSessionExpired);
+  }, [handleSessionExpired]);
 
   useEffect(() => {
-    ApiClient.registerLogoutHandler(logout);
-  }, []);
+    const storedToken = localStorage.getItem("access_token");
+    if (storedToken && isTokenExpired(storedToken)) {
+      handleSessionExpired();
+    }
+  }, [handleSessionExpired]);
 
   return (
-    <AuthContext.Provider value={{ token, login, logout }}>
+    <AuthContext.Provider
+      value={{ token, login, logout, handleSessionExpired }}
+    >
       {children}
     </AuthContext.Provider>
   );

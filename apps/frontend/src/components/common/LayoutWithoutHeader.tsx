@@ -1,8 +1,10 @@
 import { Box } from "@mui/material";
 import * as React from "react";
-import { Outlet } from "react-router";
+import { Outlet, useOutletContext } from "react-router";
 
 const LayoutWithoutHeader: React.FC = () => {
+  const context = useOutletContext();
+
   return (
     <Box
       sx={{
@@ -13,7 +15,7 @@ const LayoutWithoutHeader: React.FC = () => {
         width: "100%",
       }}
     >
-      <Outlet />
+      <Outlet context={context} />
     </Box>
   );
 };

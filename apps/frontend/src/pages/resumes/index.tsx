@@ -75,6 +75,7 @@ import {
 import { chipWithIconSx } from "../../styles/chipWithIcon";
 import type { ProtectedLayoutContext } from "../../components/common/NonAdminLayout";
 import { getAxiosErrorStatus } from "../../utils/authSession";
+import { downloadPdfWithOverwrite } from "../../utils/downloadPdfWithOverwrite";
 import { socket } from "./socket";
 
 const getLocalDateString = (date = new Date()) => {
@@ -520,32 +521,23 @@ const Resumes: React.FC = () => {
       const response = await downloadResume(id);
       const pdfBlob = response.data;
 
-      // Extract filename from Content-Disposition header
-      const contentDisposition = response.headers["content-disposition"];
-      let filename = "resume.pdf"; // Default fallback
+      const result = await downloadPdfWithOverwrite(pdfBlob, {
+        contentDisposition: response.headers["content-disposition"],
+        fallbackFilename: "resume.pdf",
+      });
 
-      if (contentDisposition) {
-        const filenameMatch = contentDisposition.match(
-          /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/,
-        );
-        if (filenameMatch && filenameMatch[1]) {
-          filename = filenameMatch[1].replace(/['"]/g, "");
-        }
+      if (result.mode === "overwrite") {
+        toast.success(`Resume downloaded (replaced existing ${result.filename})`);
+      } else if (result.mode === "created") {
+        toast.success(`Resume downloaded as ${result.filename}`);
+      } else {
+        toast.success("Resume downloaded successfully!");
       }
-
-      // Create download link and trigger download
-      // Use the exact filename from server so Chrome replaces the file
-      const url = window.URL.createObjectURL(pdfBlob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = filename; // Use the filename from server
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-
-      toast.success("Resume downloaded successfully!");
-    } catch {
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") {
+        toast.info("Download cancelled");
+        return;
+      }
       toast.error("Failed to download resume");
     }
   };
@@ -588,34 +580,30 @@ const Resumes: React.FC = () => {
       const response = await generateCoverLetter(id);
       const pdfBlob = response.data;
 
-      const contentDisposition = response.headers["content-disposition"];
-      let filename = "Cover_Letter.pdf";
+      const result = await downloadPdfWithOverwrite(pdfBlob, {
+        contentDisposition: response.headers["content-disposition"],
+        fallbackFilename: "Cover_Letter.pdf",
+      });
 
-      if (contentDisposition) {
-        const filenameMatch = contentDisposition.match(
-          /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/,
+      if (result.mode === "overwrite") {
+        toast.success(
+          `Cover letter downloaded (replaced existing ${result.filename})`,
         );
-        if (filenameMatch?.[1]) {
-          filename = filenameMatch[1].replace(/['"]/g, "");
-        }
+      } else if (result.mode === "created") {
+        toast.success(`Cover letter downloaded as ${result.filename}`);
+      } else {
+        toast.success("Cover letter generated and downloaded successfully!");
       }
-
-      const url = window.URL.createObjectURL(pdfBlob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-
-      toast.success("Cover letter generated and downloaded successfully!");
       setResumes((prev) =>
         prev.map((r) =>
           r._id === id ? { ...r, coverLetter: r.coverLetter || "generated" } : r,
         ),
       );
     } catch (error: unknown) {
+      if (error instanceof DOMException && error.name === "AbortError") {
+        toast.info("Download cancelled");
+        return;
+      }
       const err = error as {
         response?: { data?: Blob };
         message?: string;

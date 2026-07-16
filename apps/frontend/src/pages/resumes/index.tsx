@@ -529,7 +529,9 @@ const Resumes: React.FC = () => {
       if (result.mode === "overwrite") {
         toast.success(`Resume downloaded (replaced existing ${result.filename})`);
       } else if (result.mode === "created") {
-        toast.success(`Resume downloaded as ${result.filename}`);
+        toast.success(
+          `Resume saved as ${result.filename}. Next download with this name will replace it automatically.`,
+        );
       } else {
         toast.success("Resume downloaded successfully!");
       }
@@ -590,7 +592,9 @@ const Resumes: React.FC = () => {
           `Cover letter downloaded (replaced existing ${result.filename})`,
         );
       } else if (result.mode === "created") {
-        toast.success(`Cover letter downloaded as ${result.filename}`);
+        toast.success(
+          `Cover letter saved as ${result.filename}. Next download with this name will replace it automatically.`,
+        );
       } else {
         toast.success("Cover letter generated and downloaded successfully!");
       }

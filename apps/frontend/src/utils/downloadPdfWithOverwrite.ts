@@ -1,24 +1,28 @@
-const DB_NAME = "resume-builder-downloads";
-const STORE_NAME = "handles";
-const HANDLE_KEY = "downloads-root";
-const PICKER_ID = "resume-builder-downloads";
+const DB_NAME = "resume-builder-pdf-handles";
+const STORE_NAME = "file-handles";
+const DB_VERSION = 1;
 
-type ShowDirectoryPickerOptions = {
-  id?: string;
-  mode?: "read" | "readwrite";
-  startIn?:
-    | "desktop"
-    | "documents"
-    | "downloads"
-    | "music"
-    | "pictures"
-    | "videos"
-    | FileSystemHandle;
+type WellKnownDirectory =
+  | "desktop"
+  | "documents"
+  | "downloads"
+  | "music"
+  | "pictures"
+  | "videos";
+
+type ShowSaveFilePickerOptions = {
+  suggestedName?: string;
+  startIn?: WellKnownDirectory | FileSystemHandle;
+  types?: Array<{
+    description?: string;
+    accept: Record<string, string[]>;
+  }>;
+  excludeAcceptAllOption?: boolean;
 };
 
 type FileSystemPermissionMode = "read" | "readwrite";
 
-type FileSystemHandleWithPermission = FileSystemDirectoryHandle & {
+type FileSystemFileHandleWithPermission = FileSystemFileHandle & {
   queryPermission?: (descriptor?: {
     mode?: FileSystemPermissionMode;
   }) => Promise<PermissionState>;
@@ -45,13 +49,13 @@ export function getFilenameFromContentDisposition(
   return fallback;
 }
 
-function supportsDirectoryPicker(): boolean {
-  return typeof window !== "undefined" && "showDirectoryPicker" in window;
+function supportsSaveFilePicker(): boolean {
+  return typeof window !== "undefined" && "showSaveFilePicker" in window;
 }
 
 function openDb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, 1);
+    const request = indexedDB.open(DB_NAME, DB_VERSION);
     request.onerror = () => reject(request.error);
     request.onsuccess = () => resolve(request.result);
     request.onupgradeneeded = () => {
@@ -63,34 +67,37 @@ function openDb(): Promise<IDBDatabase> {
   });
 }
 
-async function getStoredDirectoryHandle(): Promise<FileSystemDirectoryHandle | null> {
+async function getStoredFileHandle(
+  filename: string,
+): Promise<FileSystemFileHandle | null> {
   const db = await openDb();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_NAME, "readonly");
     const store = tx.objectStore(STORE_NAME);
-    const request = store.get(HANDLE_KEY);
+    const request = store.get(filename);
     request.onerror = () => reject(request.error);
     request.onsuccess = () => {
-      resolve((request.result as FileSystemDirectoryHandle | undefined) ?? null);
+      resolve((request.result as FileSystemFileHandle | undefined) ?? null);
     };
   });
 }
 
-async function storeDirectoryHandle(
-  handle: FileSystemDirectoryHandle,
+async function storeFileHandle(
+  filename: string,
+  handle: FileSystemFileHandle,
 ): Promise<void> {
   const db = await openDb();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_NAME, "readwrite");
     const store = tx.objectStore(STORE_NAME);
-    const request = store.put(handle, HANDLE_KEY);
+    const request = store.put(handle, filename);
     request.onerror = () => reject(request.error);
     request.onsuccess = () => resolve();
   });
 }
 
 async function ensureReadWritePermission(
-  handle: FileSystemHandleWithPermission,
+  handle: FileSystemFileHandleWithPermission,
 ): Promise<boolean> {
   const opts = { mode: "readwrite" as const };
 
@@ -109,65 +116,39 @@ async function ensureReadWritePermission(
   return true;
 }
 
-async function resolveDownloadsRoot(): Promise<FileSystemDirectoryHandle> {
-  const existing = await getStoredDirectoryHandle();
-  if (existing) {
-    const allowed = await ensureReadWritePermission(
-      existing as FileSystemHandleWithPermission,
-    );
-    if (allowed) {
-      return existing;
-    }
-  }
-
-  const handle = await (
-    window as Window & {
-      showDirectoryPicker: (
-        options?: ShowDirectoryPickerOptions,
-      ) => Promise<FileSystemDirectoryHandle>;
-    }
-  ).showDirectoryPicker({
-    id: PICKER_ID,
-    mode: "readwrite",
-    startIn: "downloads",
-  });
-
-  await storeDirectoryHandle(handle);
-  return handle;
-}
-
-async function fileExists(
-  root: FileSystemDirectoryHandle,
-  filename: string,
-): Promise<boolean> {
-  try {
-    await root.getFileHandle(filename);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-/**
- * Delete existing same-named file if present, then write the new PDF.
- */
-async function writePdfReplacingExisting(
-  root: FileSystemDirectoryHandle,
-  filename: string,
+async function writeToFileHandle(
+  handle: FileSystemFileHandle,
   pdfBlob: Blob,
-): Promise<boolean> {
-  const existed = await fileExists(root, filename);
-
-  if (existed) {
-    await root.removeEntry(filename);
-  }
-
-  const fileHandle = await root.getFileHandle(filename, { create: true });
-  const writable = await fileHandle.createWritable();
+): Promise<void> {
+  const writable = await handle.createWritable();
   await writable.write(pdfBlob);
   await writable.close();
+}
 
-  return existed;
+async function pickAndSavePdf(
+  filename: string,
+  pdfBlob: Blob,
+): Promise<FileSystemFileHandle> {
+  const handle = await (
+    window as Window & {
+      showSaveFilePicker: (
+        options?: ShowSaveFilePickerOptions,
+      ) => Promise<FileSystemFileHandle>;
+    }
+  ).showSaveFilePicker({
+    suggestedName: filename,
+    startIn: "downloads",
+    types: [
+      {
+        description: "PDF",
+        accept: { "application/pdf": [".pdf"] },
+      },
+    ],
+  });
+
+  await writeToFileHandle(handle, pdfBlob);
+  await storeFileHandle(filename, handle);
+  return handle;
 }
 
 function fallbackAnchorDownload(pdfBlob: Blob, filename: string): void {
@@ -187,10 +168,10 @@ export type PdfOverwriteDownloadResult = {
 };
 
 /**
- * Saves a PDF directly into the user's Downloads folder.
- * If a file with the same name already exists, it is removed and rewritten.
+ * Save PDF into Downloads (via save picker) and overwrite on later downloads.
  *
- * Chrome/Edge: grant Downloads once; later downloads reuse permission.
+ * Chrome blocks directory access to Downloads, but allows saving/overwriting
+ * individual files there with showSaveFilePicker + a remembered file handle.
  */
 export async function downloadPdfWithOverwrite(
   pdfBlob: Blob,
@@ -204,18 +185,25 @@ export async function downloadPdfWithOverwrite(
     options.fallbackFilename,
   );
 
-  if (!supportsDirectoryPicker()) {
+  if (!supportsSaveFilePicker()) {
     fallbackAnchorDownload(pdfBlob, filename);
     return { mode: "fallback", filename };
   }
 
   try {
-    const root = await resolveDownloadsRoot();
-    const replaced = await writePdfReplacingExisting(root, filename, pdfBlob);
-    return {
-      mode: replaced ? "overwrite" : "created",
-      filename,
-    };
+    const existing = await getStoredFileHandle(filename);
+    if (existing) {
+      const allowed = await ensureReadWritePermission(
+        existing as FileSystemFileHandleWithPermission,
+      );
+      if (allowed) {
+        await writeToFileHandle(existing, pdfBlob);
+        return { mode: "overwrite", filename };
+      }
+    }
+
+    await pickAndSavePdf(filename, pdfBlob);
+    return { mode: "created", filename };
   } catch (error) {
     if (error instanceof DOMException && error.name === "AbortError") {
       throw error;

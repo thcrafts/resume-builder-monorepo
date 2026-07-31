@@ -28,27 +28,16 @@ export function normalizeExperienceBullet(text: string): string {
   return ensureSentenceEnding(normalized);
 }
 
-function trimRoleBulletsToMax(
+function mergeRoleBullets(
   responsibilities: string[],
   achievements: string[],
   maxBullets: number,
-): { responsibilities: string[]; achievements: string[] } {
-  let resp = responsibilities.map(normalizeExperienceBullet).filter(Boolean);
-  let ach = achievements.map(normalizeExperienceBullet).filter(Boolean);
+): string[] {
+  const merged = [...responsibilities, ...achievements]
+    .map(normalizeExperienceBullet)
+    .filter(Boolean);
 
-  while (resp.length + ach.length > maxBullets) {
-    if (ach.length > 0) {
-      ach = ach.slice(0, -1);
-      continue;
-    }
-    if (resp.length > 0) {
-      resp = resp.slice(0, -1);
-      continue;
-    }
-    break;
-  }
-
-  return { responsibilities: resp, achievements: ach };
+  return merged.slice(0, maxBullets);
 }
 
 export function normalizeResumeExperienceBullets(
@@ -69,16 +58,14 @@ export function normalizeResumeExperienceBullets(
         ? entry.achievements
         : [];
 
-      const trimmed = trimRoleBulletsToMax(
-        responsibilities,
-        achievements,
-        maxBulletsPerRole,
-      );
-
       return {
         ...entry,
-        responsibilities: trimmed.responsibilities,
-        achievements: trimmed.achievements,
+        responsibilities: [],
+        achievements: mergeRoleBullets(
+          responsibilities,
+          achievements,
+          maxBulletsPerRole,
+        ),
       };
     }),
   };

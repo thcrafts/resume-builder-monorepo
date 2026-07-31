@@ -46,7 +46,7 @@ describe('ensureSentenceEnding', () => {
 });
 
 describe('normalizeResumeExperienceBullets', () => {
-  it('trims combined responsibilities and achievements to six bullets', () => {
+  it('merges responsibilities into achievements and caps at six bullets', () => {
     const resume = normalizeResumeExperienceBullets({
       skills: [],
       experience: [
@@ -58,10 +58,15 @@ describe('normalizeResumeExperienceBullets', () => {
     });
 
     const role = resume.experience?.[0];
-    expect(role?.responsibilities).toEqual(['One.', 'Two.', 'Three.']);
-    expect(role?.achievements).toEqual(['Four.', 'Five.', 'Six.']);
-    expect(
-      (role?.responsibilities?.length ?? 0) + (role?.achievements?.length ?? 0),
-    ).toBe(6);
+    expect(role?.responsibilities).toEqual([]);
+    expect(role?.achievements).toEqual([
+      'One.',
+      'Two.',
+      'Three.',
+      'Four.',
+      'Five.',
+      'Six.',
+    ]);
+    expect(role?.achievements?.length).toBe(6);
   });
 });

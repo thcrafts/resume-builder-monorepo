@@ -642,7 +642,14 @@ const Profile: React.FC = () => {
 
     const timer = window.setTimeout(() => {
       void persistProfile({
-        resumeSettings: resumeSettingsForm,
+        resumeSettings: {
+          ...resumeSettingsForm,
+          responsibilitiesCount: 0,
+          achievementsCount: Math.min(
+            6,
+            Math.max(5, resumeSettingsForm.achievementsCount || 6),
+          ),
+        },
       }).catch(() => {
         toast.error("Failed to save resume settings");
       });
@@ -1242,19 +1249,11 @@ const Profile: React.FC = () => {
             </Typography>
             <Stack spacing={2}>
               <TextField
-                label="Responsibilities per role"
+                label="Bullets per role"
                 type="number"
                 size="small"
-                inputProps={{ min: 0, max: 30 }}
-                value={resumeSettingsForm.responsibilitiesCount}
-                onChange={handleResumeCountChange("responsibilitiesCount")}
-                sx={{ maxWidth: 320 }}
-              />
-              <TextField
-                label="Achievements per role"
-                type="number"
-                size="small"
-                inputProps={{ min: 0, max: 30 }}
+                inputProps={{ min: 5, max: 6 }}
+                helperText="5–6 impact bullets; every bullet must include a numerical improvement."
                 value={resumeSettingsForm.achievementsCount}
                 onChange={handleResumeCountChange("achievementsCount")}
                 sx={{ maxWidth: 320 }}

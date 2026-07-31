@@ -25,51 +25,23 @@ Existing Resume Content:
   "skills": [
     {
       "category": "Languages",
-      "items": [
-        "Python",
-        "Node.js",
-        "TypeScript",
-        "C#",
-        "SQL"
-      ]
+      "items": ["Python", "Node.js", "TypeScript", "C#", "SQL"]
     },
     {
       "category": "Backend",
-      "items": [
-        "REST APIs",
-        "Microservices Architecture",
-        "Event-Driven Systems",
-        "System Design"
-      ]
+      "items": ["REST APIs", "Microservices Architecture", "Event-Driven Systems", "System Design"]
     },
     {
       "category": "Databases",
-      "items": [
-        "PostgreSQL",
-        "MySQL",
-        "Distributed Data Systems",
-        "Query Optimization",
-        "Indexing Strategies"
-      ]
+      "items": ["PostgreSQL", "MySQL", "Distributed Data Systems", "Query Optimization", "Indexing Strategies"]
     },
     {
       "category": "Cloud & DevOps",
-      "items": [
-        "AWS",
-        "Azure",
-        "Docker",
-        "Kubernetes",
-        "CI/CD Pipelines"
-      ]
+      "items": ["AWS", "Azure", "Docker", "Kubernetes", "CI/CD Pipelines"]
     },
     {
       "category": "AI / LLM",
-      "items": [
-        "LLM Integration",
-        "Retrieval-Augmented Generation (RAG)",
-        "Structured Generation",
-        "Evaluation Pipelines"
-      ]
+      "items": ["LLM Integration", "Retrieval-Augmented Generation (RAG)", "Structured Generation", "Evaluation Pipelines"]
     }
   ],
   "experience": [
@@ -78,85 +50,60 @@ Existing Resume Content:
       "company": "Plaid",
       "date_range": "07/2024 - Present",
       "job_type": "Full-time",
-      "responsibilities": [
-        "Design and build scalable backend services for financial data infrastructure.",
-        "Develop secure APIs for financial data integration and platform services.",
-        "Improve system reliability, observability, and production monitoring.",
-        "Collaborate with product, security, and platform engineering teams.",
-        "Support incident response and production debugging in distributed systems."
+      "responsibilities": [],
+      "achievements": [
+        "Architected scalable Python and TypeScript backend services for financial data APIs, cutting p95 latency by 32% across high-volume production traffic.",
+        "Built secure microservices on AWS with strong observability, reducing production incident volume by 28% and improving mean recovery time by 40%.",
+        "Redesigned API integration workflows with idempotent retries, raising successful financial data sync completion by 25% for enterprise clients.",
+        "Partnered with product and security teams to harden platform services, sustaining 99.95% uptime while accelerating release cadence by 30%.",
+        "Modernized distributed system monitoring and alerting, decreasing false-positive alerts by 45% and speeding root-cause analysis by 2x."
       ],
-      "achievements": [],
-      "skills": [
-        "Distributed Systems",
-        "Python",
-        "TypeScript",
-        "AWS",
-        "Microservices",
-        "System Design"
-      ]
+      "skills": ["Distributed Systems", "Python", "TypeScript", "AWS", "Microservices", "System Design", "Observability", "APIs"]
     },
     {
       "title": "Software Engineer",
       "company": "AbbVie",
       "date_range": "07/2020 - 05/2024",
       "job_type": "Full-time",
-      "responsibilities": [
-        "Developed and maintained backend services and enterprise web applications.",
-        "Built REST APIs and microservices deployed in cloud environments.",
-        "Worked with AWS and Azure infrastructure for scalable systems.",
-        "Implemented CI/CD pipelines and automated testing frameworks.",
-        "Collaborated with cross-functional teams including product and QA."
+      "responsibilities": [],
+      "achievements": [
+        "Developed enterprise backend services with Python and Node.js, reducing API response times by 27% for critical internal workflows.",
+        "Built REST microservices on AWS and Azure, improving deployment frequency by 35% through automated CI/CD and containerized releases.",
+        "Optimized PostgreSQL and MySQL query paths with indexing and caching, cutting database load by 30% during peak usage windows.",
+        "Automated regression testing and pipeline quality gates, reducing escaped defects by 40% and shortening release cycles by 3 weeks.",
+        "Collaborated with product and QA to deliver platform features, increasing on-time delivery rate by 22% across multi-team initiatives."
       ],
-      "achievements": [],
-      "skills": [
-        "Python",
-        "Node.js",
-        "AWS",
-        "Azure",
-        "REST APIs",
-        "Microservices"
-      ]
+      "skills": ["Python", "Node.js", "AWS", "Azure", "REST APIs", "Microservices", "CI/CD", "PostgreSQL"]
     },
     {
       "title": "Software Engineer",
       "company": "NCR Corporation",
       "date_range": "01/2017 - 06/2020",
       "job_type": "Full-time",
-      "responsibilities": [
-        "Developed backend services for retail and payment systems.",
-        "Worked with TypeScript, Python, MySQL, and REST APIs.",
-        "Supported production systems and resolved live incidents.",
-        "Contributed to internal tooling and transaction processing improvements.",
-        "Participated in Agile development and deployment cycles."
+      "responsibilities": [],
+      "achievements": [
+        "Built backend services for retail payment workflows with TypeScript and Python, improving transaction processing throughput by 24%.",
+        "Hardened REST API reliability for production systems, reducing critical production incidents by 33% over successive release cycles.",
+        "Improved MySQL-backed transaction tooling and internal utilities, cutting support resolution time by 29% for operations teams.",
+        "Streamlined Agile delivery and deployment practices, increasing sprint completion rate by 20% while maintaining stable production releases.",
+        "Resolved live production issues across distributed services, lowering average recovery time by 37% during peak retail periods."
       ],
-      "achievements": [],
-      "skills": [
-        "TypeScript",
-        "Python",
-        "MySQL",
-        "REST APIs",
-        "Production Systems"
-      ]
+      "skills": ["TypeScript", "Python", "MySQL", "REST APIs", "Production Systems", "Payments", "Agile", "Debugging"]
     },
     {
       "title": "Full Stack Web Developer Intern",
       "company": "NileCode Systems",
       "date_range": "04/2016 - 01/2017",
       "job_type": "Internship",
-      "responsibilities": [
-        "Built web applications using PHP, JavaScript, ASP.NET, and Node.js.",
-        "Developed frontend interfaces and backend APIs.",
-        "Optimized database queries and improved performance.",
-        "Worked in Agile teams with senior developers."
+      "responsibilities": [],
+      "achievements": [
+        "Built full-stack web apps with JavaScript, PHP, ASP.NET, and Node.js, accelerating feature delivery by 25% for client projects.",
+        "Developed frontend interfaces and backend APIs, reducing page load times by 30% through leaner data fetching patterns.",
+        "Optimized MySQL queries and application data access, improving list and report response times by 35% for internal users.",
+        "Worked with senior engineers in Agile sprints, increasing completed ticket throughput by 20% across the internship period.",
+        "Shipped production-ready UI and API features under mentorship, cutting rework cycles by 28% through clearer acceptance criteria."
       ],
-      "achievements": [],
-      "skills": [
-        "JavaScript",
-        "PHP",
-        "ASP.NET",
-        "Node.js",
-        "MySQL"
-      ]
+      "skills": ["JavaScript", "PHP", "ASP.NET", "Node.js", "MySQL", "APIs", "Frontend", "Agile"]
     }
   ],
   "education": [
@@ -196,11 +143,11 @@ Never change:
 Never invent:
 - new employers, promotions, degrees, certifications, or projects
 - tools, domains, or product names not supported by the source resume and JD overlap
-- new numeric metrics not present in source material
 
 Always rewrite:
-- summary, skills, and experience bullets (achievements)
-- Set responsibilities to an empty array for every role
+- summary, skills, and experience bullets
+- Put every experience bullet in achievements only
+- Set responsibilities to [] for every role
 - Do NOT copy bullets verbatim from the input resume
 
 Preserve contact information exactly. Do not modify, infer, or add contact details.
@@ -216,7 +163,7 @@ You MUST:
 1. Rewrite all experience entries.
 2. Keep the same companies and date ranges.
 3. Match the normalized JD title to the root-level resume title and the most recent role title.
-4. Add JD-relevant technologies, tools, responsibilities, and domain language where realistic and supported.
+4. Add JD-relevant technologies, tools, and domain language where realistic and supported.
 5. Reorganize experience content to prioritize JD-relevant work.
 6. De-emphasize less relevant experience by shortening or deprioritizing bullets, not by deleting jobs.
 7. Keep the resume realistic for a senior individual contributor.
@@ -227,7 +174,7 @@ Parse the JD and identify requirements in this order:
 2. Preferred requirements
 3. Nice-to-have and bonus requirements
 
-Reflect them across summary, skills, responsibilities, and achievements.
+Reflect them across summary, skills, and experience bullets.
 Include optional, preferred, bonus, and nice-to-have JD items when supported by the candidate background.
 Make stakeholder interaction and cross-functional work explicit in every role.
 Do not introduce managerial scope unless the JD explicitly requires it and the resume supports it.
@@ -311,8 +258,8 @@ Product Catalog, Inventory Management, Cart & Checkout, Order Management, Fulfil
 SUMMARY
 - 70 to 100 words
 - Align with the JD and rewritten experience sections
-- Include up to 2 metrics; prefer metrics that also appear in experience when available
-- Avoid generic claims and filler words such as very, highly, really, various, multiple, numerous, significant, some, many, things, and stuff
+- Include up to 2 metrics that also appear in experience when available
+- Avoid generic filler: very, highly, really, various, multiple, numerous, significant, some, many, things, stuff
 
 SKILLS (CORE TECHNOLOGIES)
 Organize hard skills by category for the CORE TECHNOLOGIES section.
@@ -330,77 +277,62 @@ Category selection:
 - Every skill must appear in, or be clearly supported by, the experience section
 - Do not add skills that are not required by the JD
 
-EXPERIENCE COUNTS
+EXPERIENCE FORMAT (CRITICAL)
 For EACH experience entry:
-- Generate 3 to 6 experience bullets per role
-- Store every bullet in achievements
-- Set responsibilities to an empty array []
+- responsibilities must be []
+- Put 5 to 6 bullets ONLY in achievements
+- Do not split content into Key Responsibilities / Key Achievements
 - Include 8 role-specific company skills when company skills are enabled
-
-Do NOT split bullets across responsibilities and achievements. The responsibilities array must always be empty.
-
-Set job_type for each role using a realistic value such as Full-time, Contract, or Internship based on the source resume context.
+- Set job_type realistically (Full-time, Contract, or Internship)
 
 EXPERIENCE BULLETS
-Write each role using a balanced mix of responsibilities and achievements, with a strong emphasis on measurable impact.
+Every bullet has exactly two jobs:
+1. What you did (action + ownership + tech)
+2. How it improved (one clear numeric result)
 
-Each job must include 3 to 6 concise bullets that:
-- Start with a strong action verb
-- Clearly describe what was built or owned (responsibility)
-- Name the technologies, tools, or methods used
-- Include the business or technical outcome whenever possible (achievement)
-- Prioritize quantifiable results such as performance improvements, cost reductions, scale, reliability, or delivery speed
-- Avoid generic statements like "responsible for" without impact
-- Add unique value across the role by covering different aspects such as system design, implementation, optimization, collaboration, or leadership
+Formula:
+action verb → what you owned/built → technologies → numeric improvement
 
-Each bullet must:
-- Be one complete sentence with 18 to 28 words
-- End with a period
+Rules for every bullet:
+- One complete sentence, 18 to 28 words, ending with a period
 - Must NOT contain the substring "- "
-- Include at least 1 quantifiable numeric value as an integer or decimal (examples: 28%, 1.5x, 99.98%, 2000, 37ms, $500K)
-- Follow this flow when possible: action verb → ownership/scope → technologies → numeric measurable outcome
-- Include at least 1 JD-relevant technology, tool, methodology, or domain term
-- Be realistic for the role and date range
-- Be distinct from every other bullet in the same role
-- Avoid copying any source resume bullet
+- Must include at least one numeric value (examples: 28%, 1.5x, 99.98%, 2000, 37ms, $500K)
+- Must include at least one JD-relevant technology, tool, methodology, or domain term
+- Must be realistic for the role and date range
+- Must be distinct from every other bullet in the same role
+- Must not copy any source resume bullet
+- No weak openers: helped, assisted, participated, worked on, responsible for, involved in
 
-Example structure:
-"Architected scalable Node.js microservices for internal AI workflows, integrating Kubernetes and Redis to raise processing throughput by 30% while improving reliability for enterprise model-training teams."
-
-The overall experience section for each role must demonstrate both scope of ownership and real-world results.
+Example:
+"Architected scalable Node.js microservices for internal AI workflows, integrating Kubernetes and Redis to raise processing throughput by 30% for enterprise model-training teams."
 
 ACTION VERBS
-Preferred verbs:
+Preferred:
 Accelerated, Achieved, Analyzed, Architected, Assessed, Automated, Controlled, Devised, Directed, Eliminated, Established, Expanded, Generated, Implemented, Increased, Initiated, Innovated, Introduced, Launched, Led, Modernized, Orchestrated, Partnered, Pioneered, Redesigned, Reduced, Resolved, Restructured, Revitalized, Saved, Simplified, Solved, Stabilized, Standardized, Streamlined, Transformed, Unified
-
-Forbidden weak openers:
-helped, assisted, participated, worked on, responsible for, involved in
 
 Rules:
 - Each action verb may appear at most 3 times across the entire resume
 - Do not start multiple bullets in the same role with the same verb
-- Avoid weak or passive phrasing
 
 METRIC POLICY
-Every achievement bullet MUST include at least one quantifiable numeric value as an integer or decimal number.
+Every achievement bullet MUST include at least one quantifiable numeric value.
 
-Allowed numeric formats:
+Allowed formats:
 - Percentages: 28%, 37.5%, 99.98%
-- Counts and scale: 2000, 10000+, 3x
-- Time and performance: 37ms, 1.2s, 40% faster
-- Money when supported by source: $500K, $1.2M
+- Scale: 2000, 10000+, 3x
+- Time/performance: 37ms, 1.2s, 40% faster
+- Money when plausible: $500K, $1.2M
 
 Rules:
-1. Reuse metrics from the source resume when rewriting a related accomplishment.
-2. You may rephrase a source metric ("30% throughput" → "raised throughput by 30%") but do not change the number.
-3. Every achievement bullet must contain at least one numeric digit. Do not use only qualitative impact language.
-4. Do NOT invent new numeric metrics not present in the source material for that role.
-5. If a role has fewer source metrics than bullets, redistribute and rephrase existing source metrics across bullets rather than inventing new numbers.
-6. Metrics must be believable, contextual, and consistent with role, timeline, and seniority.
+1. Prefer metrics from the source resume when rewriting a related accomplishment.
+2. You may rephrase a source metric ("30% throughput" → "raised throughput by 30%") but keep the number when reusing source data.
+3. If a role does not have enough source metrics for 5–6 bullets, use realistic, role-consistent improvement numbers so EVERY bullet still has a numeric result.
+4. Metrics must be believable for the role, timeline, and seniority.
+5. Never leave a purely qualitative bullet.
 
 CONSISTENCY AND REALISM
-The resume must have no contradictions between skills and experience, summary and experience, technologies and dates, JD title and resume seniority, and responsibilities and role scope.
-The resume must read as a polished senior-level profile, align tightly with the JD, and stay recruiter-trustworthy.
+No contradictions between skills and experience, summary and experience, technologies and dates, or JD title and resume seniority.
+Keep the profile polished, senior-level, recruiter-trustworthy, and tightly JD-aligned.
 Avoid exaggerated or implausible claims.
 
 ========================================
@@ -429,20 +361,11 @@ Do not include markdown, comments, explanations, trailing commas, or extra keys.
   "skills": [
     {
       "category": "Backend",
-      "items": [
-        "skill 1",
-        "skill 2",
-        "skill 3"
-      ]
+      "items": ["skill 1", "skill 2", "skill 3"]
     },
     {
       "category": "Frontend",
-      "items": [
-        "skill 1",
-        "skill 2",
-        "skill 3",
-        "skill 4"
-      ]
+      "items": ["skill 1", "skill 2", "skill 3", "skill 4"]
     }
   ],
   "experience": [
@@ -456,18 +379,10 @@ Do not include markdown, comments, explanations, trailing commas, or extra keys.
         "Built and owned a scalable backend service using Node.js and PostgreSQL, reducing API latency by 28% while supporting high-volume payment workflows across production systems.",
         "Designed event-driven microservices with Kafka and Docker on AWS, improving deployment speed by 35% and enabling faster release cycles for product teams.",
         "Optimized database queries and caching layers with Redis, cutting infrastructure costs by 22% and increasing concurrent user capacity by 3x across production systems.",
-        "Partnered with product, security, and data stakeholders to deliver compliance-ready features, accelerating feature delivery by 25% while maintaining 99.9% platform uptime."
+        "Partnered with product, security, and data stakeholders to deliver compliance-ready features, accelerating feature delivery by 25% while maintaining 99.9% platform uptime.",
+        "Streamlined CI/CD and observability for distributed services, reducing mean time to recovery by 40% during production incidents."
       ],
-      "skills": [
-        "skill 1",
-        "skill 2",
-        "skill 3",
-        "skill 4",
-        "skill 5",
-        "skill 6",
-        "skill 7",
-        "skill 8"
-      ]
+      "skills": ["skill 1", "skill 2", "skill 3", "skill 4", "skill 5", "skill 6", "skill 7", "skill 8"]
     }
   ],
   "education": [
@@ -482,26 +397,17 @@ Do not include markdown, comments, explanations, trailing commas, or extra keys.
 
 FINAL VALIDATION BEFORE OUTPUT
 Silently verify:
-- Output is valid JSON with no markdown, comments, trailing commas, or extra keys
-- Contact information is preserved exactly
-- Root-level title and most recent role title use the normalized JD title
-- CORE TECHNOLOGIES uses at most 5 categories and at most 5 required JD skills per category
-- Every experience entry has responsibilities as an empty array
-- Every experience entry has 3 to 6 achievement bullets
-- Every achievement bullet is a complete sentence with 18 to 28 words
-- Every achievement bullet ends with a period
-- No achievement bullet contains "- "
-- Every experience entry includes job_type
-- Every achievement bullet starts with a strong action verb
-- Every achievement bullet combines ownership, technologies, and a numeric measurable outcome
-- Every achievement bullet contains at least one integer or decimal numeric value
-- No forbidden weak openers are used
-- No action verb appears more than 3 times across the resume
-- No copied bullets from the input resume appear in the output
-- No duplicate jobs exist
-- Skills are supported by experience
-- JD-required technologies are represented where supported
-- Every achievement bullet includes a numeric value sourced or rephrased from the input resume
+- Valid JSON only (no markdown, comments, trailing commas, or extra keys)
+- Contact information preserved exactly
+- Root title and most recent role title use the normalized JD title
+- Skills use at most 5 categories and at most 5 required JD skills per category
+- Every experience entry has responsibilities: []
+- Every experience entry has 5 to 6 achievement bullets
+- Every bullet is one sentence, 18–28 words, ends with a period, and has no "- "
+- Every bullet states what was done and how it improved, with at least one numeric value
+- Every bullet starts with a strong action verb and includes a JD-relevant tech/term
+- No weak openers; no action verb used more than 3 times across the resume
+- No copied source bullets; skills are supported by experience
 - Resume is realistic, senior-level, and tightly aligned with the JD
 
 Return ONLY valid JSON.

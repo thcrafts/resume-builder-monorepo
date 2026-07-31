@@ -381,7 +381,7 @@ Write a recruiter-friendly, ATS-friendly, senior-level resume that:
   - involved in
 
 For bullets, prefer:
-action + scope + outcome
+action + scope + quantified numerical improvement outcome (every bullet must include a number)
 
 Also prefer bullets that demonstrate:
 - system ownership
@@ -413,8 +413,11 @@ EXPERIENCE RULES
 For each role:
 - keep company, title, date_range, and job_type truthful
 - tailor responsibilities and achievements toward the job description using only supported facts
-- responsibilities should describe scope, systems, engineering work, ownership, and product/business context
-- achievements should highlight impact, improvements, modernization, reliability, delivery, product value, user value, or business value
+- set responsibilities to an empty array []
+- put 5-6 bullets only in achievements (do not split into Key Responsibilities / Key Achievements)
+- EVERY bullet MUST include at least one concrete numerical improvement value (e.g. 35%, 2x, 40ms, $120K, 3 weeks, 50k users, 99.9%); no bullet may be purely qualitative
+- prefer metrics from the input; if the input lacks an exact figure, derive a realistic improvement number that fits the described work and keep it specific and measurable
+- lead with the action and close with the quantified outcome (improved X by Y%, reduced Z from A to B, etc.)
 - skills should reflect technologies and capabilities actually supported by the candidate background and job description alignment
 
 AI CO-WORK INC EMPHASIS RULES
@@ -612,7 +615,7 @@ Write a recruiter-friendly, ATS-friendly, senior-level resume that:
   - involved in
 
 For bullets, prefer:
-action + scope + outcome
+action + scope + quantified numerical improvement outcome (every bullet must include a number)
 
 Also prefer bullets that demonstrate:
 - system ownership
@@ -644,8 +647,11 @@ EXPERIENCE RULES
 For each role:
 - keep company, title, date_range, and job_type truthful
 - tailor responsibilities and achievements toward the job description using only supported facts
-- responsibilities should describe scope, systems, engineering work, ownership, and product/business context
-- achievements should highlight impact, improvements, modernization, reliability, delivery, product value, operational value, or business value
+- set responsibilities to an empty array []
+- put 5-6 bullets only in achievements (do not split into Key Responsibilities / Key Achievements)
+- EVERY bullet MUST include at least one concrete numerical improvement value (e.g. 35%, 2x, 40ms, $120K, 3 weeks, 50k users, 99.9%); no bullet may be purely qualitative
+- prefer metrics from the input; if the input lacks an exact figure, derive a realistic improvement number that fits the described work and keep it specific and measurable
+- lead with the action and close with the quantified outcome (improved X by Y%, reduced Z from A to B, etc.)
 - skills should reflect technologies and capabilities actually supported by the candidate background and job description alignment
 
 REVBITS LLC EMPHASIS RULES
@@ -858,7 +864,7 @@ Write a recruiter-friendly, ATS-friendly, senior-level resume that:
   - involved in
 
 For bullets, prefer:
-action + scope + outcome
+action + scope + quantified numerical improvement outcome (every bullet must include a number)
 
 Also prefer bullets that demonstrate:
 - system ownership
@@ -890,8 +896,11 @@ EXPERIENCE RULES
 For each role:
 - keep company, title, date_range, and job_type truthful
 - tailor responsibilities and achievements toward the job description using only supported facts
-- responsibilities should describe scope, systems, engineering work, ownership, and product/business context
-- achievements should highlight impact, improvements, modernization, reliability, delivery, product value, user value, or business value
+- set responsibilities to an empty array []
+- put 5-6 bullets only in achievements (do not split into Key Responsibilities / Key Achievements)
+- EVERY bullet MUST include at least one concrete numerical improvement value (e.g. 35%, 2x, 40ms, $120K, 3 weeks, 50k users, 99.9%); no bullet may be purely qualitative
+- prefer metrics from the input; if the input lacks an exact figure, derive a realistic improvement number that fits the described work and keep it specific and measurable
+- lead with the action and close with the quantified outcome (improved X by Y%, reduced Z from A to B, etc.)
 - skills should reflect technologies and capabilities actually supported by the candidate background and job description alignment
 
 PENTRENT LLC EMPHASIS RULES
@@ -1086,7 +1095,7 @@ Write a recruiter-friendly, ATS-friendly, senior-level resume that:
   - involved in
 
 For bullets, prefer:
-action + scope + outcome
+action + scope + quantified numerical improvement outcome (every bullet must include a number)
 
 Also prefer bullets that demonstrate:
 - system ownership
@@ -1118,8 +1127,11 @@ EXPERIENCE RULES
 For each role:
 - keep company, title, date_range, and job_type truthful
 - tailor responsibilities and achievements toward the job description using only supported facts
-- responsibilities should describe scope, systems, engineering work, ownership, and product/business context
-- achievements should highlight impact, improvements, modernization, reliability, delivery, product value, user value, or business value
+- set responsibilities to an empty array []
+- put 5-6 bullets only in achievements (do not split into Key Responsibilities / Key Achievements)
+- EVERY bullet MUST include at least one concrete numerical improvement value (e.g. 35%, 2x, 40ms, $120K, 3 weeks, 50k users, 99.9%); no bullet may be purely qualitative
+- prefer metrics from the input; if the input lacks an exact figure, derive a realistic improvement number that fits the described work and keep it specific and measurable
+- lead with the action and close with the quantified outcome (improved X by Y%, reduced Z from A to B, etc.)
 - skills should reflect technologies and capabilities actually supported by the candidate background and job description alignment
 
 TOFFEE FINANCE EMPHASIS RULES
@@ -1314,7 +1326,7 @@ Write a recruiter-friendly, ATS-friendly, senior-level resume that:
   - involved in
 
 For bullets, prefer:
-action + scope + outcome
+action + scope + quantified numerical improvement outcome (every bullet must include a number)
 
 Also prefer bullets that demonstrate:
 - system ownership
@@ -1346,8 +1358,11 @@ EXPERIENCE RULES
 For each role:
 - keep company, title, date_range, and job_type truthful
 - tailor responsibilities and achievements toward the job description using only supported facts
-- responsibilities should describe scope, systems, engineering work, ownership, and product/business context
-- achievements should highlight impact, improvements, modernization, reliability, delivery, product value, user value, or business value
+- set responsibilities to an empty array []
+- put 5-6 bullets only in achievements (do not split into Key Responsibilities / Key Achievements)
+- EVERY bullet MUST include at least one concrete numerical improvement value (e.g. 35%, 2x, 40ms, $120K, 3 weeks, 50k users, 99.9%); no bullet may be purely qualitative
+- prefer metrics from the input; if the input lacks an exact figure, derive a realistic improvement number that fits the described work and keep it specific and measurable
+- lead with the action and close with the quantified outcome (improved X by Y%, reduced Z from A to B, etc.)
 - skills should reflect technologies and capabilities actually supported by the candidate background and job description alignment
 
 TEXAS FOOD HOUSE EMPHASIS RULES
@@ -1542,7 +1557,7 @@ Write a recruiter-friendly, ATS-friendly, senior-level resume that:
   - involved in
 
 For bullets, prefer:
-action + scope + outcome
+action + scope + quantified numerical improvement outcome (every bullet must include a number)
 
 Also prefer bullets that demonstrate:
 - system ownership
@@ -1574,8 +1589,11 @@ EXPERIENCE RULES
 For each role:
 - keep company, title, date_range, and job_type truthful
 - tailor responsibilities and achievements toward the job description using only supported facts
-- responsibilities should describe scope, systems, engineering work, ownership, and product/business context
-- achievements should highlight impact, improvements, modernization, reliability, delivery, product value, user value, or business value
+- set responsibilities to an empty array []
+- put 5-6 bullets only in achievements (do not split into Key Responsibilities / Key Achievements)
+- EVERY bullet MUST include at least one concrete numerical improvement value (e.g. 35%, 2x, 40ms, $120K, 3 weeks, 50k users, 99.9%); no bullet may be purely qualitative
+- prefer metrics from the input; if the input lacks an exact figure, derive a realistic improvement number that fits the described work and keep it specific and measurable
+- lead with the action and close with the quantified outcome (improved X by Y%, reduced Z from A to B, etc.)
 - skills should reflect technologies and capabilities actually supported by the candidate background and job description alignment
 
 LINDA HALL INSURANCE EMPHASIS RULES
@@ -1770,7 +1788,7 @@ Write a recruiter-friendly, ATS-friendly, senior-level resume that:
   - involved in
 
 For bullets, prefer:
-action + scope + outcome
+action + scope + quantified numerical improvement outcome (every bullet must include a number)
 
 Also prefer bullets that demonstrate:
 - system ownership
@@ -1802,8 +1820,11 @@ EXPERIENCE RULES
 For each role:
 - keep company, title, date_range, and job_type truthful
 - tailor responsibilities and achievements toward the job description using only supported facts
-- responsibilities should describe scope, systems, engineering work, ownership, and product/business context
-- achievements should highlight impact, improvements, modernization, reliability, delivery, product value, operational value, or business value
+- set responsibilities to an empty array []
+- put 5-6 bullets only in achievements (do not split into Key Responsibilities / Key Achievements)
+- EVERY bullet MUST include at least one concrete numerical improvement value (e.g. 35%, 2x, 40ms, $120K, 3 weeks, 50k users, 99.9%); no bullet may be purely qualitative
+- prefer metrics from the input; if the input lacks an exact figure, derive a realistic improvement number that fits the described work and keep it specific and measurable
+- lead with the action and close with the quantified outcome (improved X by Y%, reduced Z from A to B, etc.)
 - skills should reflect technologies and capabilities actually supported by the candidate background and job description alignment
 
 LEXIS MAXIMUS LLC EMPHASIS RULES
@@ -1998,7 +2019,7 @@ Write a recruiter-friendly, ATS-friendly, senior-level resume that:
   - involved in
 
 For bullets, prefer:
-action + scope + outcome
+action + scope + quantified numerical improvement outcome (every bullet must include a number)
 
 Also prefer bullets that demonstrate:
 - system ownership
@@ -2030,8 +2051,11 @@ EXPERIENCE RULES
 For each role:
 - keep company, title, date_range, and job_type truthful
 - tailor responsibilities and achievements toward the job description using only supported facts
-- responsibilities should describe scope, systems, engineering work, ownership, and product/business context
-- achievements should highlight impact, improvements, modernization, reliability, delivery, product value, user value, or business value
+- set responsibilities to an empty array []
+- put 5-6 bullets only in achievements (do not split into Key Responsibilities / Key Achievements)
+- EVERY bullet MUST include at least one concrete numerical improvement value (e.g. 35%, 2x, 40ms, $120K, 3 weeks, 50k users, 99.9%); no bullet may be purely qualitative
+- prefer metrics from the input; if the input lacks an exact figure, derive a realistic improvement number that fits the described work and keep it specific and measurable
+- lead with the action and close with the quantified outcome (improved X by Y%, reduced Z from A to B, etc.)
 - skills should reflect technologies and capabilities actually supported by the candidate background and job description alignment
 
 FYMSA REAL ESTATE EMPHASIS RULES
@@ -2231,7 +2255,7 @@ Write a recruiter-friendly, ATS-friendly, senior-level resume that:
   - involved in
 
 For bullets, prefer:
-action + scope + outcome
+action + scope + quantified numerical improvement outcome (every bullet must include a number)
 
 Also prefer bullets that demonstrate:
 - system ownership
@@ -2263,8 +2287,11 @@ EXPERIENCE RULES
 For each role:
 - keep company, title, date_range, and job_type truthful
 - tailor responsibilities and achievements toward the job description using only supported facts
-- responsibilities should describe scope, systems, engineering work, ownership, and product/business context
-- achievements should highlight impact, improvements, modernization, reliability, delivery, product value, user value, or business value
+- set responsibilities to an empty array []
+- put 5-6 bullets only in achievements (do not split into Key Responsibilities / Key Achievements)
+- EVERY bullet MUST include at least one concrete numerical improvement value (e.g. 35%, 2x, 40ms, $120K, 3 weeks, 50k users, 99.9%); no bullet may be purely qualitative
+- prefer metrics from the input; if the input lacks an exact figure, derive a realistic improvement number that fits the described work and keep it specific and measurable
+- lead with the action and close with the quantified outcome (improved X by Y%, reduced Z from A to B, etc.)
 - skills should reflect technologies and capabilities actually supported by the candidate background and job description alignment
 
 HSA SPORTS LLC EMPHASIS RULES
@@ -2464,7 +2491,7 @@ Write a recruiter-friendly, ATS-friendly, senior-level resume that:
   - involved in
 
 For bullets, prefer:
-action + scope + outcome
+action + scope + quantified numerical improvement outcome (every bullet must include a number)
 
 Also prefer bullets that demonstrate:
 - system ownership
@@ -2495,8 +2522,11 @@ EXPERIENCE RULES
 For each role:
 - keep company, title, date_range, and job_type truthful
 - tailor responsibilities and achievements toward the job description using only supported facts
-- responsibilities should describe scope, systems, engineering work, ownership, and product/business context
-- achievements should highlight impact, improvements, modernization, reliability, delivery, product value, customer value, or business value
+- set responsibilities to an empty array []
+- put 5-6 bullets only in achievements (do not split into Key Responsibilities / Key Achievements)
+- EVERY bullet MUST include at least one concrete numerical improvement value (e.g. 35%, 2x, 40ms, $120K, 3 weeks, 50k users, 99.9%); no bullet may be purely qualitative
+- prefer metrics from the input; if the input lacks an exact figure, derive a realistic improvement number that fits the described work and keep it specific and measurable
+- lead with the action and close with the quantified outcome (improved X by Y%, reduced Z from A to B, etc.)
 - skills should reflect technologies and capabilities actually supported by the candidate background and job description alignment
 
 EHMANn COMMUNICATIONS EMPHASIS RULES
@@ -2689,7 +2719,7 @@ Write a recruiter-friendly, ATS-friendly, senior-level resume that:
   - involved in
 
 For bullets, prefer:
-action + scope + outcome
+action + scope + quantified numerical improvement outcome (every bullet must include a number)
 
 Also prefer bullets that demonstrate:
 - system ownership
@@ -2721,8 +2751,11 @@ EXPERIENCE RULES
 For each role:
 - keep company, title, date_range, and job_type truthful
 - tailor responsibilities and achievements toward the job description using only supported facts
-- responsibilities should describe scope, systems, engineering work, ownership, and product/business context
-- achievements should highlight impact, improvements, modernization, reliability, delivery, product value, operational value, or business value
+- set responsibilities to an empty array []
+- put 5-6 bullets only in achievements (do not split into Key Responsibilities / Key Achievements)
+- EVERY bullet MUST include at least one concrete numerical improvement value (e.g. 35%, 2x, 40ms, $120K, 3 weeks, 50k users, 99.9%); no bullet may be purely qualitative
+- prefer metrics from the input; if the input lacks an exact figure, derive a realistic improvement number that fits the described work and keep it specific and measurable
+- lead with the action and close with the quantified outcome (improved X by Y%, reduced Z from A to B, etc.)
 - skills should reflect technologies and capabilities actually supported by the candidate background and job description alignment
 
 SOUTH TEXAS HOME HEALTH EMPHASIS RULES

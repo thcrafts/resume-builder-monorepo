@@ -38,15 +38,17 @@ export interface ResumeSettings {
 
 export const DEFAULT_RESUME_SETTINGS: ResumeSettings = {
   showTitle: true,
-  showSubTitle: true,
+  showSubTitle: false,
   showCompanySkills: true,
   skillCategories: [...SKILL_CATEGORIES],
   useDefaultOutputFormat: true,
   responsibilitiesCount: 0,
-  achievementsCount: 0,
+  achievementsCount: 6,
   skillsPerCategoryCount: 5,
   companySkillsCount: 8,
 };
+
+export const MAX_EXPERIENCE_BULLETS_PER_ROLE = 6;
 
 const SKILL_CATEGORY_SET = new Set<string>(SKILL_CATEGORIES);
 
@@ -89,19 +91,17 @@ export function resolveResumeSettings(
 
   return {
     showTitle: partial?.showTitle ?? base.showTitle ?? true,
-    showSubTitle: partial?.showSubTitle ?? base.showSubTitle ?? true,
+    showSubTitle: partial?.showSubTitle ?? base.showSubTitle ?? false,
     showCompanySkills:
       partial?.showCompanySkills ?? base.showCompanySkills ?? true,
     skillCategories: normalizeSkillCategories(base.skillCategories),
     useDefaultOutputFormat:
       partial?.useDefaultOutputFormat ?? base.useDefaultOutputFormat ?? true,
-    responsibilitiesCount: clampCount(
-      base.responsibilitiesCount,
-      DEFAULT_RESUME_SETTINGS.responsibilitiesCount,
-    ),
+    responsibilitiesCount: 0,
     achievementsCount: clampCount(
       base.achievementsCount,
       DEFAULT_RESUME_SETTINGS.achievementsCount,
+      MAX_EXPERIENCE_BULLETS_PER_ROLE,
     ),
     skillsPerCategoryCount: clampCount(
       base.skillsPerCategoryCount,

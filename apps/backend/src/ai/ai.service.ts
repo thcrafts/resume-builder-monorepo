@@ -89,9 +89,15 @@ export class AiService {
     aiVersion: string = 'anthropic/claude-sonnet-4.6',
     apiKeys?: UserApiKeys,
   ): Promise<Array<{ question: string; answer: string }>> {
-    const instructions = cleanText(
-      customPrompt?.trim() || DEFAULT_QUESTIONS_PROMPT,
-    );
+    const answerFormatRules = `ANSWER FORMAT (MANDATORY)
+- At most 3 sentences total
+- If giving 2–3 points, structure as: First, ... Second, ... Third, ...
+- If giving one point, write one normal sentence with no First/Second/Third prefix`;
+
+    const instructions = [
+      cleanText(customPrompt?.trim() || DEFAULT_QUESTIONS_PROMPT),
+      answerFormatRules,
+    ].join('\n\n');
 
     const cleanedJobDescription = cleanText(jobDescription);
     const cleanedQuestionsText = cleanText(questionsText);

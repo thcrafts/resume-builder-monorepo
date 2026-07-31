@@ -10,6 +10,8 @@ export const DEFAULT_QUESTIONS_PROMPT = `You are an assistant who answers questi
 The job description and resume JSON content will be provided.
 
 Answers must be specific and always positive.
-For any "describe" type question, the answer should be 2-4 sentences.
+At most 3 sentences per answer.
+If giving 2–3 points, structure as: First, ... Second, ... Third, ...
+If giving one point, write one normal sentence with no First/Second/Third prefix.
 
 The goal is to make HR want to contact me for next steps.`;

@@ -11,6 +11,7 @@ import {
   registerSessionExpiredHandler,
   resetSessionExpiredHandling,
 } from "../../utils/sessionExpiredHandler";
+import { clearStoredDateFilter } from "../../constants/resumeDateFilterStorage";
 
 interface AuthContextType {
   token: string | null;
@@ -31,6 +32,7 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const logout = useCallback(() => {
     setToken(null);
     localStorage.removeItem("access_token");
+    clearStoredDateFilter();
     resetSessionExpiredHandling();
   }, []);
 

@@ -77,12 +77,26 @@ import type { ProtectedLayoutContext } from "../../components/common/NonAdminLay
 import { getAxiosErrorStatus } from "../../utils/authSession";
 import { downloadPdfWithOverwrite } from "../../utils/downloadPdfWithOverwrite";
 import { socket } from "./socket";
+import {
+  clearStoredDateFilter,
+  readStoredDateFilter,
+  writeStoredDateFilter,
+} from "../../constants/resumeDateFilterStorage";
 
 const getLocalDateString = (date = new Date()) => {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
+};
+
+const getInitialDateFilters = () => {
+  const stored = readStoredDateFilter();
+  const today = getLocalDateString();
+  return {
+    startDate: stored.startDate ?? today,
+    endDate: stored.endDate ?? today,
+  };
 };
 
 const countChipSx = chipWithIconSx;
@@ -173,12 +187,12 @@ const Resumes: React.FC = () => {
   const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = React.useState(false);
   const [deleting, setDeleting] = React.useState(false);
   const [filters, setFilters] = React.useState<FilterResumeParams>(() => {
-    const today = getLocalDateString();
+    const dates = getInitialDateFilters();
     return {
       companyName: "",
       roleType: "",
-      startDate: today,
-      endDate: today,
+      startDate: dates.startDate,
+      endDate: dates.endDate,
     };
   });
   const [chipFilter, setChipFilter] = React.useState<ChipFilter | null>(null);
@@ -372,12 +386,12 @@ const Resumes: React.FC = () => {
   }, []);
 
   React.useEffect(() => {
-    const today = getLocalDateString();
+    const dates = getInitialDateFilters();
     loadResumes({
       companyName: "",
       roleType: "",
-      startDate: today,
-      endDate: today,
+      startDate: dates.startDate,
+      endDate: dates.endDate,
     });
   }, [loadResumes]);
 
@@ -390,6 +404,12 @@ const Resumes: React.FC = () => {
       [field]: value,
     };
     setFilters(updatedFilters);
+    if (field === "startDate" || field === "endDate") {
+      writeStoredDateFilter(
+        updatedFilters.startDate || "",
+        updatedFilters.endDate || "",
+      );
+    }
     loadResumes(updatedFilters);
   };
 
@@ -400,6 +420,7 @@ const Resumes: React.FC = () => {
       startDate: "",
       endDate: "",
     };
+    clearStoredDateFilter();
     setFilters(emptyFilters);
     setChipFilter(null);
     setSelectedResumes(new Set());

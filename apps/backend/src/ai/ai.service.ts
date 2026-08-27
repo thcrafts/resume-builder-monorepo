@@ -90,7 +90,9 @@ export class AiService {
     apiKeys?: UserApiKeys,
   ): Promise<Array<{ question: string; answer: string }>> {
     const answerFormatRules = `ANSWER FORMAT (MANDATORY)
-- At most 3 sentences total
+- Return JSON only. Never write an email, cover letter, subject line, or greeting.
+- Extract every application question from the user text and answer each one.
+- At most 3 sentences per answer
 - If giving 2–3 points, structure as: First, ... Second, ... Third, ...
 - If giving one point, write one normal sentence with no First/Second/Third prefix`;
 

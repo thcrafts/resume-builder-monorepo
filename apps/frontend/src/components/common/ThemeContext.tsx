@@ -37,7 +37,7 @@ const ThemeModeProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
 
   return (
     <ThemeModeContext.Provider value={value}>
-      <ThemeProvider theme={getTheme(mode)} key={mode}>
+      <ThemeProvider theme={getTheme(mode)}>
         <CssBaseline enableColorScheme />
         {children}
       </ThemeProvider>

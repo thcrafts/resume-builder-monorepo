@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ResumeData } from 'src/resumes/templates';
 import { cleanText } from '../ai/clean-text';
+import { extractJsonText } from '../ai/extract-json-text';
 import { parseQuestionsResponse } from '../ai/parse-questions-response';
 import type { UserApiKeys } from '../ai/user-api-keys';
 
@@ -83,7 +84,10 @@ export class OpenRouterService {
       return false;
     }
 
-    return /400[\s\S]*provider returned error/i.test(error.message);
+    return (
+      /400[\s\S]*provider returned error/i.test(error.message) ||
+      /Failed to parse JSON from AI response/i.test(error.message)
+    );
   }
 
   private async createChatCompletion(
@@ -111,10 +115,7 @@ export class OpenRouterService {
   }
 
   private extractJsonText(outputText: string): string {
-    const trimmed = outputText.trim();
-    return trimmed.startsWith('```')
-      ? trimmed.replace(/^```(?:json)?\s*/, '').replace(/\s*```$/, '')
-      : trimmed;
+    return extractJsonText(outputText);
   }
 
   private getMessageContent(response: ChatCompletion): string {
@@ -240,6 +241,12 @@ export class OpenRouterService {
     apiKeys?: UserApiKeys,
   ): Promise<Array<{ question: string; answer: string }>> {
     const keys = apiKeys ?? {};
+    const jsonOnlyRule = `OUTPUT FORMAT (MANDATORY)
+Return valid JSON only. No markdown, no emails, no subject lines, no cover letters, no greeting.
+Shape: {"questions_and_answers":[{"question":"...","answer":"..."}]}
+Extract every application question from the user text (including questions inside emails or forms) and answer each one.`;
+    const userContent = `Extract and answer the application questions in the text below. Do not write an email or cover letter.\n\n${cleanText(questionsText)}`;
+    const systemContent = `${cleanText(instructions)}\n\n${jsonOnlyRule}`;
     const questionsSchema = {
       type: 'object',
       properties: {
@@ -271,8 +278,8 @@ export class OpenRouterService {
       model,
       max_completion_tokens: 8192,
       messages: [
-        { role: 'system', content: cleanText(instructions) },
-        { role: 'user', content: cleanText(questionsText) },
+        { role: 'system', content: systemContent },
+        { role: 'user', content: userContent },
       ],
       response_format: {
         type: 'json_schema',
@@ -290,29 +297,35 @@ export class OpenRouterService {
     try {
       const response = await this.createChatCompletion(keys, structuredRequest);
       const outputText = this.getMessageContent(response);
-      return parseQuestionsResponse(this.extractJsonText(outputText));
+      return parseQuestionsResponse(outputText);
     } catch (error) {
       if (!this.isRetryableStructuredOutputError(error)) {
         throw error;
       }
     }
 
-    const fallbackResponse = await this.createChatCompletion(keys, {
-      model,
-      max_completion_tokens: 8192,
-      messages: [
-        {
-          role: 'system',
-          content: `${cleanText(instructions)}\n\nRespond with valid JSON only in this format: {"questions_and_answers": [{"question": "...", "answer": "..."}]}`,
+    try {
+      const fallbackResponse = await this.createChatCompletion(keys, {
+        model,
+        max_completion_tokens: 8192,
+        messages: [
+          {
+            role: 'system',
+            content: `${systemContent}\n\nRespond with valid JSON only in this format: {"questions_and_answers": [{"question": "...", "answer": "..."}]}`,
+          },
+          { role: 'user', content: userContent },
+        ],
+        response_format: {
+          type: 'json_object',
         },
-        { role: 'user', content: cleanText(questionsText) },
-      ],
-      response_format: {
-        type: 'json_object',
-      },
-    });
+      });
 
-    const outputText = this.getMessageContent(fallbackResponse);
-    return parseQuestionsResponse(this.extractJsonText(outputText));
+      const outputText = this.getMessageContent(fallbackResponse);
+      return parseQuestionsResponse(outputText);
+    } catch {
+      throw new Error(
+        'The AI did not return application answers in the expected JSON format. Please try again.',
+      );
+    }
   }
 }

@@ -6,8 +6,11 @@ Keep the full letter concise enough to fit on one US letter-size page. Target ab
 Be direct and specific. Do not repeat the resume verbatim. Do not use bullet points.
 Do not include a date. The date will be added automatically when the PDF is generated.`;
 
-export const DEFAULT_QUESTIONS_PROMPT = `You are an assistant who answers questions while job applying on behalf of me.
+export const DEFAULT_QUESTIONS_PROMPT = `You are an assistant who answers application screening questions on behalf of me.
 The job description and resume JSON content will be provided.
+
+Never write an email, cover letter, subject line, or greeting.
+Extract every question from the user text and answer each one.
 
 Answers must be specific and always positive.
 At most 3 sentences per answer.

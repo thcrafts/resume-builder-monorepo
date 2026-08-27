@@ -1,4 +1,5 @@
 import { notifySessionExpired } from "../utils/sessionExpiredHandler";
+import { getAuthHeaders } from "../utils/authSession";
 
 export type BlobDownloadResponse = {
   data: Blob;
@@ -27,7 +28,6 @@ export async function fetchBlobDownload(
   path: string,
   init?: RequestInit,
 ): Promise<BlobDownloadResponse> {
-  const token = localStorage.getItem("access_token");
   const baseURL = getApiBaseUrl();
   const separator = path.includes("?") ? "&" : "?";
   const url = `${baseURL}${path}${separator}_=${Date.now()}`;
@@ -38,9 +38,10 @@ export async function fetchBlobDownload(
     credentials: "include",
     ...init,
     headers: {
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      "Cache-Control": "no-cache",
-      Pragma: "no-cache",
+      ...getAuthHeaders({
+        "Cache-Control": "no-cache",
+        Pragma: "no-cache",
+      }),
       ...(init?.headers ?? {}),
     },
   });
@@ -60,7 +61,6 @@ export async function fetchBlobPost(
   path: string,
   body?: unknown,
 ): Promise<BlobDownloadResponse> {
-  const token = localStorage.getItem("access_token");
   const baseURL = getApiBaseUrl();
   const url = `${baseURL}${path}`;
 
@@ -68,12 +68,11 @@ export async function fetchBlobPost(
     method: "POST",
     cache: "no-store",
     credentials: "include",
-    headers: {
+    headers: getAuthHeaders({
       "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       "Cache-Control": "no-cache",
       Pragma: "no-cache",
-    },
+    }),
     body: body === undefined ? undefined : JSON.stringify(body),
   });
 

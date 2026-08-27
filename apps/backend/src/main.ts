@@ -1,21 +1,12 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import { getCorsOptions } from './config/cors';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.setGlobalPrefix('api');
 
-  // Reflect request Origin in local/dev so `vite --host` (LAN IP) works.
-  // Set FRONTEND_URL to a comma-separated allowlist in production.
-  const configuredOrigins = (process.env.FRONTEND_URL || '')
-    .split(',')
-    .map((origin) => origin.trim())
-    .filter(Boolean);
-
-  app.enableCors({
-    origin: configuredOrigins.length > 0 ? configuredOrigins : true,
-    credentials: true,
-  });
+  app.enableCors(getCorsOptions());
 
   const port = process.env.PORT ?? '3001';
   const server = await app.listen(port);

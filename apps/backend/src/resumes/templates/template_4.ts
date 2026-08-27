@@ -3,6 +3,7 @@ import sharp from 'sharp';
 import { existsSync } from 'fs';
 import { join } from 'path';
 import { ResumeData, DEFAULT_RESUME_PDF_SETTINGS, filterSkillsForPdf, getCertificationText, type ResumePdfSettings } from '.';
+import { normalizeResumeData } from './base-pdf-template';
 
 export class ResumePDFTemplate4 {
   private data: ResumeData;
@@ -29,7 +30,7 @@ export class ResumePDFTemplate4 {
     pdfSettings: ResumePdfSettings = DEFAULT_RESUME_PDF_SETTINGS,
     headerImagePath?: string,
   ) {
-    this.data = this._normalizeData(data);
+    this.data = normalizeResumeData(data);
     this.pdfSettings = pdfSettings;
     this.contentWidth = this.pageWidth - 2 * this.marginX;
     this._findFonts();

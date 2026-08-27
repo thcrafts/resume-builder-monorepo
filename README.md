@@ -2,6 +2,10 @@
 
 Monorepo for the AI resume tailor application.
 
+## Documentation
+
+Full system docs live under **[docs/](./docs/README.md)** (workflows, API reference, architecture, smoke checklist).
+
 ## Structure
 
 ```
@@ -9,6 +13,9 @@ resume-builder/
 ├── apps/
 │   ├── backend/    # NestJS API (MongoDB, OpenRouter)
 │   └── frontend/   # React + Vite UI
+├── packages/
+│   └── shared/     # @resume-builder/shared (templates, AI defaults, settings)
+├── docs/           # Workflow and API documentation
 ├── package.json    # Workspace root
 └── README.md
 ```
@@ -17,7 +24,7 @@ resume-builder/
 
 - Node.js 18+
 - MongoDB
-- OpenRouter API key (required)
+- OpenRouter API key (per user in Profile)
 
 ## Setup
 
@@ -30,9 +37,9 @@ npm install
 2. Configure the backend environment in `apps/backend/.env`:
 
 ```env
-DATABASE_URL=mongodb://localhost:27017/resumes
-ENCRYPTION_KEY=your_32_byte_hex_encryption_key
-PORT=3000
+DATABASE_URL=mongodb://localhost:27017/ResumeBuilder
+ENCRYPTION_KEY=your_encryption_secret
+PORT=3001
 ```
 
 Each user adds their own OpenRouter API key in **Profile** settings. Keys are encrypted at rest in the database.
@@ -40,11 +47,12 @@ Each user adds their own OpenRouter API key in **Profile** settings. Keys are en
 3. (Optional) Configure the frontend in `apps/frontend/.env`:
 
 ```env
-VITE_API_BASE_URL=http://localhost:3000
-VITE_SOCKET_URL=http://localhost:3000
+VITE_API_BASE_URL=
+VITE_SOCKET_URL=
+VITE_BACKEND_PORT=3001
 ```
 
-Leave `VITE_API_BASE_URL` empty during local dev to use the Vite proxy to `http://localhost:3000`. Set `VITE_SOCKET_URL` when the socket server is on a different host (e.g. a LAN IP).
+Leave `VITE_API_BASE_URL` empty during local dev to use the Vite proxy to the Nest backend on port **3001**. Set `VITE_SOCKET_URL` only when the socket server is on a different host (e.g. a LAN IP). See [docs/README.md](./docs/README.md) for proxy details.
 
 ## Development
 
@@ -61,15 +69,13 @@ npm run dev:backend
 npm run dev:frontend
 ```
 
-Frontend only with host (same as before):
+Frontend only with host:
 
 ```bash
 npm run dev -w resume-builder-frontend
-# or from apps/frontend:
-# npm run dev
 ```
 
-- Backend API: http://localhost:3000/api
+- Backend API: http://localhost:3001/api
 - Frontend: http://localhost:5173 (network-accessible via `--host`)
 
 ## Build
@@ -77,6 +83,8 @@ npm run dev -w resume-builder-frontend
 ```bash
 npm run build
 ```
+
+Builds `@resume-builder/shared`, then backend and frontend.
 
 ## AI models
 
@@ -91,7 +99,7 @@ The frontend uses this catalog for model selectors in Profile settings, Generate
 
 Edit defaults in `apps/backend/src/ai/openrouter-models.service.ts` (`pickDefaults`). The same values are returned in the catalog `defaults` field and used by the frontend when a user has no saved preference.
 
-Legacy resumes that stored `claude` / short version IDs are normalized automatically via `apps/backend/src/ai/ai-models.ts` and `apps/frontend/src/constants/aiModels.ts`.
+Legacy resumes that stored `claude` / short version IDs are normalized automatically via `apps/backend/src/ai/ai-models.ts` and shared helpers in `@resume-builder/shared`.
 
 No manual enum or hardcoded model list updates are required when OpenRouter adds new models — they appear in the UI after the cache refreshes.
 
@@ -101,10 +109,12 @@ No manual enum or hardcoded model list updates are required when OpenRouter adds
 |---------|------|-------------|
 | `resume-builder-backend` | `apps/backend` | NestJS API |
 | `resume-builder-frontend` | `apps/frontend` | React frontend |
+| `@resume-builder/shared` | `packages/shared` | Shared constants and helpers |
 
 Run a script in one workspace:
 
 ```bash
 npm run start:dev -w resume-builder-backend
 npm run dev -w resume-builder-frontend
+npm run build -w @resume-builder/shared
 ```

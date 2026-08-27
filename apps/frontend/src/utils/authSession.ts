@@ -6,6 +6,16 @@ export type JwtPayload = {
   [key: string]: unknown;
 };
 
+export function getAuthHeaders(
+  extra: Record<string, string> = {},
+): Record<string, string> {
+  const token = localStorage.getItem(TOKEN_STORAGE_KEY);
+  return {
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...extra,
+  };
+}
+
 export function getStoredToken(): string | null {
   return localStorage.getItem(TOKEN_STORAGE_KEY);
 }

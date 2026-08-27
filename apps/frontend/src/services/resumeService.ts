@@ -2,6 +2,7 @@
 import ApiClient from "./apiClient";
 import { fetchBlobDownload, fetchBlobPost } from "./blobDownload";
 import { notifySessionExpired } from "../utils/sessionExpiredHandler";
+import { getAuthHeaders } from "../utils/authSession";
 
 export interface GenerateResumeDto {
   companyName: string;
@@ -54,13 +55,11 @@ export interface GenerateResumeResponse {
 export const generateResumeStream = async (
   data: GenerateResumeDto,
 ): Promise<GenerateResumeResponse> => {
-  const token = localStorage.getItem("access_token");
   const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || ''}/api/resumes/generate`, {
     method: 'POST',
-    headers: {
+    headers: getAuthHeaders({
       'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
+    }),
     credentials: 'include',
     body: JSON.stringify(data),
   });

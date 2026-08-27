@@ -10,7 +10,7 @@ import ThemeModeProvider, { useThemeMode } from "./components/common/ThemeContex
 import ToastPositionProvider, {
   useToastPosition,
 } from "./components/common/ToastPositionContext";
-import AdminLayout from "./components/common/AdminLayout";
+import ProtectedLayout from "./components/common/ProtectedLayout";
 import NonPrivateLayout from "./components/common/NonPrivateLayout";
 import Login from "./pages/login";
 import Register from "./pages/register";
@@ -18,14 +18,13 @@ import Users from "./pages/users";
 import Resumes from "./pages/resumes";
 import CreateResume from "./pages/resumes/CreateResume";
 import LayoutWithoutHeader from "./components/common/LayoutWithoutHeader";
-import NonAdminLayout from "./components/common/NonAdminLayout";
 import { AiModelsProvider } from "./components/common/AiModelsContext";
 import Profile from "./pages/profile";
 
 const router = createBrowserRouter([
   {
     path: "/",
-    element: <AdminLayout />,
+    element: <ProtectedLayout requiredRole="admin" />,
     children: [
       { index: true, element: <Navigate to="/users" replace /> },
       {
@@ -39,7 +38,7 @@ const router = createBrowserRouter([
 
   {
     path: "/",
-    element: <NonAdminLayout />,
+    element: <ProtectedLayout requiredRole="user" />,
     children: [
       {
         element: <LayoutWithoutHeader />,

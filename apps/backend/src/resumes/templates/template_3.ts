@@ -2,6 +2,7 @@ import * as PDFKit from 'pdfkit';
 import { existsSync } from 'fs';
 import { join } from 'path';
 import { ResumeData, DEFAULT_RESUME_PDF_SETTINGS, filterSkillsForPdf, getCertificationText, type ResumePdfSettings } from '.';
+import { normalizeResumeData } from './base-pdf-template';
 
 const titleColor = "#4A4A4A"
 const contentColor = "#2C3E50"
@@ -29,7 +30,7 @@ export class ResumePDFTemplate3 {
     data: ResumeData,
     pdfSettings: ResumePdfSettings = DEFAULT_RESUME_PDF_SETTINGS,
   ) {
-    this.data = this._normalizeData(data);
+    this.data = normalizeResumeData(data);
     this.pdfSettings = pdfSettings;
     this.contentWidth = this.pageWidth - 2 * this.marginX;
     this._findFonts();

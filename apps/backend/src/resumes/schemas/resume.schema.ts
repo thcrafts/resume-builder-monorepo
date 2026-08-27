@@ -26,6 +26,7 @@ export class Resume {
   @Prop({ required: true })
   jobDescription: string;
 
+  @Prop({ required: false })
   aiModel?: string;
 
   @Prop({ required: false, default: 'anthropic/claude-sonnet-4.6' })

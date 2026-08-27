@@ -1,26 +1,10 @@
-import {
-  Controller,
-  Post,
-  Get,
-  Delete,
-  UseGuards,
-  Body,
-  Request,
-  UsePipes,
-  Param,
-  Res,
-  Query,
-  NotFoundException,
-} from '@nestjs/common';
+import { Controller, Post, Get, Delete, UseGuards, Body, Request, UsePipes, Param, Res, Query, NotFoundException } from '@nestjs/common';
 import { type Response } from 'express';
 
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { ZodValidationPipe } from 'src/validation.pipe';
 import { ResumesService } from './resumes.service';
-import {
-  type CreateResumeDto,
-  createResumeSchema,
-} from './dto/create-resume.dto';
+import { ResumeGenerationService } from './resume-generation.service';
 import {
   type BulkDeleteResumeDto,
   bulkDeleteResumeSchema,
@@ -40,10 +24,14 @@ import {
 import { type FromJsonDto, fromJsonSchema } from './dto/from-json.dto';
 import { sendAttachment } from '../common/download-headers';
 import { formatAiProviderError } from '../ai/format-ai-error';
+import { sanitizeFilename } from '@resume-builder/shared';
 
 @Controller('resumes')
 export class ResumesController {
-  constructor(private resumesService: ResumesService) { }
+  constructor(
+    private resumesService: ResumesService,
+    private resumeGenerationService: ResumeGenerationService,
+  ) {}
 
   @UseGuards(JwtAuthGuard)
   @Get()
@@ -65,32 +53,6 @@ export class ResumesController {
         req.user._id,
       );
 
-    sendAttachment(res, 'application/pdf', filename, pdfBuffer);
-  }
-
-  @UseGuards(JwtAuthGuard)
-  @Post()
-  @UsePipes(new ZodValidationPipe(createResumeSchema))
-  async create(
-    @Request() req,
-    @Body() createResumeDto: CreateResumeDto,
-    @Res() res: Response,
-  ) {
-    const { pdfBuffer, userName } = await this.resumesService.create(
-      req.user._id,
-      req.user.name,
-      createResumeDto.companyName,
-      createResumeDto.roleType,
-      createResumeDto.jsonContent,
-      req.user.template,
-    );
-
-    // Set headers for PDF download - use user name for consistent filename
-    const sanitizedName = userName
-      .replace(/[^a-zA-Z0-9\s-]/g, '')
-      .trim()
-      .replace(/\s+/g, ' ');
-    const filename = `${sanitizedName}.pdf`;
     sendAttachment(res, 'application/pdf', filename, pdfBuffer);
   }
 
@@ -133,7 +95,7 @@ export class ResumesController {
       // Generate resume asynchronously in the background (this will update the record when done)
       // PDF is generated and saved to disk, but not sent in response
       // User can download it manually using the download button
-      this.resumesService
+      this.resumeGenerationService
         .generateResume(
           resumeRecord._id.toString(),
           req.user._id,
@@ -204,14 +166,7 @@ export class ResumesController {
       fromJsonDto.aiVersion,
       'manual',
     );
-    const sanitizedName = userName
-      .replace(/[^a-zA-Z0-9\s-]/g, '')
-      .trim()
-      .replace(/\s+/g, '_');
-
-    console.log(`\n=====================================================================================\nGenerated successfully at ${new Date()}: \nName: ${userName}, Company: ${fromJsonDto.companyName}, Title: ${fromJsonDto.roleType}`);
-
-    const filename = `${sanitizedName}.pdf`;
+    const filename = `${sanitizeFilename(userName)}.pdf`;
     sendAttachment(res, 'application/pdf', filename, pdfBuffer);
   }
 
@@ -297,12 +252,7 @@ export class ResumesController {
     const userName = req.user.name;
 
     // Set headers for PDF download - use user name for consistent filename
-    const sanitizedName = userName
-      .replace(/[^a-zA-Z0-9\s-]/g, '')
-      .trim()
-      .replace(/\s+/g, '_')
-      ;
-    const filename = `${sanitizedName}.pdf`;
+    const filename = `${sanitizeFilename(userName)}.pdf`;
     sendAttachment(res, 'application/pdf', filename, pdfBuffer);
   }
 
@@ -320,11 +270,7 @@ export class ResumesController {
     const userName = req.user.name;
 
     // Set headers for JSON download - use user name for consistent filename
-    const sanitizedName = userName
-      .replace(/[^a-zA-Z0-9\s-]/g, '')
-      .trim()
-      .replace(/\s+/g, '_');
-    const filename = `${sanitizedName}.json`;
+    const filename = `${sanitizeFilename(userName)}.json`;
     sendAttachment(res, 'application/json', filename, jsonContent);
   }
 
@@ -351,12 +297,7 @@ export class ResumesController {
     const { pdfBuffer, userName } =
       await this.resumesService.generateCoverLetterForResume(id, req.user._id);
 
-    const sanitizedName = userName
-      .replace(/[^a-zA-Z0-9\s-]/g, '')
-      .trim()
-      .replace(/\s+/g, '_');
-
-    const filename = `${sanitizedName}_Cover_Letter.pdf`;
+    const filename = `${sanitizeFilename(userName)}_Cover_Letter.pdf`;
 
     sendAttachment(res, 'application/pdf', filename, pdfBuffer);
   }
@@ -374,13 +315,7 @@ export class ResumesController {
     );
 
     const userName = req.user.name;
-    const sanitizedName = userName
-      .replace(/[^a-zA-Z0-9\s-]/g, '')
-      .trim()
-      .replace(/\s+/g, '_')
-      ;
-
-    const filename = `${sanitizedName}_Cover_Letter.pdf`;
+    const filename = `${sanitizeFilename(userName)}_Cover_Letter.pdf`;
 
     sendAttachment(res, 'application/pdf', filename, pdfBuffer);
   }

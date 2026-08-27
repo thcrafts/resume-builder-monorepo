@@ -17,8 +17,6 @@ import {
   TableBody,
   IconButton,
   Stack,
-  TextField,
-  Grid,
   Chip,
   CircularProgress,
   Avatar,
@@ -32,7 +30,6 @@ import {
 import {
   Delete as DeleteIcon,
   Add as AddIcon,
-  Clear as ClearIcon,
   Download as DownloadIcon,
   Code as CodeIcon,
   InsertDriveFile as InsertDriveFileIcon,
@@ -73,7 +70,8 @@ import {
   saveDuplicateResumeDraft,
 } from "../../constants/duplicateResumeDraft";
 import { chipWithIconSx } from "../../styles/chipWithIcon";
-import type { ProtectedLayoutContext } from "../../components/common/NonAdminLayout";
+import type { ProtectedLayoutContext } from "../../components/common/ProtectedLayout";
+import { ResumeFiltersBar } from "./ResumeFiltersBar";
 import { getAxiosErrorStatus } from "../../utils/authSession";
 import { downloadPdfWithOverwrite } from "../../utils/downloadPdfWithOverwrite";
 import { socket } from "./socket";
@@ -893,70 +891,13 @@ const Resumes: React.FC = () => {
         </Stack>
       </Stack>
 
-      {/* Filters Section */}
-      <Paper sx={{ p: 2, mb: 2 }}>
-        <Typography variant="h6" gutterBottom>
-          Filters
-        </Typography>
-        <Grid container spacing={2} alignItems="flex-end">
-          <Grid size={{ xs: 12, sm: 6, md: "grow" }}>
-            <TextField
-              label="Company Name"
-              value={filters.companyName || ""}
-              onChange={(e) =>
-                handleFilterChange("companyName", e.target.value)
-              }
-              fullWidth
-              size="small"
-            />
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6, md: "grow" }}>
-            <TextField
-              label="Role Type"
-              value={filters.roleType || ""}
-              onChange={(e) => handleFilterChange("roleType", e.target.value)}
-              fullWidth
-              size="small"
-            />
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6, md: "grow" }}>
-            <TextField
-              label="Start Date"
-              type="date"
-              value={filters.startDate || ""}
-              onChange={(e) =>
-                handleFilterChange("startDate", e.target.value)
-              }
-              fullWidth
-              size="small"
-              InputLabelProps={{ shrink: true }}
-            />
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6, md: "grow" }}>
-            <TextField
-              label="End Date"
-              type="date"
-              value={filters.endDate || ""}
-              onChange={(e) => handleFilterChange("endDate", e.target.value)}
-              fullWidth
-              size="small"
-              InputLabelProps={{ shrink: true }}
-            />
-          </Grid>
-          <Grid size={{ xs: 12, sm: "auto" }}>
-            <Button
-              variant="outlined"
-              startIcon={<ClearIcon />}
-              onClick={handleClearFilters}
-              color="secondary"
-              size="small"
-              sx={{ height: 40 }}
-            >
-              Clear
-            </Button>
-          </Grid>
-        </Grid>
-        <Stack spacing={1} sx={{ mt: 2 }}>
+      <ResumeFiltersBar
+        filters={filters}
+        onFilterChange={handleFilterChange}
+        onClearFilters={handleClearFilters}
+      />
+      <Box sx={{ mb: 2 }}>
+        <Stack spacing={1}>
           <Typography variant="body2" color="text.secondary">
             {loading
               ? "Loading resumes..."
@@ -1017,7 +958,7 @@ const Resumes: React.FC = () => {
             </Stack>
           )}
         </Stack>
-      </Paper>
+      </Box>
 
       {loading ? (
         <Typography>Loading...</Typography>

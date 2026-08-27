@@ -1,5 +1,6 @@
 import axios, { type AxiosInstance } from "axios";
 import { notifySessionExpired } from "../utils/sessionExpiredHandler";
+import { getAuthHeaders } from "../utils/authSession";
 
 class ApiClient {
   private static instance: ApiClient;
@@ -16,10 +17,11 @@ class ApiClient {
     });
 
     this.axiosInstance.interceptors.request.use((config) => {
-      const token = localStorage.getItem("access_token");
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-      }
+      const authHeaders = getAuthHeaders();
+      config.headers = {
+        ...config.headers,
+        ...authHeaders,
+      } as typeof config.headers;
       return config;
     });
 

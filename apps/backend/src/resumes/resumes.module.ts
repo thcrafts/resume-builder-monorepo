@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ResumesService } from './resumes.service';
 import { ResumesController } from './resumes.controller';
@@ -7,6 +7,9 @@ import { Resume, ResumeSchema } from './schemas/resume.schema';
 import { User, UserSchema } from '../users/schemas/user.schema';
 import { UsersModule } from '../users/users.module';
 import { AiModule } from '../ai/ai.module';
+import { PromptRegistryService } from './prompt-registry.service';
+import { ResumeGenerationService } from './resume-generation.service';
+import { CoverLetterPdfService } from './cover-letter-pdf.service';
 
 @Module({
   imports: [
@@ -17,7 +20,13 @@ import { AiModule } from '../ai/ai.module';
     UsersModule,
     AiModule,
   ],
-  providers: [ResumesService, ResumesGateway],
+  providers: [
+    ResumesService,
+    ResumesGateway,
+    PromptRegistryService,
+    CoverLetterPdfService,
+    ResumeGenerationService,
+  ],
   controllers: [ResumesController],
 })
 export class ResumesModule {}

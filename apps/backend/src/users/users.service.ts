@@ -12,9 +12,10 @@ import { InjectModel } from '@nestjs/mongoose';
 import * as bcrypt from 'bcrypt';
 import { EncryptionService } from '../crypto/encryption.service';
 import {
+  MISSING_OPENROUTER_KEY_MESSAGE,
   resolveResumeSettings,
   type ResumeSettings,
-} from '../ai/resume-settings';
+} from '@resume-builder/shared';
 import {
   OpenRouterService,
   type OpenRouterKeyUsage,
@@ -77,6 +78,56 @@ export class UsersService {
           ) as Partial<ResumeSettings>)
         : undefined,
     );
+  }
+
+  private applyUserProfileFields(
+    user: UserDocument,
+    updateUserDto: UpdateUserDto,
+    options: {
+      includeAdminFields?: boolean;
+      includeEmail?: boolean;
+      includePassword?: boolean;
+    } = {},
+  ): void {
+    if (options.includeEmail && updateUserDto.email !== undefined) {
+      user.email = updateUserDto.email;
+    }
+    if (updateUserDto.name !== undefined) {
+      user.name = updateUserDto.name;
+    }
+    if (options.includePassword && updateUserDto.password !== undefined) {
+      user.password = updateUserDto.password;
+    }
+    if (options.includeAdminFields && updateUserDto.role !== undefined) {
+      user.role = updateUserDto.role;
+    }
+    if (updateUserDto.template !== undefined) {
+      user.template = updateUserDto.template;
+    }
+    if (updateUserDto.instructions !== undefined) {
+      user.instructions = updateUserDto.instructions;
+    }
+    if (updateUserDto.questionsPrompt !== undefined) {
+      user.questionsPrompt = updateUserDto.questionsPrompt;
+    }
+    if (updateUserDto.coverLetterPrompt !== undefined) {
+      user.coverLetterPrompt = updateUserDto.coverLetterPrompt;
+    }
+    if (updateUserDto.defaultAiModel !== undefined) {
+      user.defaultAiModel = updateUserDto.defaultAiModel;
+    }
+    if (updateUserDto.defaultAiVersion !== undefined) {
+      user.defaultAiVersion = updateUserDto.defaultAiVersion;
+    }
+    if (updateUserDto.defaultGenerateFromJson !== undefined) {
+      user.defaultGenerateFromJson = updateUserDto.defaultGenerateFromJson;
+    }
+    if (updateUserDto.defaultFromJsonAiModel !== undefined) {
+      user.defaultFromJsonAiModel = updateUserDto.defaultFromJsonAiModel;
+    }
+    if (updateUserDto.defaultFromJsonAiVersion !== undefined) {
+      user.defaultFromJsonAiVersion = updateUserDto.defaultFromJsonAiVersion;
+    }
   }
 
   private applyResumeSettingsUpdate(
@@ -150,46 +201,11 @@ export class UsersService {
       throw new NotFoundException(`User with ID ${id} not found`);
     }
 
-    if (updateUserDto.email !== undefined) {
-      user.email = updateUserDto.email;
-    }
-    if (updateUserDto.name !== undefined) {
-      user.name = updateUserDto.name;
-    }
-    if (updateUserDto.password !== undefined) {
-      user.password = updateUserDto.password;
-    }
-    if (updateUserDto.role !== undefined) {
-      user.role = updateUserDto.role;
-    }
-    if (updateUserDto.template !== undefined) {
-      user.template = updateUserDto.template;
-    }
-    if (updateUserDto.instructions !== undefined) {
-      user.instructions = updateUserDto.instructions;
-    }
-    if (updateUserDto.questionsPrompt !== undefined) {
-      user.questionsPrompt = updateUserDto.questionsPrompt;
-    }
-    if (updateUserDto.coverLetterPrompt !== undefined) {
-      user.coverLetterPrompt = updateUserDto.coverLetterPrompt;
-    }
-    if (updateUserDto.defaultAiModel !== undefined) {
-      user.defaultAiModel = updateUserDto.defaultAiModel;
-    }
-    if (updateUserDto.defaultAiVersion !== undefined) {
-      user.defaultAiVersion = updateUserDto.defaultAiVersion;
-    }
-    if (updateUserDto.defaultGenerateFromJson !== undefined) {
-      user.defaultGenerateFromJson = updateUserDto.defaultGenerateFromJson;
-    }
-    if (updateUserDto.defaultFromJsonAiModel !== undefined) {
-      user.defaultFromJsonAiModel = updateUserDto.defaultFromJsonAiModel;
-    }
-    if (updateUserDto.defaultFromJsonAiVersion !== undefined) {
-      user.defaultFromJsonAiVersion = updateUserDto.defaultFromJsonAiVersion;
-    }
-
+    this.applyUserProfileFields(user, updateUserDto, {
+      includeAdminFields: true,
+      includeEmail: true,
+      includePassword: true,
+    });
     this.applyResumeSettingsUpdate(user, updateUserDto.resumeSettings);
     this.applyApiKeyUpdates(user, updateUserDto);
 
@@ -231,37 +247,7 @@ export class UsersService {
       user.password = updateUserDto.newPassword;
     }
 
-    if (updateUserDto.name !== undefined) {
-      user.name = updateUserDto.name;
-    }
-    if (updateUserDto.template !== undefined) {
-      user.template = updateUserDto.template;
-    }
-    if (updateUserDto.instructions !== undefined) {
-      user.instructions = updateUserDto.instructions;
-    }
-    if (updateUserDto.questionsPrompt !== undefined) {
-      user.questionsPrompt = updateUserDto.questionsPrompt;
-    }
-    if (updateUserDto.coverLetterPrompt !== undefined) {
-      user.coverLetterPrompt = updateUserDto.coverLetterPrompt;
-    }
-    if (updateUserDto.defaultAiModel !== undefined) {
-      user.defaultAiModel = updateUserDto.defaultAiModel;
-    }
-    if (updateUserDto.defaultAiVersion !== undefined) {
-      user.defaultAiVersion = updateUserDto.defaultAiVersion;
-    }
-    if (updateUserDto.defaultGenerateFromJson !== undefined) {
-      user.defaultGenerateFromJson = updateUserDto.defaultGenerateFromJson;
-    }
-    if (updateUserDto.defaultFromJsonAiModel !== undefined) {
-      user.defaultFromJsonAiModel = updateUserDto.defaultFromJsonAiModel;
-    }
-    if (updateUserDto.defaultFromJsonAiVersion !== undefined) {
-      user.defaultFromJsonAiVersion = updateUserDto.defaultFromJsonAiVersion;
-    }
-
+    this.applyUserProfileFields(user, updateUserDto);
     this.applyResumeSettingsUpdate(user, updateUserDto.resumeSettings);
     this.applyApiKeyUpdates(user, updateUserDto);
 
@@ -305,9 +291,7 @@ export class UsersService {
     const keys = await this.getApiKeysForUser(id);
 
     if (!keys.openrouter?.trim()) {
-      throw new BadRequestException(
-        'No OpenRouter API key configured. Add your OpenRouter API key in Profile settings.',
-      );
+      throw new BadRequestException(MISSING_OPENROUTER_KEY_MESSAGE);
     }
 
     return this.openRouterService.getKeyUsage({ openrouter: keys.openrouter });

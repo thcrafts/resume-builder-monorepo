@@ -1,17 +1,9 @@
 import { WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
 import { Server } from 'socket.io';
-
-const configuredOrigins = (process.env.FRONTEND_URL || '')
-  .split(',')
-  .map((origin) => origin.trim())
-  .filter(Boolean);
+import { getCorsOptions } from '../config/cors';
 
 @WebSocketGateway({
-  // Reflect Origin locally; FRONTEND_URL allowlist when set
-  cors: {
-    origin: configuredOrigins.length > 0 ? configuredOrigins : true,
-    credentials: true,
-  },
+  cors: getCorsOptions(),
 })
 export class ResumesGateway {
   @WebSocketServer()

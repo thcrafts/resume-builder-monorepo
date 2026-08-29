@@ -8,6 +8,6 @@ import { OpenRouterModule } from '../openrouter/openrouter.module';
   imports: [OpenRouterModule],
   controllers: [AiController],
   providers: [AiService, OpenRouterModelsService],
-  exports: [AiService],
+  exports: [AiService, OpenRouterModelsService],
 })
 export class AiModule {}

@@ -1,49 +1,21 @@
 import * as React from "react";
 import {
-  Button,
-  Paper,
-  Typography,
-  Box,
-  Checkbox,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TableContainer,
-  Table,
-  TableHead,
-  TableRow,
-  TableCell,
-  TableBody,
-  IconButton,
-  Stack,
-  Chip,
-  CircularProgress,
-  Avatar,
-  Menu,
-  MenuItem,
-  ListItemIcon,
-  ListItemText,
-  Divider,
-  Tooltip,
-} from "@mui/material";
-import {
-  Delete as DeleteIcon,
-  Add as AddIcon,
-  Download as DownloadIcon,
-  Code as CodeIcon,
-  InsertDriveFile as InsertDriveFileIcon,
-  Task as TaskIcon,
-  QuestionAnswer as QuestionAnswerIcon,
-  Visibility as VisibilityIcon,
-  ContentCopy as ContentCopyIcon,
-  EditDocument as EditIcon,
-  Settings as SettingsIcon,
-  Logout as LogoutIcon,
-  LightMode as LightModeIcon,
-  DarkMode as DarkModeIcon,
-  Refresh as RefreshIcon,
-} from "@mui/icons-material";
+  Trash2,
+  Plus,
+  Download,
+  Code,
+  FileText,
+  ClipboardCheck,
+  MessageSquare,
+  Eye,
+  Copy,
+  Pencil,
+  Settings,
+  LogOut,
+  Sun,
+  Moon,
+  RefreshCw,
+} from "lucide-react";
 import { Link, useNavigate, useOutletContext } from "react-router";
 import {
   getResumes,
@@ -51,7 +23,6 @@ import {
   deleteResume,
   bulkDeleteResumes,
   downloadResume,
-  // downloadResumeJSON,
   generateCoverLetter,
   retryResume,
   type ResumeResponse,
@@ -65,16 +36,30 @@ import { useAuth } from "../../components/common/AuthContext";
 import { useThemeMode } from "../../components/common/ThemeContext";
 import { useAiModels } from "../../components/common/AiModelsContext";
 import ModelProviderIcon from "../../components/common/ModelProviderIcon";
-import { getProviderLabel, getRepresentativeModelIdForProvider, resolveModelSelectionInCatalog } from "../../constants/aiModels";
 import {
-  saveDuplicateResumeDraft,
-} from "../../constants/duplicateResumeDraft";
-import { chipWithIconSx } from "../../styles/chipWithIcon";
+  getProviderLabel,
+  getRepresentativeModelIdForProvider,
+  resolveModelSelectionInCatalog,
+} from "../../constants/aiModels";
+import { saveDuplicateResumeDraft } from "../../constants/duplicateResumeDraft";
 import type { ProtectedLayoutContext } from "../../components/common/ProtectedLayout";
 import { ResumeFiltersBar } from "./ResumeFiltersBar";
 import { getAxiosErrorStatus } from "../../utils/authSession";
 import { downloadPdfWithOverwrite } from "../../utils/downloadPdfWithOverwrite";
 import { socket } from "./socket";
+import { Button } from "../../components/ui/button";
+import { Card, CardContent } from "../../components/ui/card";
+import { Dialog } from "../../components/ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "../../components/ui/table";
+import { Badge, Checkbox, Spinner } from "../../components/ui/misc";
+import { cn } from "../../lib/utils";
 
 const getLocalDateString = (date = new Date()) => {
   const year = date.getFullYear();
@@ -83,35 +68,13 @@ const getLocalDateString = (date = new Date()) => {
   return `${year}-${month}-${day}`;
 };
 
-const countChipSx = chipWithIconSx;
+type GenerateProgressStep = "title" | "summary" | "skills" | "experience";
 
-const sourceChipSelectedSx = {
-  bgcolor: "primary.main",
-  color: "primary.contrastText",
-  borderColor: "primary.main",
-  fontWeight: 700,
-  boxShadow: 3,
-  "& .MuiChip-icon": {
-    color: "primary.contrastText",
-  },
-  "&:hover": {
-    bgcolor: "primary.dark",
-  },
+type GenerateProgress = {
+  step: GenerateProgressStep;
+  index?: number;
+  total?: number;
 };
-
-const manualChipSelectedSx = {
-  bgcolor: "secondary.main",
-  color: "secondary.contrastText",
-  borderColor: "secondary.main",
-  fontWeight: 700,
-  boxShadow: 3,
-  "& .MuiChip-icon": {
-    color: "secondary.contrastText",
-  },
-  "&:hover": {
-    bgcolor: "secondary.dark",
-  },
-} as const;
 
 type StatusChipFilter = "completed" | "in_progress" | "failed";
 type ChipFilter = StatusChipFilter | "manual" | `provider:${string}`;
@@ -150,12 +113,23 @@ const matchesChipFilter = (resume: ResumeResponse, filter: ChipFilter) => {
         const providerId = filter.slice("provider:".length);
         return (
           resume.generationSource !== "manual" &&
-          normalizeResumeProvider(resume.aiModel, resume.aiVersion) === providerId
+          normalizeResumeProvider(resume.aiModel, resume.aiVersion) ===
+            providerId
         );
       }
       return true;
   }
 };
+
+function formatProgressLabel(progress?: GenerateProgress): string | null {
+  if (!progress) return null;
+  const stepLabel =
+    progress.step.charAt(0).toUpperCase() + progress.step.slice(1);
+  if (progress.index != null && progress.total != null) {
+    return `${stepLabel} ${progress.index}/${progress.total}`;
+  }
+  return stepLabel;
+}
 
 const Resumes: React.FC = () => {
   const { catalog } = useAiModels();
@@ -186,9 +160,9 @@ const Resumes: React.FC = () => {
   const [retryingResumeId, setRetryingResumeId] = React.useState<string | null>(
     null,
   );
-  const [editingResumeId, setEditingResumeId] = React.useState<
-    string | null
-  >(null);
+  const [editingResumeId, setEditingResumeId] = React.useState<string | null>(
+    null,
+  );
   const [questionsResumeId, setQuestionsResumeId] = React.useState<
     string | null
   >(null);
@@ -197,8 +171,11 @@ const Resumes: React.FC = () => {
   const [selectedJobDescription, setSelectedJobDescription] =
     React.useState<string>("");
   const [logoutDialogOpen, setLogoutDialogOpen] = React.useState(false);
-  const [avatarMenuAnchor, setAvatarMenuAnchor] =
-    React.useState<null | HTMLElement>(null);
+  const [avatarMenuOpen, setAvatarMenuOpen] = React.useState(false);
+  const avatarMenuRef = React.useRef<HTMLDivElement>(null);
+  const [generateProgressById, setGenerateProgressById] = React.useState<
+    Record<string, GenerateProgress>
+  >({});
 
   const navigate = useNavigate();
   const { logout } = useAuth();
@@ -214,28 +191,50 @@ const Resumes: React.FC = () => {
     ? userName.trim().split(" ")[0]
     : userEmail.split("@")[0] || "";
 
-  const handleAvatarMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
-    setAvatarMenuAnchor(event.currentTarget);
-  };
-
-  const handleAvatarMenuClose = () => {
-    setAvatarMenuAnchor(null);
-  };
+  React.useEffect(() => {
+    if (!avatarMenuOpen) return;
+    const onPointerDown = (event: MouseEvent) => {
+      if (
+        avatarMenuRef.current &&
+        !avatarMenuRef.current.contains(event.target as Node)
+      ) {
+        setAvatarMenuOpen(false);
+      }
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setAvatarMenuOpen(false);
+    };
+    window.addEventListener("mousedown", onPointerDown);
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("mousedown", onPointerDown);
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [avatarMenuOpen]);
 
   const handleSettingsClick = () => {
-    handleAvatarMenuClose();
+    setAvatarMenuOpen(false);
     navigate("/settings");
   };
 
   const handleLogoutClick = () => {
-    handleAvatarMenuClose();
+    setAvatarMenuOpen(false);
     setLogoutDialogOpen(true);
   };
 
   const handleThemeChange = (nextMode: "light" | "dark") => {
     setMode(nextMode);
-    handleAvatarMenuClose();
+    setAvatarMenuOpen(false);
   };
+
+  const clearProgress = React.useCallback((id: string) => {
+    setGenerateProgressById((prev) => {
+      if (!(id in prev)) return prev;
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+  }, []);
 
   const loadResumes = React.useCallback(
     async (
@@ -246,7 +245,6 @@ const Resumes: React.FC = () => {
         setLoading(true);
       }
       try {
-        // Build filter object, only including non-empty values
         const activeFilters: FilterResumeParams = {};
         if (filterParams?.companyName?.trim()) {
           activeFilters.companyName = filterParams.companyName.trim();
@@ -293,7 +291,9 @@ const Resumes: React.FC = () => {
   }, [loadResumes]);
 
   React.useEffect(() => {
-    const hasInProgress = resumes.some((resume) => resume.status === "in_progress");
+    const hasInProgress = resumes.some(
+      (resume) => resume.status === "in_progress",
+    );
     if (!hasInProgress) {
       return;
     }
@@ -311,7 +311,15 @@ const Resumes: React.FC = () => {
       message?: string;
     };
 
+    type GenerateProgressPayload = {
+      id: string;
+      step: GenerateProgressStep;
+      index?: number;
+      total?: number;
+    };
+
     function onGenerateDone({ id }: GenerateDonePayload) {
+      clearProgress(String(id));
       let matched = false;
       setResumes((prev) => {
         matched = prev.some((resume) => String(resume._id) === String(id));
@@ -332,6 +340,7 @@ const Resumes: React.FC = () => {
     }
 
     function onGenerateFailed({ id, message }: GenerateDonePayload) {
+      clearProgress(String(id));
       let matched = false;
       setResumes((prev) => {
         matched = prev.some((resume) => String(resume._id) === String(id));
@@ -355,8 +364,21 @@ const Resumes: React.FC = () => {
       }
     }
 
+    function onGenerateProgress({
+      id,
+      step,
+      index,
+      total,
+    }: GenerateProgressPayload) {
+      setGenerateProgressById((prev) => ({
+        ...prev,
+        [String(id)]: { step, index, total },
+      }));
+    }
+
     socket.on("generate:done", onGenerateDone);
     socket.on("generate:failed", onGenerateFailed);
+    socket.on("generate:progress", onGenerateProgress);
 
     socket.on("connect_error", (e) => {
       toast.error(e?.message ?? "Socket connection error");
@@ -365,9 +387,10 @@ const Resumes: React.FC = () => {
     return () => {
       socket.off("generate:done", onGenerateDone);
       socket.off("generate:failed", onGenerateFailed);
+      socket.off("generate:progress", onGenerateProgress);
       socket.off("connect_error");
     };
-  }, []);
+  }, [clearProgress]);
 
   React.useEffect(() => {
     const today = getLocalDateString();
@@ -413,7 +436,9 @@ const Resumes: React.FC = () => {
     const completed = resumes.filter((r) => r.status === "completed").length;
     const inProgress = resumes.filter((r) => r.status === "in_progress").length;
     const failed = resumes.filter((r) => r.status === "failed").length;
-    const manual = resumes.filter((r) => r.generationSource === "manual").length;
+    const manual = resumes.filter(
+      (r) => r.generationSource === "manual",
+    ).length;
     const providerCounts = new Map<string, number>();
 
     for (const resume of resumes) {
@@ -421,7 +446,10 @@ const Resumes: React.FC = () => {
         continue;
       }
 
-      const providerId = normalizeResumeProvider(resume.aiModel, resume.aiVersion);
+      const providerId = normalizeResumeProvider(
+        resume.aiModel,
+        resume.aiVersion,
+      );
       providerCounts.set(
         providerId,
         (providerCounts.get(providerId) ?? 0) + 1,
@@ -467,52 +495,13 @@ const Resumes: React.FC = () => {
     return resumes.filter((resume) => matchesChipFilter(resume, chipFilter));
   }, [resumes, chipFilter]);
 
-  const getChipProps = (filter: ChipFilter) => ({
-    clickable: true,
-    onClick: () => handleChipFilterClick(filter),
-    variant: (chipFilter === filter ? "filled" : "outlined") as
-      | "filled"
-      | "outlined",
-    sx: { cursor: "pointer" },
-  });
-
-  const getSourceChipProps = (filter: ChipFilter) => {
-    const isSelected = chipFilter === filter;
-    const isManual = filter === "manual";
-
-    return {
-      clickable: true,
-      onClick: () => handleChipFilterClick(filter),
-      variant: (isSelected ? "filled" : "outlined") as "filled" | "outlined",
-      color: isManual ? ("secondary" as const) : undefined,
-      sx: {
-        ...countChipSx,
-        cursor: "pointer",
-        borderWidth: isSelected ? 2 : 1,
-        transition: "all 0.15s ease",
-        ...(isManual
-          ? {
-            "& .MuiChip-icon": {
-              marginLeft: 0,
-              marginRight: 0,
-            },
-            "& .MuiChip-icon svg": {
-              marginRight: 0,
-            },
-          }
-          : {}),
-        ...(isSelected
-          ? isManual
-            ? manualChipSelectedSx
-            : sourceChipSelectedSx
-          : {
-            "&:hover": {
-              bgcolor: "action.hover",
-            },
-          }),
-      },
-    };
-  };
+  const filterChipClass = (filter: ChipFilter, selectedExtra?: string) =>
+    cn(
+      "cursor-pointer transition-colors",
+      chipFilter === filter
+        ? selectedExtra ?? "ring-2 ring-primary ring-offset-1 ring-offset-background"
+        : "hover:bg-accent",
+    );
 
   const handleDownloadResume = async (id: string) => {
     try {
@@ -525,7 +514,9 @@ const Resumes: React.FC = () => {
       });
 
       if (result.mode === "overwrite") {
-        toast.success(`Resume downloaded (replaced existing ${result.filename})`);
+        toast.success(
+          `Resume downloaded (replaced existing ${result.filename})`,
+        );
       } else if (result.mode === "created") {
         toast.success(
           `Resume saved as ${result.filename}. Next download with this name will replace it automatically.`,
@@ -541,38 +532,6 @@ const Resumes: React.FC = () => {
       toast.error("Failed to download resume");
     }
   };
-
-  // const handleDownloadResumeJSON = async (id: string) => {
-  //   try {
-  //     const response = await downloadResumeJSON(id);
-  //     const jsonBlob = response.data;
-  //
-  //     const contentDisposition = response.headers["content-disposition"];
-  //     let filename = "resume.json";
-  //
-  //     if (contentDisposition) {
-  //       const filenameMatch = contentDisposition.match(
-  //         /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/,
-  //       );
-  //       if (filenameMatch && filenameMatch[1]) {
-  //         filename = filenameMatch[1].replace(/['"]/g, "");
-  //       }
-  //     }
-  //
-  //     const url = window.URL.createObjectURL(jsonBlob);
-  //     const link = document.createElement("a");
-  //     link.href = url;
-  //     link.download = filename;
-  //     document.body.appendChild(link);
-  //     link.click();
-  //     document.body.removeChild(link);
-  //     window.URL.revokeObjectURL(url);
-  //
-  //     toast.success("Resume JSON downloaded successfully!");
-  //   } catch {
-  //     toast.error("Failed to download resume JSON");
-  //   }
-  // };
 
   const handleGenerateCoverLetter = async (id: string) => {
     setGeneratingCoverLetterId(id);
@@ -598,7 +557,9 @@ const Resumes: React.FC = () => {
       }
       setResumes((prev) =>
         prev.map((r) =>
-          r._id === id ? { ...r, coverLetter: r.coverLetter || "generated" } : r,
+          r._id === id
+            ? { ...r, coverLetter: r.coverLetter || "generated" }
+            : r,
         ),
       );
     } catch (error: unknown) {
@@ -638,6 +599,7 @@ const Resumes: React.FC = () => {
     setRetryingResumeId(id);
     try {
       await retryResume(id);
+      clearProgress(id);
       setResumes((prev) =>
         prev.map((r) =>
           r._id === id
@@ -763,9 +725,10 @@ const Resumes: React.FC = () => {
         ids: Array.from(selectedResumes),
       });
       toast.success(
-        `Successfully deleted ${result.deleted} resume(s)${result.failed.length > 0
-          ? `. ${result.failed.length} failed to delete.`
-          : ""
+        `Successfully deleted ${result.deleted} resume(s)${
+          result.failed.length > 0
+            ? `. ${result.failed.length} failed to delete.`
+            : ""
         }`,
       );
       setSelectedResumes(new Set());
@@ -782,7 +745,7 @@ const Resumes: React.FC = () => {
     try {
       await navigator.clipboard.writeText(text);
       toast.success("Job description copied to clipboard!");
-    } catch (err) {
+    } catch {
       toast.error("Failed to copy to clipboard");
     }
   };
@@ -792,548 +755,589 @@ const Resumes: React.FC = () => {
     setJobDescriptionDialogOpen(true);
   };
 
+  const allFilteredSelected =
+    filteredResumes.length > 0 &&
+    selectedResumes.size === filteredResumes.length;
+  const someFilteredSelected =
+    selectedResumes.size > 0 &&
+    selectedResumes.size < filteredResumes.length;
+
   return (
-    <Box sx={{ maxWidth: 1400, mx: "auto" }}>
-      <Stack
-        direction="row"
-        spacing={2}
-        alignItems="center"
-        justifyContent="space-between"
-        sx={{ mb: 2 }}
-      >
-        <Typography variant="h4">Resumes</Typography>
-        <Stack direction="row" spacing={2} alignItems="center">
+    <div className="mx-auto max-w-[1400px]">
+      <div className="mb-4 flex items-center justify-between gap-4">
+        <h1 className="text-3xl font-bold">Resumes</h1>
+        <div className="flex items-center gap-3">
           {resumes.length > 0 && selectedResumes.size > 0 && (
             <Button
-              variant="outlined"
-              color="error"
-              startIcon={<DeleteIcon />}
+              type="button"
+              variant="outline"
+              className="border-destructive text-destructive hover:bg-destructive/10"
               onClick={handleBulkDeleteClick}
             >
+              <Trash2 className="h-4 w-4" />
               Delete Selected ({selectedResumes.size})
             </Button>
           )}
-          <Button
-            variant="contained"
-            component={Link}
-            to="/resumes/new"
-            startIcon={<AddIcon />}
-          >
-            Generate
-          </Button>
-          <Box
-            onClick={handleAvatarMenuOpen}
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              gap: 1,
-              cursor: "pointer",
-              borderRadius: 1,
-              px: 0.5,
-              py: 0.25,
-              "&:hover": { bgcolor: "action.hover" },
-            }}
-          >
-            <Avatar
-              sx={{
-                bgcolor: "primary.main",
-                color: "primary.contrastText",
-                width: 40,
-                height: 40,
-                fontWeight: 600,
-              }}
+          <Link to="/resumes/new">
+            <Button type="button">
+              <Plus className="h-4 w-4" />
+              Generate
+            </Button>
+          </Link>
+          <div className="relative" ref={avatarMenuRef}>
+            <button
+              type="button"
+              className="flex items-center gap-2 rounded-md px-1.5 py-1 hover:bg-accent"
+              onClick={() => setAvatarMenuOpen((open) => !open)}
             >
-              {avatarInitial}
-            </Avatar>
-            {displayName && (
-              <Typography variant="body1" fontWeight={500} color="text.primary">
-                {displayName}
-              </Typography>
-            )}
-          </Box>
-          <Menu
-            anchorEl={avatarMenuAnchor}
-            open={Boolean(avatarMenuAnchor)}
-            onClose={handleAvatarMenuClose}
-            anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-            transformOrigin={{ vertical: "top", horizontal: "right" }}
-          >
-            <MenuItem onClick={handleSettingsClick}>
-              <ListItemIcon>
-                <SettingsIcon fontSize="small" />
-              </ListItemIcon>
-              <ListItemText>Settings</ListItemText>
-            </MenuItem>
-            <Divider />
-            {mode === "dark" ? (
-              <MenuItem onClick={() => handleThemeChange("light")}>
-                <ListItemIcon>
-                  <LightModeIcon fontSize="small" />
-                </ListItemIcon>
-                <ListItemText>Light</ListItemText>
-              </MenuItem>
-            ) : (
-              <MenuItem onClick={() => handleThemeChange("dark")}>
-                <ListItemIcon>
-                  <DarkModeIcon fontSize="small" />
-                </ListItemIcon>
-                <ListItemText>Dark</ListItemText>
-              </MenuItem>
-            )}
-            <Divider />
-            <MenuItem onClick={handleLogoutClick}>
-              <ListItemIcon>
-                <LogoutIcon fontSize="small" />
-              </ListItemIcon>
-              <ListItemText>Log out</ListItemText>
-            </MenuItem>
-          </Menu>
-        </Stack>
-      </Stack>
+              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
+                {avatarInitial}
+              </span>
+              {displayName ? (
+                <span className="text-sm font-medium">{displayName}</span>
+              ) : null}
+            </button>
+            {avatarMenuOpen ? (
+              <div className="absolute right-0 z-50 mt-2 w-48 rounded-md border border-border bg-card py-1 shadow-lg">
+                <button
+                  type="button"
+                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-accent"
+                  onClick={handleSettingsClick}
+                >
+                  <Settings className="h-4 w-4" />
+                  Settings
+                </button>
+                <div className="my-1 border-t border-border" />
+                {mode === "dark" ? (
+                  <button
+                    type="button"
+                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-accent"
+                    onClick={() => handleThemeChange("light")}
+                  >
+                    <Sun className="h-4 w-4" />
+                    Light
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-accent"
+                    onClick={() => handleThemeChange("dark")}
+                  >
+                    <Moon className="h-4 w-4" />
+                    Dark
+                  </button>
+                )}
+                <div className="my-1 border-t border-border" />
+                <button
+                  type="button"
+                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-accent"
+                  onClick={handleLogoutClick}
+                >
+                  <LogOut className="h-4 w-4" />
+                  Log out
+                </button>
+              </div>
+            ) : null}
+          </div>
+        </div>
+      </div>
 
       <ResumeFiltersBar
         filters={filters}
         onFilterChange={handleFilterChange}
         onClearFilters={handleClearFilters}
       />
-      <Box sx={{ mb: 2 }}>
-        <Stack spacing={1}>
-          <Typography variant="body2" color="text.secondary">
-            {loading
-              ? "Loading resumes..."
-              : chipFilter
-                ? `${filteredResumes.length} of ${resumeCounts.total} resume${resumeCounts.total !== 1 ? "s" : ""}`
-                : `${resumeCounts.total} resume${resumeCounts.total !== 1 ? "s" : ""}`}
-          </Typography>
-          {!loading && resumeCounts.total > 0 && (
-            <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
-              <Chip
-                label={`${resumeCounts.completed} completed`}
-                size="small"
-                color="success"
-                {...getChipProps("completed")}
-              />
-              {resumeCounts.inProgress > 0 && (
-                <Chip
-                  label={`${resumeCounts.inProgress} in progress`}
-                  size="small"
-                  color="info"
-                  {...getChipProps("in_progress")}
-                />
-              )}
-              {resumeCounts.failed > 0 && (
-                <Chip
-                  label={`${resumeCounts.failed} failed`}
-                  size="small"
-                  color="error"
-                  {...getChipProps("failed")}
-                />
-              )}
-              {providerFilters.map((providerId) => {
-                const filter = `provider:${providerId}` as const;
-                return (
-                  <Chip
-                    key={providerId}
-                    icon={
-                      <ModelProviderIcon
-                        modelId={getRepresentativeModelIdForProvider(
-                          catalog,
-                          providerId,
-                        )}
-                      />
-                    }
-                    label={resumeCounts.providerCounts.get(providerId) ?? 0}
-                    size="small"
-                    title={getProviderLabel(catalog, providerId)}
-                    {...getSourceChipProps(filter)}
-                  />
-                );
-              })}
-              <Chip
-                icon={<CodeIcon sx={{ fontSize: 16, mr: 0 }} />}
-                label={resumeCounts.manual}
-                size="small"
-                {...getSourceChipProps("manual")}
-              />
-            </Stack>
-          )}
-        </Stack>
-      </Box>
+
+      <div className="mb-4 space-y-2">
+        <p className="text-sm text-muted-foreground">
+          {loading
+            ? "Loading resumes..."
+            : chipFilter
+              ? `${filteredResumes.length} of ${resumeCounts.total} resume${resumeCounts.total !== 1 ? "s" : ""}`
+              : `${resumeCounts.total} resume${resumeCounts.total !== 1 ? "s" : ""}`}
+        </p>
+        {!loading && resumeCounts.total > 0 && (
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => handleChipFilterClick("completed")}
+            >
+              <Badge
+                variant="success"
+                className={filterChipClass("completed")}
+              >
+                {resumeCounts.completed} completed
+              </Badge>
+            </button>
+            {resumeCounts.inProgress > 0 && (
+              <button
+                type="button"
+                onClick={() => handleChipFilterClick("in_progress")}
+              >
+                <Badge
+                  variant="default"
+                  className={filterChipClass("in_progress")}
+                >
+                  {resumeCounts.inProgress} in progress
+                </Badge>
+              </button>
+            )}
+            {resumeCounts.failed > 0 && (
+              <button
+                type="button"
+                onClick={() => handleChipFilterClick("failed")}
+              >
+                <Badge
+                  variant="secondary"
+                  className={cn(
+                    filterChipClass("failed"),
+                    "border-destructive/40 bg-destructive/10 text-destructive",
+                  )}
+                >
+                  {resumeCounts.failed} failed
+                </Badge>
+              </button>
+            )}
+            {providerFilters.map((providerId) => {
+              const filter = `provider:${providerId}` as const;
+              const selected = chipFilter === filter;
+              return (
+                <button
+                  key={providerId}
+                  type="button"
+                  title={getProviderLabel(catalog, providerId)}
+                  onClick={() => handleChipFilterClick(filter)}
+                >
+                  <Badge
+                    variant={selected ? "default" : "outline"}
+                    className={cn(
+                      "gap-1.5",
+                      filterChipClass(
+                        filter,
+                        "border-transparent bg-primary text-primary-foreground shadow-md",
+                      ),
+                    )}
+                  >
+                    <ModelProviderIcon
+                      modelId={getRepresentativeModelIdForProvider(
+                        catalog,
+                        providerId,
+                      )}
+                    />
+                    {resumeCounts.providerCounts.get(providerId) ?? 0}
+                  </Badge>
+                </button>
+              );
+            })}
+            <button
+              type="button"
+              onClick={() => handleChipFilterClick("manual")}
+            >
+              <Badge
+                variant={chipFilter === "manual" ? "secondary" : "outline"}
+                className={cn(
+                  "gap-1.5",
+                  filterChipClass(
+                    "manual",
+                    "border-transparent bg-secondary text-secondary-foreground shadow-md",
+                  ),
+                )}
+              >
+                <Code className="h-3.5 w-3.5" />
+                {resumeCounts.manual}
+              </Badge>
+            </button>
+          </div>
+        )}
+      </div>
 
       {loading ? (
-        <Typography>Loading...</Typography>
+        <p className="text-sm text-muted-foreground">Loading...</p>
       ) : resumes.length === 0 ? (
-        <Paper sx={{ p: 3, textAlign: "center" }}>
-          <Typography variant="body1" color="text.secondary" gutterBottom>
-            No resumes found. Create your first resume!
-          </Typography>
-          <Stack direction="row" spacing={2} justifyContent="center" sx={{ mt: 2 }}>
-            <Button
-              variant="contained"
-              component={Link}
-              to="/resumes/new"
-              startIcon={<AddIcon />}
-            >
-              Generate
-            </Button>
-          </Stack>
-        </Paper>
+        <Card>
+          <CardContent className="space-y-4 p-8 text-center">
+            <p className="text-muted-foreground">
+              No resumes found. Create your first resume!
+            </p>
+            <div className="flex justify-center">
+              <Link to="/resumes/new">
+                <Button type="button">
+                  <Plus className="h-4 w-4" />
+                  Generate
+                </Button>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
       ) : filteredResumes.length === 0 ? (
-        <Paper sx={{ p: 3, textAlign: "center" }}>
-          <Typography variant="body1" color="text.secondary" gutterBottom>
-            No resumes match the selected filter.
-          </Typography>
-          <Button
-            variant="outlined"
-            onClick={() => setChipFilter(null)}
-            sx={{ mt: 2 }}
-          >
-            Clear Filter
-          </Button>
-        </Paper>
+        <Card>
+          <CardContent className="space-y-4 p-8 text-center">
+            <p className="text-muted-foreground">
+              No resumes match the selected filter.
+            </p>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setChipFilter(null)}
+            >
+              Clear Filter
+            </Button>
+          </CardContent>
+        </Card>
       ) : (
-        <TableContainer component={Paper}>
-          <Table sx={{ minWidth: 650 }} size="small" aria-label="resumes table">
-            <TableHead>
+        <Card>
+          <Table aria-label="resumes table">
+            <TableHeader>
               <TableRow>
-                <TableCell padding="checkbox">
-                  <Checkbox
-                    checked={
-                      filteredResumes.length > 0 &&
-                      selectedResumes.size === filteredResumes.length
-                    }
-                    indeterminate={
-                      selectedResumes.size > 0 &&
-                      selectedResumes.size < filteredResumes.length
-                    }
+                <TableHead className="w-12">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 rounded border-input text-primary focus:ring-ring"
+                    checked={allFilteredSelected}
+                    ref={(el) => {
+                      if (el) el.indeterminate = someFilteredSelected;
+                    }}
                     onChange={handleSelectAll}
+                    aria-label="Select all"
                   />
-                </TableCell>
-                <TableCell align="center">Company Name</TableCell>
-                <TableCell align="center">Role Type</TableCell>
-                <TableCell align="center">Job Description</TableCell>
-                <TableCell align="center">AI Version</TableCell>
-                <TableCell align="center">Status</TableCell>
-                <TableCell align="center">Date</TableCell>
-                <TableCell align="center" colSpan={5}>
+                </TableHead>
+                <TableHead className="text-center">Company Name</TableHead>
+                <TableHead className="text-center">Role Type</TableHead>
+                <TableHead className="text-center">Job Description</TableHead>
+                <TableHead className="text-center">AI Version</TableHead>
+                <TableHead className="text-center">Status</TableHead>
+                <TableHead className="text-center">Date</TableHead>
+                <TableHead className="text-center" colSpan={5}>
                   Actions
-                </TableCell>
+                </TableHead>
               </TableRow>
-            </TableHead>
+            </TableHeader>
             <TableBody>
-              {filteredResumes.map((resume) => (
-                <TableRow
-                  key={resume._id}
-                  sx={{
-                    "&:last-child td, &:last-child th": { border: 0 },
-                    "&:hover": { bgcolor: "action.hover" },
-                  }}
-                >
-                  <TableCell padding="checkbox">
-                    <Checkbox
-                      checked={selectedResumes.has(resume._id)}
-                      onChange={() => handleSelectResume(resume._id)}
-                    />
-                  </TableCell>
-                  <TableCell align="center">{resume.companyName}</TableCell>
-                  <TableCell align="center">{resume.roleType}</TableCell>
-                  <TableCell align="center">
-                    {resume.jobDescription ? (
-                      <IconButton
-                        size="small"
-                        color="info"
-                        onClick={() =>
-                          handleViewJobDescription(resume.jobDescription!)
+              {filteredResumes.map((resume) => {
+                const progressLabel = formatProgressLabel(
+                  generateProgressById[resume._id],
+                );
+                return (
+                  <TableRow key={resume._id}>
+                    <TableCell>
+                      <Checkbox
+                        checked={selectedResumes.has(resume._id)}
+                        onCheckedChange={() => handleSelectResume(resume._id)}
+                        aria-label={`Select ${resume.companyName}`}
+                      />
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {resume.companyName}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {resume.roleType}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {resume.jobDescription ? (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() =>
+                            handleViewJobDescription(resume.jobDescription!)
+                          }
+                          title="View Job Description"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      ) : (
+                        "-"
+                      )}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <div className="flex justify-center">
+                        <AiVersionBadge
+                          aiModel={resume.aiModel}
+                          aiVersion={resume.aiVersion}
+                          generationSource={resume.generationSource}
+                        />
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {resume.status === "in_progress" ? (
+                        <div className="flex flex-col items-center justify-center gap-1">
+                          <Spinner className="h-5 w-5" />
+                          {progressLabel ? (
+                            <Badge variant="outline" className="text-[10px]">
+                              {progressLabel}
+                            </Badge>
+                          ) : null}
+                        </div>
+                      ) : resume.status === "failed" ? (
+                        <div className="flex items-center justify-center gap-1">
+                          <Badge
+                            variant="secondary"
+                            className="border-destructive/40 bg-destructive/10 text-destructive"
+                            title={
+                              resume.failureMessage || "Generation failed"
+                            }
+                          >
+                            Failed
+                          </Badge>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-destructive hover:text-destructive"
+                            onClick={() => handleRetryResume(resume._id)}
+                            title="Retry generation"
+                            disabled={retryingResumeId === resume._id}
+                          >
+                            {retryingResumeId === resume._id ? (
+                              <Spinner className="h-4 w-4" />
+                            ) : (
+                              <RefreshCw className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </div>
+                      ) : (
+                        <Badge variant="success">Completed</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {resume.createdAt
+                        ? moment(resume.createdAt).format("MMM DD, YYYY")
+                        : "-"}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => handleDownloadResume(resume._id)}
+                        title="Download PDF"
+                        disabled={resume.status !== "completed"}
+                      >
+                        <Download className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className={cn(
+                          "h-8 w-8",
+                          resume.coverLetter?.trim() && "text-success",
+                        )}
+                        onClick={() => handleGenerateCoverLetter(resume._id)}
+                        title={
+                          resume.generationSource === "manual"
+                            ? "Cover letter not available for manual resumes"
+                            : resume.coverLetter?.trim()
+                              ? "Download cover letter (already generated)"
+                              : "Generate cover letter"
                         }
-                        title="View Job Description"
+                        disabled={
+                          resume.status !== "completed" ||
+                          resume.generationSource === "manual" ||
+                          generatingCoverLetterId === resume._id
+                        }
                       >
-                        <VisibilityIcon />
-                      </IconButton>
-                    ) : (
-                      "-"
-                    )}
-                  </TableCell>
-                  <TableCell align="center">
-                    <AiVersionBadge
-                      aiModel={resume.aiModel}
-                      aiVersion={resume.aiVersion}
-                      generationSource={resume.generationSource}
-                    />
-                  </TableCell>
-                  <TableCell align="center">
-                    {resume.status === "in_progress" ? (
-                      <CircularProgress size={25} thickness={6} />
-                    ) : resume.status === "failed" ? (
-                      <Stack
-                        direction="row"
-                        spacing={0.5}
-                        alignItems="center"
-                        justifyContent="center"
+                        {generatingCoverLetterId === resume._id ? (
+                          <Spinner className="h-4 w-4" />
+                        ) : resume.coverLetter?.trim() ? (
+                          <ClipboardCheck className="h-4 w-4" />
+                        ) : (
+                          <FileText className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => setQuestionsResumeId(resume._id)}
+                        title={
+                          resume.generationSource === "manual"
+                            ? "Answer questions not available for manual resumes"
+                            : "Answer Questions"
+                        }
+                        disabled={
+                          resume.status !== "completed" ||
+                          resume.generationSource === "manual"
+                        }
                       >
-                        <Tooltip
-                          title={resume.failureMessage || "Generation failed"}
-                          arrow
-                        >
-                          <Chip label="Failed" color="error" size="small" />
-                        </Tooltip>
-                        <IconButton
-                          size="small"
-                          color="error"
-                          onClick={() => handleRetryResume(resume._id)}
-                          title="Retry generation"
-                          disabled={retryingResumeId === resume._id}
-                        >
-                          {retryingResumeId === resume._id ? (
-                            <CircularProgress size={18} color="inherit" />
-                          ) : (
-                            <RefreshIcon fontSize="small" />
-                          )}
-                        </IconButton>
-                      </Stack>
-                    ) : (
-                      <Chip label="Completed" color="success" size="small" />
-                    )}
-                  </TableCell>
-                  <TableCell align="center">
-                    {resume.createdAt
-                      ? moment(resume.createdAt).format("MMM DD, YYYY")
-                      : "-"}
-                  </TableCell>
-                  <TableCell align="center">
-                    <IconButton
-                      size="small"
-                      color="primary"
-                      onClick={() => handleDownloadResume(resume._id)}
-                      title="Download PDF"
-                      disabled={resume.status !== "completed"}
-                    >
-                      <DownloadIcon />
-                    </IconButton>
-                  </TableCell>
-                  {/* <TableCell align="center">
-                    <IconButton
-                      size="small"
-                      color="secondary"
-                      onClick={() => handleDownloadResumeJSON(resume._id)}
-                      title="Download JSON"
-                      disabled={resume.status !== "completed"}
-                    >
-                      <CodeIcon />
-                    </IconButton>
-                  </TableCell> */}
-                  <TableCell align="center">
-                    <IconButton
-                      size="small"
-                      color={
-                        resume.coverLetter?.trim()
-                          ? "success"
-                          : "info"
-                      }
-                      onClick={() => handleGenerateCoverLetter(resume._id)}
-                      title={
-                        resume.generationSource === "manual"
-                          ? "Cover letter not available for manual resumes"
-                          : resume.coverLetter?.trim()
-                            ? "Download cover letter (already generated)"
-                            : "Generate cover letter"
-                      }
-                      disabled={
-                        resume.status !== "completed" ||
-                        resume.generationSource === "manual" ||
-                        generatingCoverLetterId === resume._id
-                      }
-                    >
-                      {generatingCoverLetterId === resume._id ? (
-                        <CircularProgress size={20} color="inherit" />
-                      ) : resume.coverLetter?.trim() ? (
-                        <TaskIcon />
-                      ) : (
-                        <InsertDriveFileIcon />
-                      )}
-                    </IconButton>
-                  </TableCell>
-                  <TableCell align="center">
-                    <IconButton
-                      size="small"
-                      color="info"
-                      onClick={() => setQuestionsResumeId(resume._id)}
-                      title={
-                        resume.generationSource === "manual"
-                          ? "Answer questions not available for manual resumes"
-                          : "Answer Questions"
-                      }
-                      disabled={
-                        resume.status !== "completed" ||
-                        resume.generationSource === "manual"
-                      }
-                    >
-                      <QuestionAnswerIcon />
-                    </IconButton>
-                  </TableCell>
-                  <TableCell align="center">
-                    <IconButton
-                      size="small"
-                      color="info"
-                      onClick={() => handleEditResume(resume)}
-                      title="Edit in Generate from JSON"
-                      disabled={
-                        resume.status !== "completed" ||
-                        editingResumeId === resume._id
-                      }
-                    >
-                      {editingResumeId === resume._id ? (
-                        <CircularProgress size={20} color="inherit" />
-                      ) : (
-                        <EditIcon />
-                      )}
-                    </IconButton>
-                  </TableCell>
-                  <TableCell align="center">
-                    <IconButton
-                      size="small"
-                      color="error"
-                      onClick={() => handleDeleteClick(resume._id)}
-                      title="Delete"
-                    >
-                      <DeleteIcon />
-                    </IconButton>
-                  </TableCell>
-                </TableRow>
-              ))}
+                        <MessageSquare className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => handleEditResume(resume)}
+                        title="Edit in Generate from JSON"
+                        disabled={
+                          resume.status !== "completed" ||
+                          editingResumeId === resume._id
+                        }
+                      >
+                        {editingResumeId === resume._id ? (
+                          <Spinner className="h-4 w-4" />
+                        ) : (
+                          <Pencil className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-destructive hover:text-destructive"
+                        onClick={() => handleDeleteClick(resume._id)}
+                        title="Delete"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
-        </TableContainer>
+        </Card>
       )}
 
-      {/* Delete Confirmation Dialog */}
       <Dialog
         open={deleteDialogOpen}
-        onClose={() => setDeleteDialogOpen(false)}
+        onOpenChange={setDeleteDialogOpen}
+        title="Delete Resume"
+        footer={
+          <>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setDeleteDialogOpen(false)}
+              disabled={deleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={handleDeleteConfirm}
+              disabled={deleting}
+            >
+              <Trash2 className="h-4 w-4" />
+              {deleting ? "Deleting..." : "Delete"}
+            </Button>
+          </>
+        }
       >
-        <DialogTitle>Delete Resume</DialogTitle>
-        <DialogContent>
-          <Typography>
-            Are you sure you want to delete this resume? This action cannot be
-            undone.
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button
-            onClick={() => setDeleteDialogOpen(false)}
-            disabled={deleting}
-            color="secondary"
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleDeleteConfirm}
-            color="error"
-            variant="contained"
-            disabled={deleting}
-            startIcon={deleting ? undefined : <DeleteIcon />}
-          >
-            {deleting ? "Deleting..." : "Delete"}
-          </Button>
-        </DialogActions>
+        <p className="text-sm">
+          Are you sure you want to delete this resume? This action cannot be
+          undone.
+        </p>
       </Dialog>
 
-      {/* Bulk Delete Confirmation Dialog */}
       <Dialog
         open={bulkDeleteDialogOpen}
-        onClose={() => setBulkDeleteDialogOpen(false)}
+        onOpenChange={setBulkDeleteDialogOpen}
+        title="Delete Selected Resumes"
+        footer={
+          <>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setBulkDeleteDialogOpen(false)}
+              disabled={deleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={handleBulkDeleteConfirm}
+              disabled={deleting}
+            >
+              <Trash2 className="h-4 w-4" />
+              {deleting ? "Deleting..." : `Delete ${selectedResumes.size}`}
+            </Button>
+          </>
+        }
       >
-        <DialogTitle>Delete Selected Resumes</DialogTitle>
-        <DialogContent>
-          <Typography>
-            Are you sure you want to delete {selectedResumes.size} resume(s)?
-            This action cannot be undone.
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button
-            onClick={() => setBulkDeleteDialogOpen(false)}
-            disabled={deleting}
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleBulkDeleteConfirm}
-            color="error"
-            variant="contained"
-            disabled={deleting}
-            startIcon={deleting ? undefined : <DeleteIcon />}
-          >
-            {deleting ? "Deleting..." : `Delete ${selectedResumes.size}`}
-          </Button>
-        </DialogActions>
+        <p className="text-sm">
+          Are you sure you want to delete {selectedResumes.size} resume(s)? This
+          action cannot be undone.
+        </p>
       </Dialog>
 
-      {/* Questions Dialog */}
       <QuestionsDialog
         open={questionsResumeId !== null}
         resumeId={questionsResumeId}
         handleClose={() => setQuestionsResumeId(null)}
       />
 
-      {/* Job Description Dialog */}
       <Dialog
         open={jobDescriptionDialogOpen}
-        onClose={() => setJobDescriptionDialogOpen(false)}
-        maxWidth="md"
-        fullWidth
+        onOpenChange={setJobDescriptionDialogOpen}
+        title="Job Description"
+        className="max-w-2xl"
+        footer={
+          <>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => handleCopyToClipboard(selectedJobDescription)}
+            >
+              <Copy className="h-4 w-4" />
+              Copy to Clipboard
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setJobDescriptionDialogOpen(false)}
+            >
+              Close
+            </Button>
+          </>
+        }
       >
-        <DialogTitle>Job Description</DialogTitle>
-        <DialogContent>
-          <Typography
-            variant="body1"
-            sx={{
-              whiteSpace: "pre-wrap",
-              wordBreak: "break-word",
-              mt: 1,
-            }}
-          >
-            {selectedJobDescription}
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button
-            onClick={() => handleCopyToClipboard(selectedJobDescription)}
-            startIcon={<ContentCopyIcon />}
-            color="secondary"
-          >
-            Copy to Clipboard
-          </Button>
-          <Button
-            color="secondary" onClick={() => setJobDescriptionDialogOpen(false)}>
-            Close
-          </Button>
-        </DialogActions>
+        <p className="whitespace-pre-wrap break-words text-sm">
+          {selectedJobDescription}
+        </p>
       </Dialog>
 
-      {/* Logout Confirmation Dialog */}
       <Dialog
         open={logoutDialogOpen}
-        onClose={() => setLogoutDialogOpen(false)}
+        onOpenChange={setLogoutDialogOpen}
+        title="Confirm Logout"
+        footer={
+          <>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setLogoutDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={() => {
+                logout();
+                setLogoutDialogOpen(false);
+              }}
+            >
+              Logout
+            </Button>
+          </>
+        }
       >
-        <DialogTitle>Confirm Logout</DialogTitle>
-        <DialogContent>
-          <Typography>Are you sure you want to log out?</Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setLogoutDialogOpen(false)}>Cancel</Button>
-          <Button
-            onClick={() => {
-              logout();
-              setLogoutDialogOpen(false);
-            }}
-            color="primary"
-            autoFocus
-          >
-            Logout
-          </Button>
-        </DialogActions>
+        <p className="text-sm">Are you sure you want to log out?</p>
       </Dialog>
-    </Box>
+    </div>
   );
 };
 

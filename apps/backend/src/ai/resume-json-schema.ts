@@ -1,8 +1,6 @@
 import {
   DEFAULT_RESUME_SETTINGS,
   MAX_EXPERIENCE_BULLETS_PER_ROLE,
-  MAX_SKILL_CATEGORIES,
-  MAX_SKILLS_PER_CATEGORY,
   type ResumeSettings,
   resolveResumeSettings,
 } from './resume-settings';
@@ -20,10 +18,10 @@ export function buildResumeJsonSchema(
     settings.achievementsCount,
     Math.max(0, MAX_EXPERIENCE_BULLETS_PER_ROLE - responsibilitiesMin),
   );
-  const skillsPerCategoryMax = Math.min(
-    settings.skillsPerCategoryCount,
-    MAX_SKILLS_PER_CATEGORY,
-  );
+  const skillsPerCategoryMax =
+    settings.skillsPerCategoryCount > 0
+      ? settings.skillsPerCategoryCount
+      : undefined;
 
   return {
     type: 'object',
@@ -76,14 +74,15 @@ export function buildResumeJsonSchema(
               type: 'array',
               items: { type: 'string' },
               minItems: 1,
-              maxItems: skillsPerCategoryMax,
+              ...(skillsPerCategoryMax
+                ? { maxItems: skillsPerCategoryMax }
+                : {}),
             },
           },
           required: ['category', 'items'],
           additionalProperties: false,
         },
         minItems: 1,
-        maxItems: MAX_SKILL_CATEGORIES,
       },
       experience: {
         type: 'array',
@@ -127,7 +126,9 @@ export function buildResumeJsonSchema(
               items: {
                 type: 'string',
               },
-              minItems: settings.companySkillsCount,
+              ...(settings.companySkillsCount > 0
+                ? { minItems: settings.companySkillsCount }
+                : {}),
             },
           },
           required: [

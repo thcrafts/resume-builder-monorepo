@@ -1,5 +1,4 @@
 import * as React from "react";
-import { Alert, Box, Button, CircularProgress } from "@mui/material";
 import { Navigate, Outlet } from "react-router";
 import { useAuth } from "./AuthContext";
 import { getProfile, type UserResponse } from "../../services/userService";
@@ -7,6 +6,8 @@ import {
   getAxiosErrorStatus,
   isTokenExpired,
 } from "../../utils/authSession";
+import { Button } from "../ui/button";
+import { Alert, Spinner } from "../ui/misc";
 
 export type ProtectedLayoutContext = {
   user: UserResponse;
@@ -21,7 +22,6 @@ const ProtectedLayout: React.FC<ProtectedLayoutProps> = ({ requiredRole }) => {
   const [user, setUser] = React.useState<UserResponse | null>(null);
   const [loading, setLoading] = React.useState<boolean>(true);
   const [profileError, setProfileError] = React.useState<string | null>(null);
-  const [authInvalid, setAuthInvalid] = React.useState(false);
 
   const loadProfile = React.useCallback(async () => {
     if (!token) {
@@ -30,7 +30,6 @@ const ProtectedLayout: React.FC<ProtectedLayoutProps> = ({ requiredRole }) => {
     }
 
     if (isTokenExpired(token)) {
-      setAuthInvalid(true);
       handleSessionExpired();
       return;
     }
@@ -43,7 +42,7 @@ const ProtectedLayout: React.FC<ProtectedLayoutProps> = ({ requiredRole }) => {
       setUser(profile);
     } catch (error: unknown) {
       if (getAxiosErrorStatus(error) === 401) {
-        setAuthInvalid(true);
+        handleSessionExpired();
         return;
       }
 
@@ -62,47 +61,24 @@ const ProtectedLayout: React.FC<ProtectedLayoutProps> = ({ requiredRole }) => {
     return <Navigate to="/login" replace />;
   }
 
-  if (authInvalid) {
-    return null;
-  }
-
   if (loading) {
     return (
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          minHeight: "40vh",
-        }}
-      >
-        <CircularProgress />
-      </Box>
+      <div className="flex min-h-[40vh] items-center justify-center">
+        <Spinner className="h-8 w-8" />
+      </div>
     );
   }
 
   if (profileError) {
     return (
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          minHeight: "40vh",
-          px: 2,
-        }}
-      >
-        <Alert
-          severity="error"
-          action={
-            <Button color="inherit" size="small" onClick={() => void loadProfile()}>
-              Retry
-            </Button>
-          }
-        >
-          {profileError}
+      <div className="flex min-h-[40vh] items-center justify-center px-4">
+        <Alert variant="destructive" className="flex max-w-md items-center justify-between gap-4">
+          <span>{profileError}</span>
+          <Button variant="outline" size="sm" onClick={() => void loadProfile()}>
+            Retry
+          </Button>
         </Alert>
-      </Box>
+      </div>
     );
   }
 
@@ -115,7 +91,7 @@ const ProtectedLayout: React.FC<ProtectedLayoutProps> = ({ requiredRole }) => {
   }
 
   if (!user) {
-    return null;
+    return <Navigate to="/login" replace />;
   }
 
   return <Outlet context={{ user } satisfies ProtectedLayoutContext} />;

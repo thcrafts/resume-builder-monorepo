@@ -1,6 +1,9 @@
-import { Button, Grid, Paper, TextField, Typography } from "@mui/material";
-import ClearIcon from "@mui/icons-material/Clear";
+import { X } from "lucide-react";
 import type { FilterResumeParams } from "../../services/resumeService";
+import { Button } from "../../components/ui/button";
+import { Card, CardContent } from "../../components/ui/card";
+import { Input } from "../../components/ui/input";
+import { Label } from "../../components/ui/label";
 
 type ResumeFiltersBarProps = {
   filters: FilterResumeParams;
@@ -14,64 +17,56 @@ export function ResumeFiltersBar({
   onClearFilters,
 }: ResumeFiltersBarProps) {
   return (
-    <Paper sx={{ p: 2, mb: 2 }}>
-      <Typography variant="h6" gutterBottom>
-        Filters
-      </Typography>
-      <Grid container spacing={2} alignItems="flex-end">
-        <Grid size={{ xs: 12, sm: 6, md: "grow" }}>
-          <TextField
-            label="Company Name"
-            value={filters.companyName || ""}
-            onChange={(e) => onFilterChange("companyName", e.target.value)}
-            fullWidth
-            size="small"
-          />
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: "grow" }}>
-          <TextField
-            label="Role Type"
-            value={filters.roleType || ""}
-            onChange={(e) => onFilterChange("roleType", e.target.value)}
-            fullWidth
-            size="small"
-          />
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: "grow" }}>
-          <TextField
-            label="Start Date"
-            type="date"
-            value={filters.startDate || ""}
-            onChange={(e) => onFilterChange("startDate", e.target.value)}
-            fullWidth
-            size="small"
-            InputLabelProps={{ shrink: true }}
-          />
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: "grow" }}>
-          <TextField
-            label="End Date"
-            type="date"
-            value={filters.endDate || ""}
-            onChange={(e) => onFilterChange("endDate", e.target.value)}
-            fullWidth
-            size="small"
-            InputLabelProps={{ shrink: true }}
-          />
-        </Grid>
-        <Grid size={{ xs: 12, sm: "auto" }}>
+    <Card className="mb-4">
+      <CardContent className="space-y-3 p-4">
+        <h2 className="text-base font-semibold">Filters</h2>
+        <div className="grid grid-cols-1 items-end gap-3 sm:grid-cols-2 md:grid-cols-[1fr_1fr_1fr_1fr_auto]">
+          <div className="space-y-1.5">
+            <Label htmlFor="filter-company">Company Name</Label>
+            <Input
+              id="filter-company"
+              value={filters.companyName || ""}
+              onChange={(e) => onFilterChange("companyName", e.target.value)}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="filter-role">Role Type</Label>
+            <Input
+              id="filter-role"
+              value={filters.roleType || ""}
+              onChange={(e) => onFilterChange("roleType", e.target.value)}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="filter-start">Start Date</Label>
+            <Input
+              id="filter-start"
+              type="date"
+              value={filters.startDate || ""}
+              onChange={(e) => onFilterChange("startDate", e.target.value)}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="filter-end">End Date</Label>
+            <Input
+              id="filter-end"
+              type="date"
+              value={filters.endDate || ""}
+              onChange={(e) => onFilterChange("endDate", e.target.value)}
+            />
+          </div>
           <Button
-            variant="outlined"
-            startIcon={<ClearIcon />}
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-10"
             onClick={onClearFilters}
-            color="secondary"
-            size="small"
-            sx={{ height: 40 }}
           >
+            <X className="h-4 w-4" />
             Clear
           </Button>
-        </Grid>
-      </Grid>
-    </Paper>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

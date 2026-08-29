@@ -357,6 +357,7 @@ export class ResumePDFTemplate1 {
     const skills = filterSkillsForPdf(
       this.data.skills || [],
       this.pdfSettings.skillCategories,
+      this.pdfSettings.skillsPerCategoryCount,
     );
     if (skills.length === 0) {
       return;

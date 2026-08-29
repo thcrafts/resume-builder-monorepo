@@ -54,6 +54,20 @@ export class PromptRegistryService {
     return this.loadIndustryPrompt(industry);
   }
 
+  getIndustryOverlay(industry: string | undefined): string | null {
+    if (!industry || industry === 'default') {
+      return null;
+    }
+
+    if (!SUPPORTED_INDUSTRIES.includes(industry as IndustryPromptId)) {
+      return null;
+    }
+
+    const full = this.loadIndustryPrompt(industry);
+    const overlay = full.slice(0, 1024).trim();
+    return overlay || null;
+  }
+
   private loadIndustryPrompt(industry: string): string {
     const cached = this.cache.get(industry);
     if (cached) {

@@ -4,6 +4,7 @@ import { createRoot } from "react-dom/client";
 import { createBrowserRouter, Navigate, RouterProvider } from "react-router";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import "./index.css";
 
 import AuthProvider from "./components/common/AuthContext";
 import ThemeModeProvider, { useThemeMode } from "./components/common/ThemeContext";
@@ -61,7 +62,7 @@ const router = createBrowserRouter([
     ],
   },
 
-  { path: "*", element: <Navigate to="/resumes" replace /> },
+  { path: "*", element: <Navigate to="/login" replace /> },
 ]);
 
 const AppContent: React.FC = () => {

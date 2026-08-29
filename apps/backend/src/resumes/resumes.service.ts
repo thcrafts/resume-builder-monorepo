@@ -217,6 +217,9 @@ export class ResumesService {
     json: ResumeData,
     userTemplate?: string,
     conversationId?: string,
+    aiModel?: string,
+    aiVersion?: string,
+    generationMeta?: Record<string, unknown>,
     coverLetter?: string,
   ) {
     const pdfSettings = await this.getResumePdfSettingsForUser(userId);
@@ -240,11 +243,21 @@ export class ResumesService {
     }
 
     // Update the resume record
-    const updateData: any = {
+    const updateData: Record<string, unknown> = {
       resumeJson: json,
       conversationId: conversationId,
       status: 'completed',
     };
+
+    if (aiModel) {
+      updateData.aiModel = aiModel;
+    }
+    if (aiVersion) {
+      updateData.aiVersion = aiVersion;
+    }
+    if (generationMeta) {
+      updateData.generationMeta = generationMeta;
+    }
 
     // Only update coverLetter if provided
     if (coverLetterText) {

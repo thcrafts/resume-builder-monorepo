@@ -55,6 +55,9 @@ export class Resume {
   @Prop({ required: false })
   failureMessage?: string;
 
+  @Prop({ type: MongooseSchema.Types.Mixed, required: false })
+  generationMeta?: Record<string, unknown>;
+
   @Prop({ required: false })
   coverLetter?: string;
 

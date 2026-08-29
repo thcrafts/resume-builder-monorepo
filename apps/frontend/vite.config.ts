@@ -3,6 +3,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
+import tailwindcss from '@tailwindcss/vite'
 
 const sharedRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../packages/shared/src')
 
@@ -47,13 +48,24 @@ export default defineConfig(({ mode }) => {
   console.log(`[vite] proxying /api and /socket.io -> ${target}`)
 
   return {
-    plugins: [react()],
+    plugins: [react(), tailwindcss()],
     resolve: {
+      // Shared package is TypeScript source; Vite may rewrite extensionless
+      // imports to .js (Node ESM style). Prefer .ts so /@fs/.../*.js 404s stop.
+      extensionAlias: {
+        '.js': ['.ts', '.js'],
+      },
       alias: {
-        '@resume-builder/shared': sharedRoot,
+        '@resume-builder/shared': path.resolve(sharedRoot, 'index.ts'),
+        '@': path.resolve(path.dirname(fileURLToPath(import.meta.url)), './src'),
       },
     },
     server: {
+      fs: {
+        allow: [
+          path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..'),
+        ],
+      },
       proxy: {
         '/api': {
           target,

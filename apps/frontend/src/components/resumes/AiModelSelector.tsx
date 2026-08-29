@@ -1,27 +1,16 @@
 import * as React from "react";
-import {
-  Alert,
-  Box,
-  Button,
-  CircularProgress,
-  FormControl,
-  InputLabel,
-  MenuItem,
-  Select,
-  Stack,
-  Typography,
-} from "@mui/material";
 import { Link } from "react-router";
 import {
-  getProviderLabel,
   getVersionsForProvider,
-  getRepresentativeModelIdForProvider,
   resolveModelSelectionInCatalog,
 } from "../../constants/aiModels";
 import { getApiKeyWarning } from "../../constants/profileWarnings";
 import { useAiModels } from "../common/AiModelsContext";
 import ModelProviderIcon from "../common/ModelProviderIcon";
 import { getProfile, type UserResponse } from "../../services/userService";
+import { Button } from "../ui/button";
+import { Label } from "../ui/label";
+import { Alert, Select, Spinner } from "../ui/misc";
 
 interface AiModelSelectorProps {
   aiModel: string;
@@ -69,97 +58,71 @@ const AiModelSelector: React.FC<AiModelSelectorProps> = ({
 
   if (loading && providers.length === 0) {
     return (
-      <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 1, pt: 1 }}>
-        <CircularProgress size={18} />
-        <Typography variant="body2" color="text.secondary">
-          Loading models...
-        </Typography>
-      </Stack>
+      <div className="mt-1 flex items-center gap-2 pt-1">
+        <Spinner className="h-4 w-4" />
+        <span className="text-sm text-muted-foreground">Loading models...</span>
+      </div>
     );
   }
 
   return (
-    <Stack spacing={1} sx={{ mt: 1, pt: 1 }}>
+    <div className="mt-1 space-y-2 pt-1">
       {error && profileLoaded && apiKeyWarning ? (
-        <Alert
-          severity="warning"
-          action={
-            <Button color="inherit" size="small" component={Link} to="/settings">
+        <Alert variant="warning" className="flex items-center justify-between gap-3">
+          <span>{apiKeyWarning}</span>
+          <Link to="/settings">
+            <Button type="button" variant="outline" size="sm">
               Go to Settings
             </Button>
-          }
-        >
-          {apiKeyWarning}
+          </Link>
         </Alert>
       ) : error && profileLoaded && !apiKeyWarning ? (
-        <Typography variant="body2" color="warning.main">
-          {error}. Showing limited model list.
-        </Typography>
+        <p className="text-sm text-primary">{error}. Showing limited model list.</p>
       ) : null}
-      <Stack direction="row" spacing={2} alignItems="center">
-        <FormControl
-          size="small"
-          disabled={disabled || providers.length === 0}
-          sx={{ width: 200, flexShrink: 0 }}
-        >
-          <InputLabel id="ai-model-label">Model</InputLabel>
-          <Select
-            labelId="ai-model-label"
-            label="Model"
-            value={resolved.aiModel}
-            onChange={(e) => handleModelChange(e.target.value)}
-            renderValue={(value) => (
-              <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
-                <ModelProviderIcon modelId={selectedVersion} provider={value} />
-                {getProviderLabel(catalog, value)}
-              </Box>
-            )}
-          >
-            {providers.map((provider) => (
-              <MenuItem key={provider.id} value={provider.id}>
-                <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
-                  <ModelProviderIcon
-                    modelId={getRepresentativeModelIdForProvider(
-                      catalog,
-                      provider.id,
-                    )}
-                  />
-                  {provider.label}
-                </Box>
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
 
-        <FormControl
-          size="small"
-          disabled={disabled || versions.length === 0}
-          sx={{ width: 280, flexShrink: 0 }}
-        >
-          <InputLabel id="ai-version-label">Version</InputLabel>
+      <div className="flex flex-wrap items-end gap-3">
+        <div className="w-[200px] shrink-0 space-y-1.5">
+          <Label htmlFor="ai-model">Model</Label>
+          <div className="relative">
+            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2">
+              <ModelProviderIcon
+                modelId={selectedVersion}
+                provider={resolved.aiModel}
+              />
+            </span>
+            <Select
+              id="ai-model"
+              className="pl-8"
+              value={resolved.aiModel}
+              disabled={disabled || providers.length === 0}
+              onChange={(e) => handleModelChange(e.target.value)}
+            >
+              {providers.map((provider) => (
+                <option key={provider.id} value={provider.id}>
+                  {provider.label}
+                </option>
+              ))}
+            </Select>
+          </div>
+        </div>
+
+        <div className="w-[280px] shrink-0 space-y-1.5">
+          <Label htmlFor="ai-version">Version</Label>
           <Select
-            labelId="ai-version-label"
-            label="Version"
+            id="ai-version"
             value={selectedVersion}
+            disabled={disabled || versions.length === 0}
             onChange={(e) => onChange(resolved.aiModel, e.target.value)}
-            MenuProps={{
-              PaperProps: {
-                sx: { maxHeight: 360 },
-              },
-            }}
           >
             {versions.map((model) => (
-              <MenuItem key={model.id} value={model.id}>
-                <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
-                  <ModelProviderIcon modelId={model.id} />
-                  {model.versionLabel}
-                </Box>
-              </MenuItem>
+              <option key={model.id} value={model.id}>
+                {model.versionLabel}
+              </option>
             ))}
           </Select>
-        </FormControl>
-      </Stack>
-    </Stack>
+        </div>
+      </div>
+    </div>
   );
 };
 

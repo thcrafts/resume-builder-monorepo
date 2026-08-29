@@ -7,12 +7,53 @@ import { resolveResumeSettings } from './resume-settings';
 import {
   DEFAULT_COVER_LETTER_PROMPT,
   DEFAULT_QUESTIONS_PROMPT,
-} from './default-prompts';
+  DEFAULT_TITLE_MATCH_PROMPT,
+  DEFAULT_SUMMARY_PROMPT,
+  DEFAULT_SKILLS_PROMPT,
+  DEFAULT_TITLE_MATCH_MODEL,
+  DEFAULT_SUMMARY_MODEL,
+  DEFAULT_SKILLS_MODEL,
+  DEFAULT_EXPERIENCE_MODEL,
+  TITLE_MATCH_MAX_TOKENS,
+  SUMMARY_MAX_TOKENS,
+  SKILLS_MAX_TOKENS,
+  EXPERIENCE_MAX_TOKENS,
+  JD_EXPERIENCE_TRUNCATE_CHARS,
+  TITLE_SIMILARITY_THRESHOLD,
+  type CompanyEntry,
+  type CandidateProfileData,
+} from '@resume-builder/shared';
 import { cleanText } from './clean-text';
 import { prepareResumeGenerationInstructions } from './prepare-resume-instructions';
 import type { UserApiKeys } from './user-api-keys';
 import { normalizeResumeExperienceBullets } from './normalize-resume-json';
 import { OpenRouterService } from '../openrouter/openrouter.service';
+import {
+  parseTitleMatchResult,
+  resolveFinalTitle,
+  titleMatchJsonSchema,
+} from './schemas/title-match.schema';
+import { parseSummaryResult, summaryJsonSchema } from './schemas/summary.schema';
+import { parseSkillsResult, buildSkillsJsonSchema, buildSkillsFallback } from './schemas/skills.schema';
+import {
+  parseExperienceResult,
+  experienceJsonSchema,
+} from './schemas/experience.schema';
+import { prepareCompanyExperienceInstructions } from './prepare-company-experience-instructions';
+import {
+  enrichSkillsWithSources,
+  normalizeGeneratedSkills,
+} from './normalize-resume-skills';
+
+export interface SkillsGenerationContext {
+  companies: Array<{
+    company: string;
+    title: string;
+    product: string;
+    mission: string;
+    roleSkills: string[];
+  }>;
+}
 
 @Injectable()
 export class AiService {
@@ -55,6 +96,201 @@ export class AiService {
     };
   }
 
+  async matchTitle(
+    jobDescription: string,
+    professionalTitle: string,
+    companyTitles: string[],
+    apiKeys?: UserApiKeys,
+    model = DEFAULT_TITLE_MATCH_MODEL,
+  ) {
+    const userPrompt = [
+      `Job Description:\n${cleanText(jobDescription)}`,
+      `Professional Title: ${professionalTitle}`,
+      `Company Titles:\n${companyTitles.map((t) => `- ${t}`).join('\n')}`,
+    ].join('\n\n');
+
+    const systemPrompt = `${DEFAULT_TITLE_MATCH_PROMPT}\n\nSchema:\n${JSON.stringify(titleMatchJsonSchema)}`;
+
+    const { data } = await this.openRouterService.createJsonCompletion<unknown>(
+      systemPrompt,
+      userPrompt,
+      model,
+      TITLE_MATCH_MAX_TOKENS,
+      apiKeys,
+    );
+
+    const match = parseTitleMatchResult(data);
+    const finalTitle = resolveFinalTitle(
+      professionalTitle,
+      match,
+      TITLE_SIMILARITY_THRESHOLD,
+    );
+
+    return { match, finalTitle };
+  }
+
+  async generateSummaryChunk(
+    jobDescription: string,
+    finalTitle: string,
+    companySummaries: string[],
+    userInstructions: string | undefined,
+    apiKeys?: UserApiKeys,
+    model = DEFAULT_SUMMARY_MODEL,
+  ) {
+    const parts = [
+      `Job Description:\n${cleanText(jobDescription)}`,
+      `Resume Title: ${finalTitle}`,
+      `Companies:\n${companySummaries.join('\n')}`,
+    ];
+    if (userInstructions?.trim()) {
+      parts.push(`Additional Instructions:\n${cleanText(userInstructions)}`);
+    }
+
+    const systemPrompt = `${DEFAULT_SUMMARY_PROMPT}\n\nSchema:\n${JSON.stringify(summaryJsonSchema)}`;
+
+    const { data } = await this.openRouterService.createJsonCompletion<unknown>(
+      systemPrompt,
+      parts.join('\n\n'),
+      model,
+      SUMMARY_MAX_TOKENS,
+      apiKeys,
+    );
+
+    return parseSummaryResult(data);
+  }
+
+  async generateSkillsChunk(
+    jobDescription: string,
+    baselineSkills: CandidateProfileData['baselineSkills'],
+    resumeSettings: ResumeSettings,
+    apiKeys?: UserApiKeys,
+    model = DEFAULT_SKILLS_MODEL,
+    context?: SkillsGenerationContext,
+  ) {
+    const settings = resolveResumeSettings(resumeSettings);
+    const targetCategories = settings.skillCategories.length;
+
+    const userPromptParts = [
+      `Job Description:\n${cleanText(jobDescription)}`,
+      `Baseline Skills:\n${JSON.stringify(baselineSkills)}`,
+    ];
+
+    if (context?.companies.length) {
+      userPromptParts.push(
+        `Company Context and Role-Proven Skills:\n${JSON.stringify(context.companies)}`,
+      );
+    }
+
+    userPromptParts.push(
+      `Output goals:
+- Enabled categories: ${settings.skillCategories.join(', ')}
+- Be RICH: include all supported skills from baseline and role-proven lists
+- ${
+        settings.skillsPerCategoryCount > 0
+          ? `Optional soft max ${settings.skillsPerCategoryCount} items per category`
+          : 'No per-category item limit — include every supported skill'
+      }
+- Populate as many relevant enabled categories as possible (~${targetCategories} when supported)`,
+    );
+
+    const skillsSchema = buildSkillsJsonSchema({
+      skillCategories: settings.skillCategories,
+      skillsPerCategoryCount: settings.skillsPerCategoryCount,
+    });
+    const systemPrompt = `${DEFAULT_SKILLS_PROMPT}\n\nSchema:\n${JSON.stringify(skillsSchema)}`;
+
+    const { data } = await this.openRouterService.createJsonCompletion<unknown>(
+      systemPrompt,
+      userPromptParts.join('\n\n'),
+      model,
+      SKILLS_MAX_TOKENS,
+      apiKeys,
+    );
+
+    const roleSkills = (context?.companies ?? []).flatMap(
+      (company) => company.roleSkills ?? [],
+    );
+
+    let parsedSkills: Array<{ category: string; items: string[] }> = [];
+    try {
+      parsedSkills = parseSkillsResult(data).skills;
+    } catch (error) {
+      console.warn(
+        'Skills model returned an unusable payload; falling back to baseline/role skills.',
+        error instanceof Error ? error.message : error,
+        typeof data === 'object' ? JSON.stringify(data).slice(0, 500) : data,
+      );
+      parsedSkills = buildSkillsFallback(baselineSkills, roleSkills);
+    }
+
+    if (parsedSkills.length === 0) {
+      parsedSkills = buildSkillsFallback(baselineSkills, roleSkills);
+    }
+
+    if (parsedSkills.length === 0) {
+      throw new Error(
+        'Invalid skills response: model returned no skills and profile baseline skills are empty. Add baseline skills in Profile → Candidate, then retry.',
+      );
+    }
+
+    return {
+      skills: enrichSkillsWithSources(
+        normalizeGeneratedSkills(parsedSkills, settings),
+        {
+          baselineSkills,
+          roleSkills,
+        },
+        settings,
+      ),
+    };
+  }
+
+  async generateCompanyExperience(
+    jobDescription: string,
+    company: CompanyEntry,
+    systemInstructions: string,
+    apiKeys?: UserApiKeys,
+    model = DEFAULT_EXPERIENCE_MODEL,
+  ) {
+    let jd = cleanText(jobDescription);
+    if (jd.length > JD_EXPERIENCE_TRUNCATE_CHARS) {
+      jd = jd.slice(0, JD_EXPERIENCE_TRUNCATE_CHARS);
+    }
+
+    const userPrompt = [
+      `Job Description:\n${jd}`,
+      `Company Context:\n${JSON.stringify({
+        company: company.company,
+        title: company.title,
+        date_range: company.date_range,
+        job_type: company.job_type,
+        location: company.location,
+        product: company.product,
+        mission: company.mission,
+        context: company.context,
+      })}`,
+    ].join('\n\n');
+
+    const { data } = await this.openRouterService.createJsonCompletion<unknown>(
+      systemInstructions,
+      userPrompt,
+      model,
+      EXPERIENCE_MAX_TOKENS,
+      apiKeys,
+    );
+
+    return parseExperienceResult(data);
+  }
+
+  buildExperienceSystemInstructions(options: {
+    experiencePrompt?: string | null;
+    industryOverlay?: string | null;
+    companySkillsCount?: number;
+    achievementsCount?: number;
+  }): string {
+    return prepareCompanyExperienceInstructions(options);
+  }
+
   async generateCoverLetter(
     jobDescription: string,
     resumeJson: Record<string, unknown>,
@@ -82,7 +318,7 @@ export class AiService {
 
   async parseAndAnswerQuestions(
     questionsText: string,
-    resumeJson: Record<string, any>,
+    resumeJson: Record<string, unknown>,
     jobDescription: string,
     customPrompt?: string,
     aiProvider: string = 'anthropic',
@@ -104,7 +340,7 @@ export class AiService {
     const cleanedJobDescription = cleanText(jobDescription);
     const cleanedQuestionsText = cleanText(questionsText);
 
-    const resumeCopy: Record<string, any> = { ...(resumeJson || {}) };
+    const resumeCopy: Record<string, unknown> = { ...(resumeJson || {}) };
     if (resumeCopy.cover_letter) {
       delete resumeCopy.cover_letter;
     }

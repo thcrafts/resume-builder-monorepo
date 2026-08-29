@@ -1,5 +1,10 @@
 import ApiClient from "./apiClient";
 import type { ResumeSettings } from "../constants/resumeSettings";
+import type {
+  CandidateProfileData,
+  CompanyEntry,
+  ContactEntry,
+} from "@resume-builder/shared";
 
 export type User = {
   id: number;
@@ -23,6 +28,10 @@ export interface UserResponse {
   instructions?: string;
   questionsPrompt?: string;
   coverLetterPrompt?: string;
+  experiencePrompt?: string;
+  contacts?: ContactEntry[];
+  candidateProfile?: CandidateProfileData;
+  companies?: CompanyEntry[];
   defaultAiModel?: string;
   defaultAiVersion?: string;
   defaultGenerateFromJson?: boolean;
@@ -74,6 +83,10 @@ export interface UpdateProfileDto {
   instructions?: string;
   questionsPrompt?: string;
   coverLetterPrompt?: string;
+  experiencePrompt?: string;
+  contacts?: ContactEntry[];
+  candidateProfile?: Partial<CandidateProfileData>;
+  companies?: CompanyEntry[];
   defaultAiModel?: string;
   defaultAiVersion?: string;
   defaultGenerateFromJson?: boolean;

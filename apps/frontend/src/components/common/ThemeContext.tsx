@@ -1,7 +1,6 @@
 import * as React from "react";
-import { CssBaseline, ThemeProvider } from "@mui/material";
 
-import { getTheme, type ThemeMode } from "../../theme";
+type ThemeMode = "light" | "dark";
 
 const THEME_STORAGE_KEY = "theme-mode";
 
@@ -15,17 +14,36 @@ const ThemeModeContext = React.createContext<ThemeModeContextValue | undefined>(
 );
 
 const getInitialMode = (): ThemeMode => {
+  if (typeof window === "undefined") return "light";
   const stored = localStorage.getItem(THEME_STORAGE_KEY);
   return stored === "dark" ? "dark" : "light";
 };
 
+const applyDomTheme = (mode: ThemeMode) => {
+  const root = document.documentElement;
+  if (mode === "dark") {
+    root.classList.add("dark");
+  } else {
+    root.classList.remove("dark");
+  }
+};
+
 const ThemeModeProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
-  const [mode, setModeState] = React.useState<ThemeMode>(getInitialMode);
+  const [mode, setModeState] = React.useState<ThemeMode>(() => {
+    const initial = getInitialMode();
+    applyDomTheme(initial);
+    return initial;
+  });
 
   const setMode = React.useCallback((nextMode: ThemeMode) => {
     setModeState(nextMode);
     localStorage.setItem(THEME_STORAGE_KEY, nextMode);
+    applyDomTheme(nextMode);
   }, []);
+
+  React.useEffect(() => {
+    applyDomTheme(mode);
+  }, [mode]);
 
   const value = React.useMemo(
     () => ({
@@ -36,12 +54,7 @@ const ThemeModeProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
   );
 
   return (
-    <ThemeModeContext.Provider value={value}>
-      <ThemeProvider theme={getTheme(mode)}>
-        <CssBaseline enableColorScheme />
-        {children}
-      </ThemeProvider>
-    </ThemeModeContext.Provider>
+    <ThemeModeContext.Provider value={value}>{children}</ThemeModeContext.Provider>
   );
 };
 
@@ -54,3 +67,4 @@ export const useThemeMode = () => {
 };
 
 export default ThemeModeProvider;
+export type { ThemeMode };

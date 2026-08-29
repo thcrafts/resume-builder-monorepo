@@ -53,13 +53,60 @@ export function createInitialFontState(
 }
 
 export function normalizeResumeData(data: ResumeData): ResumeData {
+  const coerceBullet = (value: unknown): string => {
+    if (typeof value === 'string') {
+      return value.trim();
+    }
+    if (value && typeof value === 'object') {
+      const record = value as Record<string, unknown>;
+      for (const key of [
+        'text',
+        'bullet',
+        'achievement',
+        'description',
+        'content',
+        'value',
+        'item',
+        'summary',
+        'name',
+        'skill',
+        'label',
+      ]) {
+        const candidate = record[key];
+        if (typeof candidate === 'string' && candidate.trim()) {
+          return candidate.trim();
+        }
+      }
+      for (const candidate of Object.values(record)) {
+        if (typeof candidate === 'string' && candidate.trim()) {
+          return candidate.trim();
+        }
+      }
+    }
+    if (typeof value === 'number' || typeof value === 'boolean') {
+      return String(value);
+    }
+    return '';
+  };
+
   return {
     name: data.name || '',
     title: data.title || '',
     contact: data.contact || {},
     summary: data.summary || '',
     skills: data.skills,
-    experience: data.experience || [],
+    experience: (data.experience || []).map((entry) => ({
+      ...entry,
+      responsibilities: Array.isArray(entry.responsibilities)
+        ? entry.responsibilities.map(coerceBullet).filter(Boolean)
+        : [],
+      achievements: Array.isArray(entry.achievements)
+        ? entry.achievements.map(coerceBullet).filter(Boolean)
+        : [],
+      skills: Array.isArray(entry.skills)
+        ? entry.skills.map(coerceBullet).filter(Boolean)
+        : entry.skills,
+    })),
     education: data.education || [],
     certifications: Array.isArray(data.certifications)
       ? data.certifications
@@ -193,8 +240,9 @@ export function renderBulletItems(
   doc.font(fontName).fontSize(fontSize);
 
   for (const item of items) {
-    const itemText = (item || '').trim();
-    if (!itemText) {
+    const itemText = (typeof item === 'string' ? item : String(item ?? ''))
+      .trim();
+    if (!itemText || itemText === '[object Object]') {
       continue;
     }
 

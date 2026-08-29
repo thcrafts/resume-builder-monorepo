@@ -27,8 +27,10 @@ Manual checks after local setup (`npm run dev`, MongoDB up, backend **:3001**, f
 ## Profile / users
 
 - [ ] Open `/settings` → load profile
+- [ ] Fill Candidate section: 2 contacts (one primary with email), title, education, baseline skills, 2 companies with product/mission
+- [ ] Incomplete candidate profile → CreateResume shows blocking warning
 - [ ] Save name + template → persists after refresh
-- [ ] Save resume prompt (`instructions`) → persists
+- [ ] Save experience prompt → persists
 - [ ] Set OpenRouter API key → `hasOpenrouterApiKey` true; key not returned in profile GET
 - [ ] Reveal API key with wrong password → error
 - [ ] Reveal API key with correct password → key shown
@@ -39,15 +41,18 @@ Manual checks after local setup (`npm run dev`, MongoDB up, backend **:3001**, f
 ## AI models
 
 - [ ] `GET /api/ai/models` (authenticated) returns providers + defaults
-- [ ] Profile / create-resume model selectors populate from catalog
+- [ ] From-JSON model selector populates from catalog (AI generate uses fixed per-step models)
 
-## Resume generate (SSE + socket)
+## Resume generate (chunked SSE + socket)
 
 - [ ] Without API key → generate shows error (SSE `type:error` or toast)
-- [ ] Without default prompt and industry `default` → failure / clear message
-- [ ] With key + prompt: submit generate → receive `resumeId`, redirect/list shows `in_progress`
+- [ ] Without complete candidate profile → blocked client-side and/or server error listing fields
+- [ ] With key + complete profile: submit generate → receive `resumeId`; progress steps visible (`title` → `summary` → `skills` → `experience`)
 - [ ] On success → socket `generate:done`; status `completed`; JSON present
+- [ ] Static fields (name, contact, education, company names/dates) unchanged vs profile
+- [ ] Experience bullets mention product/mission and include numbers
 - [ ] On OpenRouter failure → socket `generate:failed`; status `failed` + message
+- [ ] Retry failed resume clears failure and re-runs chunked pipeline
 - [ ] Download PDF → valid PDF named from user
 - [ ] Download JSON → valid JSON file
 
@@ -80,7 +85,8 @@ Manual checks after local setup (`npm run dev`, MongoDB up, backend **:3001**, f
 
 ## Frontend chrome
 
-- [ ] Theme light/dark toggle persists (`theme-mode`)
+- [ ] Theme light/dark toggle persists (`theme-mode`); `html` has `class="dark"` in dark mode
+- [ ] Tailwind pages (login, settings, resumes, users) render without MUI
 - [ ] Toasts appear on success/error
 - [ ] Hard refresh on `/resumes` stays logged in with valid token
 

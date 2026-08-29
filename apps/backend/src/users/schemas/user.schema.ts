@@ -5,6 +5,11 @@ import {
   DEFAULT_RESUME_SETTINGS,
   SKILL_CATEGORIES,
 } from '../../ai/resume-settings';
+import {
+  CandidateProfileEmbedded,
+  CompanyEmbedded,
+  ContactEmbedded,
+} from './candidate-profile.schema';
 
 export type UserDocument = HydratedDocument<User>;
 
@@ -66,6 +71,26 @@ export class User {
 
   @Prop({ type: String, required: false })
   coverLetterPrompt?: string;
+
+  @Prop({ type: String, required: false })
+  experiencePrompt?: string;
+
+  @Prop({ type: [ContactEmbedded], default: [] })
+  contacts: ContactEmbedded[];
+
+  @Prop({
+    type: CandidateProfileEmbedded,
+    default: () => ({
+      professionalTitle: '',
+      education: [],
+      certifications: [],
+      baselineSkills: [],
+    }),
+  })
+  candidateProfile: CandidateProfileEmbedded;
+
+  @Prop({ type: [CompanyEmbedded], default: [] })
+  companies: CompanyEmbedded[];
 
   @Prop({ default: 'anthropic' })
   defaultAiModel: string;

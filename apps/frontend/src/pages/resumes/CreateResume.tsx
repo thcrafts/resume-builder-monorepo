@@ -1,26 +1,17 @@
 import * as React from "react";
-import {
-  Alert,
-  Box,
-  Button,
-  Checkbox,
-  Paper,
-  Stack,
-  TextField,
-  Typography,
-} from "@mui/material";
-import { ArrowBack as ArrowBackIcon } from "@mui/icons-material";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
+import { Link, useNavigate, useSearchParams } from "react-router";
+import { toast } from "react-toastify";
+import { ArrowLeft } from "lucide-react";
+import { validateCandidateProfile } from "@resume-builder/shared";
 import {
   generatePdfFromJson,
   generateResumeStream,
   type GenerateResumeDto,
 } from "../../services/resumeService";
 import { getProfile, type UserResponse } from "../../services/userService";
-import { toast } from "react-toastify";
-import { Link, useNavigate, useSearchParams } from "react-router";
 import AiModelSelector from "../../components/resumes/AiModelSelector";
 import { getApiKeyWarning } from "../../constants/profileWarnings";
 import {
@@ -33,19 +24,13 @@ import {
   clearDuplicateResumeDraft,
   loadDuplicateResumeDraft,
 } from "../../constants/duplicateResumeDraft";
-import { resizableMultilineSx } from "../../constants/textFieldStyles";
-
-const getResumePromptWarning = (
-  profile: UserResponse | null,
-): string | null => {
-  if (!profile) return null;
-
-  if (!profile.instructions?.trim()) {
-    return "No resume prompt configured. Add your resume prompt in Profile settings before generating a resume.";
-  }
-
-  return null;
-};
+import { socket } from "./socket";
+import { Button } from "../../components/ui/button";
+import { Input } from "../../components/ui/input";
+import { Textarea } from "../../components/ui/textarea";
+import { Label } from "../../components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
+import { Alert, Checkbox, Spinner } from "../../components/ui/misc";
 
 const aiGenerateSchema = yup
   .object({
@@ -78,6 +63,8 @@ const fromJsonSchema = yup
 type AiGenerateFormData = yup.InferType<typeof aiGenerateSchema>;
 type FromJsonFormData = yup.InferType<typeof fromJsonSchema>;
 
+type ProgressStep = "title" | "summary" | "skills" | "experience";
+
 const CreateResume: React.FC = () => {
   const { catalog } = useAiModels();
   const navigate = useNavigate();
@@ -91,21 +78,35 @@ const CreateResume: React.FC = () => {
   const [aiVersion, setAiVersion] = React.useState("anthropic/claude-sonnet-4.6");
   const [profile, setProfile] = React.useState<UserResponse | null>(null);
   const [submitError, setSubmitError] = React.useState<string | null>(null);
-
-  const industry = "default";
+  const [activeResumeId, setActiveResumeId] = React.useState<string | null>(null);
+  const [progress, setProgress] = React.useState<{
+    step: ProgressStep;
+    index?: number;
+    total?: number;
+  } | null>(null);
 
   const apiKeyWarning = React.useMemo(
     () => getApiKeyWarning(profile),
     [profile],
   );
 
-  const resumePromptWarning = React.useMemo(
-    () => getResumePromptWarning(profile),
-    [profile],
-  );
+  const profileValidation = React.useMemo(() => {
+    if (!profile) return null;
+    return validateCandidateProfile({
+      name: profile.name,
+      contacts: profile.contacts,
+      candidateProfile: profile.candidateProfile,
+      companies: profile.companies,
+    });
+  }, [profile]);
+
+  const profileWarning =
+    profileValidation && !profileValidation.valid
+      ? `Complete your candidate profile before generating: ${profileValidation.errors.join("; ")}`
+      : null;
 
   const isAiGenerateDisabled =
-    isSubmitting || !!apiKeyWarning || !!resumePromptWarning;
+    isSubmitting || !!apiKeyWarning || !!profileWarning;
 
   const aiForm = useForm<AiGenerateFormData>({
     resolver: yupResolver(aiGenerateSchema),
@@ -173,29 +174,56 @@ const CreateResume: React.FC = () => {
         setAiVersion(defaults.aiVersion);
       })
       .catch(() => {
-        // Profile warning is optional; submit validation still runs on the server.
+        // optional
       });
   }, [fromJsonParam, catalog]);
 
   React.useEffect(() => {
-    if (catalog.providers.length === 0) {
-      return;
-    }
+    if (!activeResumeId) return;
 
-    const resolved = resolveModelSelectionInCatalog(aiModel, aiVersion, catalog);
-    if (
-      resolved.aiModel !== aiModel ||
-      resolved.aiVersion !== aiVersion
-    ) {
-      setAiModel(resolved.aiModel);
-      setAiVersion(resolved.aiVersion);
-    }
-  }, [catalog, aiModel, aiVersion]);
+    const onProgress = (payload: {
+      id: string;
+      step: ProgressStep;
+      index?: number;
+      total?: number;
+    }) => {
+      if (payload.id !== activeResumeId) return;
+      setProgress({
+        step: payload.step,
+        index: payload.index,
+        total: payload.total,
+      });
+    };
 
-  const handleGenerateFromJsonChange = (
-    _event: React.ChangeEvent<HTMLInputElement>,
-    checked: boolean,
-  ) => {
+    const onDone = (payload: { id: string }) => {
+      if (payload.id !== activeResumeId) return;
+      setProgress(null);
+      setActiveResumeId(null);
+      toast.success("Resume generated");
+      navigate("/resumes");
+    };
+
+    const onFailed = (payload: { id: string; message?: string }) => {
+      if (payload.id !== activeResumeId) return;
+      setProgress(null);
+      setActiveResumeId(null);
+      setIsSubmitting(false);
+      const message = payload.message || "Resume generation failed";
+      setSubmitError(message);
+      toast.error(message);
+    };
+
+    socket.on("generate:progress", onProgress);
+    socket.on("generate:done", onDone);
+    socket.on("generate:failed", onFailed);
+    return () => {
+      socket.off("generate:progress", onProgress);
+      socket.off("generate:done", onDone);
+      socket.off("generate:failed", onFailed);
+    };
+  }, [activeResumeId, navigate]);
+
+  const handleGenerateFromJsonChange = (checked: boolean) => {
     if (checked) {
       const aiValues = aiForm.getValues();
       jsonForm.reset({
@@ -215,18 +243,8 @@ const CreateResume: React.FC = () => {
         roleType: jsonValues.roleType,
         jobDescription: jsonValues.jobDescription,
       });
-      const defaults = resolveUserDefaultAi(profile, catalog);
-      setAiModel(defaults.aiModel);
-      setAiVersion(defaults.aiVersion);
     }
-
     setGenerateFromJson(checked);
-    setSubmitError(null);
-  };
-
-  const handleAiModelChange = (model: string, version: string) => {
-    setAiModel(model);
-    setAiVersion(version);
     setSubmitError(null);
   };
 
@@ -240,8 +258,8 @@ const CreateResume: React.FC = () => {
       return;
     }
 
-    if (resumePromptWarning) {
-      setSubmitError(resumePromptWarning);
+    if (profileWarning) {
+      setSubmitError(profileWarning);
       setIsSubmitting(false);
       return;
     }
@@ -251,16 +269,15 @@ const CreateResume: React.FC = () => {
         companyName: data.companyName,
         roleType: data.roleType,
         jobDescription: data.jobDescription,
-        industry,
-        aiModel,
-        aiVersion,
+        industry: "default",
       };
 
       const response = await generateResumeStream(payload);
 
       if (response.resumeId) {
-        toast.success("Resume generation started! Redirecting to resumes page...");
-        navigate("/resumes");
+        setActiveResumeId(response.resumeId);
+        setProgress({ step: "title" });
+        toast.success("Resume generation started");
         return;
       }
     } catch (error: unknown) {
@@ -274,7 +291,6 @@ const CreateResume: React.FC = () => {
         "Failed to generate resume";
       setSubmitError(errorMessage);
       toast.error(errorMessage);
-    } finally {
       setIsSubmitting(false);
     }
   };
@@ -330,7 +346,7 @@ const CreateResume: React.FC = () => {
               : parsed.message;
           }
         } catch {
-          // use default message
+          // use default
         }
       } else if (err.message) {
         message = err.message;
@@ -343,217 +359,116 @@ const CreateResume: React.FC = () => {
     }
   };
 
+  const progressLabel = progress
+    ? progress.step === "experience" && progress.index && progress.total
+      ? `Experience ${progress.index}/${progress.total}`
+      : progress.step.charAt(0).toUpperCase() + progress.step.slice(1)
+    : null;
+
   return (
-    <Paper sx={{ p: 3, maxWidth: 1000, mx: "auto" }}>
-      <Stack
-        direction="row"
-        justifyContent="space-between"
-        alignItems="center"
-        sx={{ mb: 2 }}
-      >
-        <Typography variant="h4">Generate Resume</Typography>
-        <Button
-          variant="contained"
-          component={Link}
+    <Card className="mx-auto max-w-3xl">
+      <CardHeader className="flex flex-row items-center justify-between">
+        <CardTitle>Generate Resume</CardTitle>
+        <Link
           to="/resumes"
-          startIcon={<ArrowBackIcon />}
+          className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
         >
+          <ArrowLeft className="h-4 w-4" />
           Resumes
-        </Button>
-      </Stack>
+        </Link>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <label className="flex items-center gap-2 text-sm">
+          <Checkbox
+            checked={generateFromJson}
+            onCheckedChange={handleGenerateFromJsonChange}
+          />
+          Generate from JSON
+        </label>
 
-      <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mb: 2 }}>
-        <Checkbox
-          checked={generateFromJson}
-          onChange={handleGenerateFromJsonChange}
-          size="small"
-          sx={{ p: 0.5 }}
-        />
-        <Typography variant="body1">Generate from JSON</Typography>
-      </Box>
+        {apiKeyWarning ? <Alert variant="warning">{apiKeyWarning}</Alert> : null}
+        {profileWarning && !generateFromJson ? (
+          <Alert variant="warning">
+            {profileWarning}{" "}
+            <Link to="/settings" className="underline">
+              Open Settings
+            </Link>
+          </Alert>
+        ) : null}
 
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        {generateFromJson
-          ? "Enter job details and paste resume JSON. A completed resume record will be saved and the PDF will use your profile template."
-          : "Enter job details and paste the job description. A tailored resume will be generated in the background using your profile prompt and selected AI model."}
-      </Typography>
+        {progressLabel ? (
+          <Alert variant="default" className="flex items-center gap-3">
+            <Spinner />
+            <span>
+              Generating… current step: <strong>{progressLabel}</strong>
+            </span>
+          </Alert>
+        ) : null}
 
-      {!generateFromJson && resumePromptWarning && (
-        <Alert
-          severity="warning"
-          sx={{ mb: 2 }}
-          action={
-            <Button color="inherit" size="small" component={Link} to="/settings">
-              Go to Settings
-            </Button>
-          }
-        >
-          {resumePromptWarning}
-        </Alert>
-      )}
+        {submitError ? <Alert variant="destructive">{submitError}</Alert> : null}
 
-      {!generateFromJson && apiKeyWarning && (
-        <Alert
-          severity="warning"
-          sx={{ mb: 2 }}
-          action={
-            <Button color="inherit" size="small" component={Link} to="/settings">
-              Go to Settings
-            </Button>
-          }
-        >
-          {apiKeyWarning}
-        </Alert>
-      )}
-
-      {submitError && (
-        <Alert
-          severity="error"
-          sx={{ mb: 2 }}
-          onClose={() => setSubmitError(null)}
-          action={
-            submitError.toLowerCase().includes("profile") ? (
-              <Button color="inherit" size="small" component={Link} to="/settings">
-                Go to Settings
-              </Button>
-            ) : undefined
-          }
-        >
-          {submitError}
-        </Alert>
-      )}
-
-      {generateFromJson ? (
-        <form onSubmit={jsonForm.handleSubmit(onJsonSubmit)}>
-          <Stack spacing={3}>
+        {generateFromJson ? (
+          <form
+            className="space-y-4"
+            onSubmit={jsonForm.handleSubmit(onJsonSubmit)}
+          >
+            <div className="space-y-2">
+              <Label>Company name</Label>
+              <Input {...jsonForm.register("companyName")} />
+            </div>
+            <div className="space-y-2">
+              <Label>Job title</Label>
+              <Input {...jsonForm.register("roleType")} />
+            </div>
+            <div className="space-y-2">
+              <Label>Job description</Label>
+              <Textarea rows={6} {...jsonForm.register("jobDescription")} />
+            </div>
+            <div className="space-y-2">
+              <Label>Resume JSON</Label>
+              <Textarea rows={12} {...jsonForm.register("jsonContent")} />
+            </div>
             <AiModelSelector
               aiModel={aiModel}
               aiVersion={aiVersion}
-              onChange={handleAiModelChange}
-              disabled={isSubmitting}
+              onChange={(model, version) => {
+                setAiModel(model);
+                setAiVersion(version);
+              }}
             />
-
-            <TextField
-              {...jsonForm.register("companyName")}
-              label="Company Name"
-              fullWidth
-              error={!!jsonForm.formState.errors.companyName}
-              helperText={jsonForm.formState.errors.companyName?.message}
-              required
-              size="small"
-              disabled={isSubmitting}
-            />
-            <TextField
-              {...jsonForm.register("roleType")}
-              label="Role Type"
-              fullWidth
-              error={!!jsonForm.formState.errors.roleType}
-              helperText={jsonForm.formState.errors.roleType?.message}
-              required
-              size="small"
-              disabled={isSubmitting}
-            />
-            <TextField
-              {...jsonForm.register("jobDescription")}
-              label="Job Description"
-              fullWidth
-              multiline
-              rows={6}
-              error={!!jsonForm.formState.errors.jobDescription}
-              helperText={jsonForm.formState.errors.jobDescription?.message}
-              required
-              placeholder="Paste the job description here..."
-              disabled={isSubmitting}
-              size="small"
-              sx={resizableMultilineSx}
-            />
-
-            <TextField
-              {...jsonForm.register("jsonContent")}
-              label="Resume JSON"
-              fullWidth
-              multiline
-              rows={16}
-              error={!!jsonForm.formState.errors.jsonContent}
-              helperText={
-                jsonForm.formState.errors.jsonContent?.message ??
-                "Paste the full resume JSON object"
-              }
-              required
-              placeholder='{"name": "...", "title": "...", ...}'
-              disabled={isSubmitting}
-              size="small"
-              sx={resizableMultilineSx}
-            />
-
-            <Button
-              type="submit"
-              variant="contained"
-              size="large"
-              disabled={isSubmitting}
-              fullWidth
-            >
-              {isSubmitting ? "Generating..." : "Generate"}
+            <Button type="submit" disabled={isSubmitting} className="w-full">
+              {isSubmitting ? "Generating…" : "Generate from JSON"}
             </Button>
-          </Stack>
-        </form>
-      ) : (
-        <form onSubmit={aiForm.handleSubmit(onAiSubmit)}>
-          <Stack spacing={3}>
-            <AiModelSelector
-              aiModel={aiModel}
-              aiVersion={aiVersion}
-              onChange={handleAiModelChange}
-              disabled={isSubmitting}
-            />
-
-            <TextField
-              {...aiForm.register("companyName")}
-              label="Company Name"
-              fullWidth
-              error={!!aiForm.formState.errors.companyName}
-              helperText={aiForm.formState.errors.companyName?.message}
-              required
-              size="small"
-              disabled={isSubmitting}
-            />
-            <TextField
-              {...aiForm.register("roleType")}
-              label="Role Type"
-              fullWidth
-              error={!!aiForm.formState.errors.roleType}
-              helperText={aiForm.formState.errors.roleType?.message}
-              required
-              size="small"
-              disabled={isSubmitting}
-            />
-            <TextField
-              {...aiForm.register("jobDescription")}
-              label="Job Description"
-              fullWidth
-              multiline
-              rows={10}
-              error={!!aiForm.formState.errors.jobDescription}
-              helperText={aiForm.formState.errors.jobDescription?.message}
-              required
-              placeholder="Paste the job description here..."
-              disabled={isSubmitting}
-              sx={resizableMultilineSx}
-            />
-
+          </form>
+        ) : (
+          <form className="space-y-4" onSubmit={aiForm.handleSubmit(onAiSubmit)}>
+            <div className="space-y-2">
+              <Label>Company name</Label>
+              <Input {...aiForm.register("companyName")} />
+            </div>
+            <div className="space-y-2">
+              <Label>Role type</Label>
+              <Input {...aiForm.register("roleType")} />
+            </div>
+            <div className="space-y-2">
+              <Label>Job description</Label>
+              <Textarea rows={10} {...aiForm.register("jobDescription")} />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Uses chunked generation (title → summary → skills → experience) with
+              fixed per-step models.
+            </p>
             <Button
               type="submit"
-              variant="contained"
-              size="large"
               disabled={isAiGenerateDisabled}
-              fullWidth
+              className="w-full"
             >
-              {isSubmitting ? "Generating..." : "Generate"}
+              {isSubmitting ? "Generating…" : "Generate resume"}
             </Button>
-          </Stack>
-        </form>
-      )}
-    </Paper>
+          </form>
+        )}
+      </CardContent>
+    </Card>
   );
 };
 

@@ -8,9 +8,9 @@ export interface GenerateResumeDto {
   companyName: string;
   roleType: string;
   jobDescription: string;
-  industry: string;
-  aiModel: string;
-  aiVersion: string;
+  industry?: string;
+  aiModel?: string;
+  aiVersion?: string;
 }
 
 export interface ResumeResponse {

@@ -10,6 +10,7 @@ import { AiModule } from '../ai/ai.module';
 import { PromptRegistryService } from './prompt-registry.service';
 import { ResumeGenerationService } from './resume-generation.service';
 import { CoverLetterPdfService } from './cover-letter-pdf.service';
+import { ChunkedResumeBuilder } from './chunked-resume.builder';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { CoverLetterPdfService } from './cover-letter-pdf.service';
     PromptRegistryService,
     CoverLetterPdfService,
     ResumeGenerationService,
+    ChunkedResumeBuilder,
   ],
   controllers: [ResumesController],
 })

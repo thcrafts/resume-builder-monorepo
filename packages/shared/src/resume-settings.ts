@@ -41,11 +41,14 @@ export interface ResumePdfSettings {
   showSubTitle: boolean;
   showCompanySkills: boolean;
   skillCategories: SkillCategory[];
+  skillsPerCategoryCount: number;
 }
 
-export const MAX_SKILL_CATEGORIES = 5;
-export const MAX_SKILLS_PER_CATEGORY = 5;
 export const MAX_EXPERIENCE_BULLETS_PER_ROLE = 6;
+export const MIN_COMPANY_SKILL_COUNT = 7;
+export const MAX_COMPANY_SKILL_COUNT = 12;
+/** 0 = no limit (rich technical skills section). Soft upper clamp only. */
+export const MAX_SKILLS_PER_CATEGORY = 40;
 
 export const DEFAULT_RESUME_SETTINGS: ResumeSettings = {
   showTitle: true,
@@ -55,8 +58,8 @@ export const DEFAULT_RESUME_SETTINGS: ResumeSettings = {
   useDefaultOutputFormat: true,
   responsibilitiesCount: 0,
   achievementsCount: 6,
-  skillsPerCategoryCount: 5,
-  companySkillsCount: 8,
+  skillsPerCategoryCount: 0,
+  companySkillsCount: 10,
 };
 
 export const DEFAULT_RESUME_PDF_SETTINGS: ResumePdfSettings = {
@@ -64,6 +67,7 @@ export const DEFAULT_RESUME_PDF_SETTINGS: ResumePdfSettings = {
   showSubTitle: false,
   showCompanySkills: true,
   skillCategories: [...SKILL_CATEGORIES],
+  skillsPerCategoryCount: DEFAULT_RESUME_SETTINGS.skillsPerCategoryCount,
 };
 
 const SKILL_CATEGORY_SET = new Set<string>(SKILL_CATEGORIES);
@@ -74,6 +78,41 @@ function clampCount(value: unknown, fallback: number, max = 30): number {
     return fallback;
   }
   return Math.min(max, Math.max(0, Math.round(parsed)));
+}
+
+function clampAchievementCount(value: unknown, fallback: number): number {
+  const parsed = typeof value === 'number' ? value : Number(value);
+  if (!Number.isFinite(parsed)) {
+    return fallback;
+  }
+
+  const rounded = Math.round(parsed);
+  if (rounded <= 0) {
+    return fallback;
+  }
+
+  return Math.min(MAX_EXPERIENCE_BULLETS_PER_ROLE, rounded);
+}
+
+function clampSkillsPerCategoryCount(value: unknown, fallback: number): number {
+  return clampCount(value, fallback, MAX_SKILLS_PER_CATEGORY);
+}
+
+function clampCompanySkillCount(value: unknown, fallback: number): number {
+  const parsed = typeof value === 'number' ? value : Number(value);
+  if (!Number.isFinite(parsed)) {
+    return fallback;
+  }
+
+  const rounded = Math.round(parsed);
+  if (rounded === 0) {
+    return 0;
+  }
+
+  return Math.min(
+    MAX_COMPANY_SKILL_COUNT,
+    Math.max(MIN_COMPANY_SKILL_COUNT, rounded),
+  );
 }
 
 export function normalizeSkillCategories(
@@ -114,16 +153,15 @@ export function resolveResumeSettings(
     useDefaultOutputFormat:
       partial?.useDefaultOutputFormat ?? base.useDefaultOutputFormat ?? true,
     responsibilitiesCount: 0,
-    achievementsCount: clampCount(
+    achievementsCount: clampAchievementCount(
       base.achievementsCount,
       DEFAULT_RESUME_SETTINGS.achievementsCount,
-      MAX_EXPERIENCE_BULLETS_PER_ROLE,
     ),
-    skillsPerCategoryCount: clampCount(
+    skillsPerCategoryCount: clampSkillsPerCategoryCount(
       base.skillsPerCategoryCount,
       DEFAULT_RESUME_SETTINGS.skillsPerCategoryCount,
     ),
-    companySkillsCount: clampCount(
+    companySkillsCount: clampCompanySkillCount(
       base.companySkillsCount,
       DEFAULT_RESUME_SETTINGS.companySkillsCount,
     ),
@@ -138,6 +176,7 @@ export function getResumePdfSettings(
     showSubTitle: settings.showSubTitle,
     showCompanySkills: settings.showCompanySkills,
     skillCategories: settings.skillCategories,
+    skillsPerCategoryCount: settings.skillsPerCategoryCount,
   };
 }
 
@@ -204,6 +243,7 @@ function getSkillCategoryPdfLabel(category: SkillCategory): string {
 export function filterSkillsForPdf(
   skills: Array<{ category: string; items: string[] }>,
   enabledCategories: SkillCategory[] | undefined,
+  skillsPerCategoryCount = 0,
 ): Array<{ category: string; items: string[] }> {
   const enabled = new Set(
     enabledCategories && enabledCategories.length > 0
@@ -240,15 +280,19 @@ export function filterSkillsForPdf(
     });
   }
 
+  const perCategoryLimit =
+    skillsPerCategoryCount > 0 ? skillsPerCategoryCount : undefined;
+
   return SKILL_CATEGORIES.filter((category) => enabled.has(category))
     .map((category) => skillsByCategory.get(category))
     .filter(
       (skill): skill is { category: string; items: string[] } =>
         !!skill && Array.isArray(skill.items) && skill.items.length > 0,
     )
-    .slice(0, MAX_SKILL_CATEGORIES)
     .map((skill) => ({
       category: skill.category,
-      items: skill.items.slice(0, MAX_SKILLS_PER_CATEGORY),
+      items: perCategoryLimit
+        ? skill.items.slice(0, perCategoryLimit)
+        : skill.items,
     }));
 }

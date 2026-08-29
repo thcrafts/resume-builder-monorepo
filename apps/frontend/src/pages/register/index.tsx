@@ -1,14 +1,4 @@
 import { yupResolver } from "@hookform/resolvers/yup";
-import {
-  Alert,
-  Box,
-  Button,
-  Link as MuiLink,
-  Paper,
-  Stack,
-  TextField,
-  Typography,
-} from "@mui/material";
 import * as React from "react";
 import { useForm, type SubmitHandler } from "react-hook-form";
 import { Link } from "react-router";
@@ -16,6 +6,11 @@ import * as yup from "yup";
 import { toast } from "react-toastify";
 import { register as registerUser } from "../../services/userService";
 import { useAuth } from "../../components/common/AuthContext";
+import { Button } from "../../components/ui/button";
+import { Input } from "../../components/ui/input";
+import { Label } from "../../components/ui/label";
+import { Card, CardContent } from "../../components/ui/card";
+import { Alert } from "../../components/ui/misc";
 
 const schema = yup
   .object({
@@ -45,9 +40,7 @@ const Register: React.FC = () => {
     },
   });
 
-  const onSubmit: SubmitHandler<yup.InferType<typeof schema>> = async (
-    data,
-  ) => {
+  const onSubmit: SubmitHandler<yup.InferType<typeof schema>> = async (data) => {
     try {
       setError(null);
       const { access_token } = await registerUser({
@@ -59,78 +52,56 @@ const Register: React.FC = () => {
       toast.success("Account created successfully");
     } catch (err: unknown) {
       const message =
-        (err as { response?: { data?: { message?: string } } })?.response
-          ?.data?.message || "Failed to create account";
+        (err as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message || "Failed to create account";
       setError(message);
       toast.error(message);
     }
   };
 
   return (
-    <Paper sx={{ p: 4, width: "100%", maxWidth: 420 }}>
-      <Stack spacing={3}>
-        <Box sx={{ textAlign: "center" }}>
-          <Typography variant="h4" fontWeight={700} gutterBottom>
-            Resume Builder
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Create your account
-          </Typography>
-        </Box>
+    <Card className="w-full max-w-md">
+      <CardContent className="space-y-6 p-8">
+        <div className="text-center">
+          <h1 className="text-3xl font-bold">Resume Builder</h1>
+          <p className="mt-1 text-sm text-muted-foreground">Create your account</p>
+        </div>
 
-        <form onSubmit={handleSubmit(onSubmit)}>
-          <Stack spacing={2}>
-            <TextField
-              label="Full Name"
-              slotProps={{ input: { ...register("name") } }}
-              fullWidth
-              size="small"
-              error={!!formState.errors.name}
-              helperText={formState.errors.name?.message}
-            />
-            <TextField
-              label="Email"
-              slotProps={{ input: { ...register("email") } }}
-              fullWidth
-              size="small"
-              error={!!formState.errors.email}
-              helperText={formState.errors.email?.message}
-            />
-            <TextField
-              label="Password"
-              type="password"
-              slotProps={{ input: { ...register("password") } }}
-              fullWidth
-              size="small"
-              error={!!formState.errors.password}
-              helperText={formState.errors.password?.message}
-            />
-            <TextField
-              label="Confirm Password"
-              type="password"
-              slotProps={{ input: { ...register("confirmPassword") } }}
-              fullWidth
-              size="small"
-              error={!!formState.errors.confirmPassword}
-              helperText={formState.errors.confirmPassword?.message}
-            />
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          {(
+            [
+              ["name", "Full Name", "text"],
+              ["email", "Email", "email"],
+              ["password", "Password", "password"],
+              ["confirmPassword", "Confirm Password", "password"],
+            ] as const
+          ).map(([field, label, type]) => (
+            <div key={field} className="space-y-2">
+              <Label htmlFor={field}>{label}</Label>
+              <Input id={field} type={type} {...register(field)} />
+              {formState.errors[field] ? (
+                <p className="text-xs text-destructive">
+                  {formState.errors[field]?.message}
+                </p>
+              ) : null}
+            </div>
+          ))}
 
-            {error && <Alert severity="error">{error}</Alert>}
+          {error ? <Alert variant="destructive">{error}</Alert> : null}
 
-            <Button variant="contained" type="submit" fullWidth size="large">
-              Create account
-            </Button>
-          </Stack>
+          <Button type="submit" className="w-full" size="lg">
+            Create account
+          </Button>
         </form>
 
-        <Typography variant="body2" textAlign="center">
+        <p className="text-center text-sm">
           Already have an account?{" "}
-          <MuiLink component={Link} to="/login" underline="hover">
+          <Link to="/login" className="text-primary underline-offset-4 hover:underline">
             Log in
-          </MuiLink>
-        </Typography>
-      </Stack>
-    </Paper>
+          </Link>
+        </p>
+      </CardContent>
+    </Card>
   );
 };
 

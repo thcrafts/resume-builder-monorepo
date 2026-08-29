@@ -18,6 +18,21 @@ export class ResumesGateway {
     this.server.emit('generate:done', { id });
   }
 
+  emitProgress(
+    id: string,
+    payload: {
+      step: 'title' | 'summary' | 'skills' | 'experience';
+      index?: number;
+      total?: number;
+    },
+  ) {
+    if (!this.server) {
+      return;
+    }
+
+    this.server.emit('generate:progress', { id, ...payload });
+  }
+
   emitFailed(id: string, message?: string) {
     if (!this.server) {
       console.warn('WebSocket server not ready; skipping generate:failed emit');

@@ -69,4 +69,25 @@ describe('normalizeResumeExperienceBullets', () => {
     ]);
     expect(role?.achievements?.length).toBe(6);
   });
+
+  it('uses default bullet cap when achievementsCount is zero', () => {
+    const resume = normalizeResumeExperienceBullets(
+      {
+        skills: [],
+        experience: [
+          {
+            responsibilities: [],
+            achievements: ['One.', 'Two.', 'Three.'],
+          },
+        ],
+      },
+      0,
+    );
+
+    expect(resume.experience?.[0]?.achievements).toEqual([
+      'One.',
+      'Two.',
+      'Three.',
+    ]);
+  });
 });

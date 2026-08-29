@@ -17,6 +17,14 @@ describe('shared resume settings', () => {
     });
     expect(settings.achievementsCount).toBe(6);
   });
+
+  it('falls back to default achievements when set to zero', () => {
+    const settings = resolveResumeSettings({
+      ...DEFAULT_RESUME_SETTINGS,
+      achievementsCount: 0,
+    });
+    expect(settings.achievementsCount).toBe(6);
+  });
 });
 
 describe('sanitizeFilename', () => {

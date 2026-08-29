@@ -6,6 +6,9 @@ dist/
 dist-ssr/
 build/
 coverage/
+packages/shared/src/**/*.js
+packages/shared/src/**/*.d.ts
+packages/shared/src/**/*.js.map
 
 # Logs
 logs/

@@ -14,8 +14,14 @@ import { EncryptionService } from '../crypto/encryption.service';
 import {
   MISSING_OPENROUTER_KEY_MESSAGE,
   resolveResumeSettings,
+  validateCompanyFieldsForSave,
   type ResumeSettings,
 } from '@resume-builder/shared';
+import {
+  normalizeCandidateProfile,
+  normalizeCompanies,
+  normalizeContacts,
+} from './normalize-candidate-profile';
 import {
   OpenRouterService,
   type OpenRouterKeyUsage,
@@ -112,6 +118,25 @@ export class UsersService {
     }
     if (updateUserDto.coverLetterPrompt !== undefined) {
       user.coverLetterPrompt = updateUserDto.coverLetterPrompt;
+    }
+    if (updateUserDto.experiencePrompt !== undefined) {
+      user.experiencePrompt = updateUserDto.experiencePrompt;
+    }
+    if (updateUserDto.contacts !== undefined) {
+      user.contacts = normalizeContacts(updateUserDto.contacts) as UserDocument['contacts'];
+    }
+    if (updateUserDto.candidateProfile !== undefined) {
+      user.candidateProfile = normalizeCandidateProfile(
+        updateUserDto.candidateProfile,
+      ) as UserDocument['candidateProfile'];
+    }
+    if (updateUserDto.companies !== undefined) {
+      const normalized = normalizeCompanies(updateUserDto.companies);
+      const validation = validateCompanyFieldsForSave(normalized);
+      if (!validation.valid) {
+        throw new BadRequestException(validation.errors.join('; '));
+      }
+      user.companies = normalized as UserDocument['companies'];
     }
     if (updateUserDto.defaultAiModel !== undefined) {
       user.defaultAiModel = updateUserDto.defaultAiModel;

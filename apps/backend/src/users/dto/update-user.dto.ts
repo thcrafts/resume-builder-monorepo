@@ -1,4 +1,9 @@
 import type { ResumeSettings } from '../../ai/resume-settings';
+import type {
+  CandidateProfileData,
+  CompanyEntry,
+  ContactEntry,
+} from '@resume-builder/shared';
 
 export class UpdateUserDto {
   email?: string;
@@ -9,6 +14,10 @@ export class UpdateUserDto {
   instructions?: string;
   questionsPrompt?: string;
   coverLetterPrompt?: string;
+  experiencePrompt?: string;
+  contacts?: ContactEntry[];
+  candidateProfile?: Partial<CandidateProfileData>;
+  companies?: CompanyEntry[];
   defaultAiModel?: string;
   defaultAiVersion?: string;
   defaultGenerateFromJson?: boolean;

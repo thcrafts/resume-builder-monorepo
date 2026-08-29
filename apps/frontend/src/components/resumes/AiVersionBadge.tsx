@@ -1,6 +1,5 @@
 import * as React from "react";
-import { Chip } from "@mui/material";
-import { Code as CodeIcon } from "@mui/icons-material";
+import { Code } from "lucide-react";
 import {
   FALLBACK_CATALOG,
   getCompactModelVersionLabel,
@@ -8,15 +7,13 @@ import {
 } from "../../constants/aiModels";
 import { useAiModels } from "../common/AiModelsContext";
 import ModelProviderIcon from "../common/ModelProviderIcon";
-import { chipWithIconSx } from "../../styles/chipWithIcon";
+import { Badge } from "../ui/misc";
 
 interface AiVersionBadgeProps {
   aiModel?: string;
   aiVersion?: string;
   generationSource?: "ai" | "manual";
 }
-
-const chipSx = chipWithIconSx;
 
 const AiVersionBadge: React.FC<AiVersionBadgeProps> = ({
   aiModel,
@@ -36,35 +33,15 @@ const AiVersionBadge: React.FC<AiVersionBadgeProps> = ({
     normalized.aiVersion,
   );
 
-  if (generationSource === "manual") {
-    return (
-      <Chip
-        size="small"
-        variant="outlined"
-        icon={<CodeIcon sx={{ fontSize: 16, mr: 0 }} />}
-        label={versionLabel}
-        sx={{
-          ...chipWithIconSx,
-          "& .MuiChip-icon": {
-            marginLeft: 0,
-            marginRight: 0,
-          },
-          "& .MuiChip-icon svg": {
-            marginRight: 0,
-          },
-        }}
-      />
-    );
-  }
-
   return (
-    <Chip
-      size="small"
-      variant="outlined"
-      icon={<ModelProviderIcon modelId={normalized.aiVersion} size={16} />}
-      label={versionLabel}
-      sx={chipSx}
-    />
+    <Badge variant="outline" className="gap-1.5 font-normal">
+      {generationSource === "manual" ? (
+        <Code className="h-3.5 w-3.5" />
+      ) : (
+        <ModelProviderIcon modelId={normalized.aiVersion} size={16} />
+      )}
+      {versionLabel}
+    </Badge>
   );
 };
 

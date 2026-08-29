@@ -126,15 +126,15 @@ export class OpenRouterService {
     return content.trim();
   }
 
-  private parseResumeJson(
+  private parseJsonResponse<T>(
     outputText: string,
     responseId: string,
-  ): { resumeJson: ResumeData; responseId: string } {
+  ): { data: T; responseId: string } {
     const jsonText = this.extractJsonText(outputText);
 
     try {
       return {
-        resumeJson: JSON.parse(jsonText),
+        data: JSON.parse(jsonText) as T,
         responseId,
       };
     } catch (error) {
@@ -142,6 +142,65 @@ export class OpenRouterService {
         `Failed to parse JSON from OpenRouter response: ${error.message}. Response: ${outputText.substring(0, 200)}`,
       );
     }
+  }
+
+  private parseResumeJson(
+    outputText: string,
+    responseId: string,
+  ): { resumeJson: ResumeData; responseId: string } {
+    const { data, responseId: id } = this.parseJsonResponse<ResumeData>(
+      outputText,
+      responseId,
+    );
+    return { resumeJson: data, responseId: id };
+  }
+
+  async createJsonCompletion<T>(
+    systemPrompt: string,
+    userPrompt: string,
+    model: string,
+    maxTokens: number,
+    apiKeys?: UserApiKeys,
+    strictRetry = true,
+  ): Promise<{ data: T; responseId: string }> {
+    const keys = apiKeys ?? {};
+    const baseRequest = {
+      model,
+      max_completion_tokens: maxTokens,
+      messages: [
+        { role: 'system', content: cleanText(systemPrompt) },
+        { role: 'user', content: cleanText(userPrompt) },
+      ],
+      response_format: { type: 'json_object' as const },
+    };
+
+    try {
+      const response = await this.createChatCompletion(keys, baseRequest);
+      return this.parseJsonResponse<T>(
+        this.getMessageContent(response),
+        response.id,
+      );
+    } catch (error) {
+      if (!strictRetry || !this.isRetryableStructuredOutputError(error)) {
+        throw error;
+      }
+    }
+
+    const fallbackResponse = await this.createChatCompletion(keys, {
+      ...baseRequest,
+      messages: [
+        {
+          role: 'system',
+          content: `${cleanText(systemPrompt)}\n\nRespond with valid JSON only. No markdown or extra text.`,
+        },
+        { role: 'user', content: cleanText(userPrompt) },
+      ],
+    });
+
+    return this.parseJsonResponse<T>(
+      this.getMessageContent(fallbackResponse),
+      fallbackResponse.id,
+    );
   }
 
   async getKeyUsage(apiKeys?: UserApiKeys): Promise<OpenRouterKeyUsage> {

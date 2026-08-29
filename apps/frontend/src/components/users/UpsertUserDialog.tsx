@@ -1,19 +1,4 @@
 import * as React from "react";
-import {
-  Button,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  Grid,
-  TextField,
-  FormControl,
-  InputLabel,
-  MenuItem,
-  Select,
-  Slide,
-} from "@mui/material";
-import type { TransitionProps } from "@mui/material/transitions";
 import { Controller, useForm, type SubmitHandler } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
@@ -25,15 +10,12 @@ import {
   type CreateUserDto,
   type UpdateUserDto,
 } from "../../services/userService";
-
-const Transition = React.forwardRef(function Transition(
-  props: TransitionProps & {
-    children: React.ReactElement;
-  },
-  ref: React.Ref<unknown>
-) {
-  return <Slide direction="up" ref={ref} {...props} />;
-});
+import { Button } from "../ui/button";
+import { Dialog } from "../ui/dialog";
+import { Input } from "../ui/input";
+import { Label } from "../ui/label";
+import { Textarea } from "../ui/textarea";
+import { Select } from "../ui/misc";
 
 const schema = yup
   .object({
@@ -42,13 +24,21 @@ const schema = yup
     name: yup.string().required(),
     password: yup.string().when("id", {
       is: (id: string) => !id,
-      then: (schema) => schema.required(),
-      otherwise: (schema) => schema.notRequired(),
+      then: (s) => s.required(),
+      otherwise: (s) => s.notRequired(),
     }),
     role: yup.string().oneOf(["user", "admin"]).required(),
     template: yup
       .string()
-      .oneOf(["template1", "template2", "template3", "template4", "template5", "template6", "template7"])
+      .oneOf([
+        "template1",
+        "template2",
+        "template3",
+        "template4",
+        "template5",
+        "template6",
+        "template7",
+      ])
       .required(),
     instructions: yup.string().notRequired(),
     questionsPrompt: yup.string().notRequired(),
@@ -85,7 +75,7 @@ const UpsertUserDialog = React.forwardRef<
   });
 
   const onSubmit: SubmitHandler<yup.InferType<typeof schema>> = async (
-    data
+    data,
   ) => {
     try {
       if (data.id) {
@@ -153,130 +143,128 @@ const UpsertUserDialog = React.forwardRef<
   return (
     <Dialog
       open={open}
-      slots={{
-        transition: Transition,
+      onOpenChange={(next) => {
+        if (!next) handleClose();
       }}
-      keepMounted
-      maxWidth="sm"
-      fullWidth
-      scroll="body"
+      title={isEditMode ? "Edit User" : "Create User"}
+      className="max-w-lg"
+      footer={
+        <>
+          <Button type="button" variant="outline" onClick={handleClose}>
+            Cancel
+          </Button>
+          <Button type="submit" form="upsert-user-form">
+            {isEditMode ? "Update" : "Create"}
+          </Button>
+        </>
+      }
     >
-      <form onSubmit={handleSubmit(onSubmit)}>
-        <DialogTitle>{isEditMode ? "Edit User" : "Create User"}</DialogTitle>
-        <DialogContent dividers>
-          <input type="hidden" {...register("id")} />
-          <Grid container spacing={2} py={2}>
-            <Grid size={{ xs: 12 }}>
-              <TextField
-                label="Email"
-                type="email"
-                slotProps={{ input: { ...register("email") } }}
-                fullWidth
-                size="small"
-                error={formState.errors.email ? true : false}
-                helperText={formState.errors.email?.message}
-              />
-            </Grid>
-            <Grid size={{ xs: 12 }}>
-              <TextField
-                label="Name"
-                slotProps={{ input: { ...register("name") } }}
-                fullWidth
-                size="small"
-                error={formState.errors.name ? true : false}
-                helperText={formState.errors.name?.message}
-              />
-            </Grid>
-            <Grid size={{ xs: 12 }}>
-              <TextField
-                label="Password"
-                type="password"
-                slotProps={{ input: { ...register("password") } }}
-                fullWidth
-                size="small"
-                error={formState.errors.password ? true : false}
-                helperText={
-                  formState.errors.password?.message ||
-                  (isEditMode ? "Leave blank to keep current password" : "")
-                }
-              />
-            </Grid>
-            <Grid size={{ xs: 12 }}>
-              <FormControl fullWidth size="small">
-                <InputLabel id="role-select-label">Role</InputLabel>
-                <Controller
-                  name="role"
-                  control={control}
-                  render={({ field }) => (
-                    <Select {...field} label="Role" labelId="role-select-label">
-                      <MenuItem value="user">User</MenuItem>
-                      <MenuItem value="admin">Admin</MenuItem>
-                    </Select>
-                  )}
-                />
-              </FormControl>
-            </Grid>
-            <Grid size={{ xs: 12 }}>
-              <FormControl fullWidth size="small">
-                <InputLabel id="template-select-label">Template</InputLabel>
-                <Controller
-                  name="template"
-                  control={control}
-                  render={({ field }) => (
-                    <Select
-                      {...field}
-                      label="Template"
-                      labelId="template-select-label"
-                    >
-                      <MenuItem value="template1">Template 1</MenuItem>
-                      <MenuItem value="template2">Template 2</MenuItem>
-                      <MenuItem value="template3">Template 3</MenuItem>
-                      <MenuItem value="template4">Template 4</MenuItem>
-                      <MenuItem value="template5">Template 5</MenuItem>
-                      <MenuItem value="template6">Template 6</MenuItem>
-                      <MenuItem value="template7">Template 7</MenuItem>
-                    </Select>
-                  )}
-                />
-              </FormControl>
-            </Grid>
-            <Grid size={{ xs: 12 }}>
-              <TextField
-                label="Instructions"
-                slotProps={{
-                  input: { ...register("instructions") },
-                }}
-                multiline
-                rows={6}
-                fullWidth
-                size="small"
-                placeholder="Enter custom instructions for resume generation (optional)"
-                helperText="These instructions will be appended to the default resume generation prompt for this user"
-              />
-            </Grid>
-            <Grid size={{ xs: 12 }}>
-              <TextField
-                label="Questions Prompt"
-                slotProps={{
-                  input: { ...register("questionsPrompt") },
-                }}
-                multiline
-                rows={8}
-                fullWidth
-                size="small"
-                placeholder="Enter custom prompt for answering job application questions (optional)"
-                helperText="This prompt will override the default questions answering prompt for this user"
-              />
-            </Grid>
-          </Grid>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleClose}>Cancel</Button>
-          <Button type="submit">{isEditMode ? "Update" : "Create"}</Button>
-        </DialogActions>
+      <form
+        id="upsert-user-form"
+        onSubmit={handleSubmit(onSubmit)}
+        className="space-y-4"
+      >
+        <input type="hidden" {...register("id")} />
+
+        <div className="space-y-1.5">
+          <Label htmlFor="user-email">Email</Label>
+          <Input id="user-email" type="email" {...register("email")} />
+          {formState.errors.email ? (
+            <p className="text-xs text-destructive">
+              {formState.errors.email.message}
+            </p>
+          ) : null}
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="user-name">Name</Label>
+          <Input id="user-name" {...register("name")} />
+          {formState.errors.name ? (
+            <p className="text-xs text-destructive">
+              {formState.errors.name.message}
+            </p>
+          ) : null}
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="user-password">Password</Label>
+          <Input id="user-password" type="password" {...register("password")} />
+          {formState.errors.password ? (
+            <p className="text-xs text-destructive">
+              {formState.errors.password.message}
+            </p>
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              {isEditMode ? "Leave blank to keep current password" : ""}
+            </p>
+          )}
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="user-role">Role</Label>
+          <Controller
+            name="role"
+            control={control}
+            render={({ field }) => (
+              <Select id="user-role" {...field}>
+                <option value="user">User</option>
+                <option value="admin">Admin</option>
+              </Select>
+            )}
+          />
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="user-template">Template</Label>
+          <Controller
+            name="template"
+            control={control}
+            render={({ field }) => (
+              <Select id="user-template" {...field}>
+                <option value="template1">Template 1</option>
+                <option value="template2">Template 2</option>
+                <option value="template3">Template 3</option>
+                <option value="template4">Template 4</option>
+                <option value="template5">Template 5</option>
+                <option value="template6">Template 6</option>
+                <option value="template7">Template 7</option>
+              </Select>
+            )}
+          />
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="user-instructions">Instructions</Label>
+          <Textarea
+            id="user-instructions"
+            rows={6}
+            placeholder="Enter custom instructions for resume generation (optional)"
+            {...register("instructions")}
+          />
+          <p className="text-xs text-muted-foreground">
+            These instructions will be appended to the default resume generation
+            prompt for this user
+          </p>
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="user-questions-prompt">Questions Prompt</Label>
+          <Textarea
+            id="user-questions-prompt"
+            rows={8}
+            placeholder="Enter custom prompt for answering job application questions (optional)"
+            {...register("questionsPrompt")}
+          />
+          <p className="text-xs text-muted-foreground">
+            This prompt will override the default questions answering prompt for
+            this user
+          </p>
+        </div>
       </form>
     </Dialog>
   );
 });
+
+UpsertUserDialog.displayName = "UpsertUserDialog";
 
 export default UpsertUserDialog;

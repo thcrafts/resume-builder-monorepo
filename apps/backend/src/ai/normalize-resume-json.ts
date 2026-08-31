@@ -1,9 +1,36 @@
 import type { ResumeData } from 'src/resumes/templates';
 import { MAX_EXPERIENCE_BULLETS_PER_ROLE } from './resume-settings';
 import { DEFAULT_RESUME_SETTINGS, normalizeTechStackSkills } from '@resume-builder/shared';
-import { coerceToPlainText } from './schemas/experience.schema';
+import {
+  coerceToPlainText,
+  isUsableExperienceBullet,
+} from './schemas/experience.schema';
 
 export const MAX_WORDS_PER_EXPERIENCE_BULLET = 28;
+
+const DANGLING_TRAILING_WORDS = new Set([
+  'a',
+  'an',
+  'the',
+  'and',
+  'or',
+  'but',
+  'by',
+  'to',
+  'for',
+  'of',
+  'in',
+  'on',
+  'at',
+  'with',
+  'from',
+  'as',
+  'via',
+  'into',
+  'over',
+  'under',
+  'than',
+]);
 
 export function ensureSentenceEnding(text: string): string {
   let result = text.replace(/[,;:\s]+$/, '').trim();
@@ -16,6 +43,18 @@ export function ensureSentenceEnding(text: string): string {
   return result;
 }
 
+function trimDanglingTrailingWords(words: string[]): string[] {
+  const next = [...words];
+  while (next.length > 0) {
+    const last = next[next.length - 1].replace(/[.,;:!?]+$/g, '').toLowerCase();
+    if (!DANGLING_TRAILING_WORDS.has(last)) {
+      break;
+    }
+    next.pop();
+  }
+  return next;
+}
+
 export function normalizeExperienceBullet(text: unknown): string {
   let normalized = coerceToPlainText(text);
   if (!normalized || normalized === '[object Object]') {
@@ -26,9 +65,19 @@ export function normalizeExperienceBullet(text: unknown): string {
   normalized = normalized.replace(/\s+-\s+/g, ', ');
   normalized = normalized.replace(/\s+/g, ' ').trim();
 
-  const words = normalized.split(' ').filter(Boolean);
+  if (!isUsableExperienceBullet(normalized)) {
+    return '';
+  }
+
+  let words = normalized.split(' ').filter(Boolean);
   if (words.length > MAX_WORDS_PER_EXPERIENCE_BULLET) {
-    normalized = words.slice(0, MAX_WORDS_PER_EXPERIENCE_BULLET).join(' ');
+    words = trimDanglingTrailingWords(
+      words.slice(0, MAX_WORDS_PER_EXPERIENCE_BULLET),
+    );
+    if (words.length < 6) {
+      return '';
+    }
+    normalized = words.join(' ');
   }
 
   return ensureSentenceEnding(normalized);

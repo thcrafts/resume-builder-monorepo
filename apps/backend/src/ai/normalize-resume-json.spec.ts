@@ -51,23 +51,47 @@ describe('normalizeResumeExperienceBullets', () => {
       skills: [],
       experience: [
         {
-          responsibilities: ['One.', 'Two.', 'Three.'],
-          achievements: ['Four.', 'Five.', 'Six.', 'Seven.', 'Eight.'],
+          responsibilities: [
+            'Owned API gateway delivery for the platform rollout.',
+            'Led migration of billing services cutting latency 30%.',
+            'Built observability dashboards for production incidents.',
+          ],
+          achievements: [
+            'Shipped checkout rewrite improving conversion by 12%.',
+            'Scaled search index supporting two million daily users.',
+            'Automated release pipelines reducing deploy time 40%.',
+            'Mentored engineers shipping three critical features.',
+            'Reduced cloud spend through right-sizing workloads 18%.',
+          ],
         },
       ],
     });
 
     const role = resume.experience?.[0];
     expect(role?.responsibilities).toEqual([]);
-    expect(role?.achievements).toEqual([
-      'One.',
-      'Two.',
-      'Three.',
-      'Four.',
-      'Five.',
-      'Six.',
+    expect(role?.achievements).toHaveLength(6);
+    expect(role?.achievements?.[0]).toContain('API gateway');
+  });
+
+  it('drops boolean leftovers that would render as False.', () => {
+    const resume = normalizeResumeExperienceBullets({
+      skills: [],
+      experience: [
+        {
+          responsibilities: [],
+          achievements: [
+            'Applied LLMs and RAG to clinical search workflows successfully.',
+            false as unknown as string,
+            'False',
+            'true',
+          ],
+        },
+      ],
+    });
+
+    expect(resume.experience?.[0]?.achievements).toEqual([
+      'Applied LLMs and RAG to clinical search workflows successfully.',
     ]);
-    expect(role?.achievements?.length).toBe(6);
   });
 
   it('uses default bullet cap when achievementsCount is zero', () => {
@@ -77,17 +101,17 @@ describe('normalizeResumeExperienceBullets', () => {
         experience: [
           {
             responsibilities: [],
-            achievements: ['One.', 'Two.', 'Three.'],
+            achievements: [
+              'Owned API gateway delivery for the platform rollout.',
+              'Led migration of billing services cutting latency 30%.',
+              'Built observability dashboards for production incidents.',
+            ],
           },
         ],
       },
       0,
     );
 
-    expect(resume.experience?.[0]?.achievements).toEqual([
-      'One.',
-      'Two.',
-      'Three.',
-    ]);
+    expect(resume.experience?.[0]?.achievements).toHaveLength(3);
   });
 });

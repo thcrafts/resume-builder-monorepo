@@ -83,7 +83,11 @@ export function normalizeResumeData(data: ResumeData): ResumeData {
         }
       }
     }
-    if (typeof value === 'number' || typeof value === 'boolean') {
+    // Never stringify booleans — "false" was rendering as a resume bullet.
+    if (typeof value === 'boolean' || value == null) {
+      return '';
+    }
+    if (typeof value === 'number' && Number.isFinite(value)) {
       return String(value);
     }
     return '';

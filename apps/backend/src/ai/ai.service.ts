@@ -47,7 +47,6 @@ import { parseSummaryResult, summaryJsonSchema } from './schemas/summary.schema'
 import { parseSkillsResult, buildSkillsJsonSchema, buildSkillsFallback } from './schemas/skills.schema';
 import {
   parseExperienceResult,
-  alignExperienceResultWithJd,
   experienceJsonSchema,
 } from './schemas/experience.schema';
 import { prepareCompanyExperienceInstructions } from './prepare-company-experience-instructions';
@@ -207,6 +206,7 @@ export class AiService {
     apiKeys?: UserApiKeys,
     model = DEFAULT_SKILLS_MODEL,
     context?: SkillsGenerationContext,
+    jdSkills?: string[],
   ) {
     const settings = resolveResumeSettings(resumeSettings);
     const targetCategories = settings.skillCategories.length;
@@ -219,6 +219,12 @@ export class AiService {
     if (context?.companies.length) {
       userPromptParts.push(
         `Company Context and Role-Proven Skills:\n${JSON.stringify(context.companies)}`,
+      );
+    }
+
+    if (jdSkills?.length) {
+      userPromptParts.push(
+        `JD Skills (include ALL in Core Technologies when enabled):\n${jdSkills.join(', ')}`,
       );
     }
 
@@ -280,6 +286,7 @@ export class AiService {
         {
           baselineSkills,
           roleSkills,
+          jdSkills: settings.includeJdSkillsInCoreTechnologies ? jdSkills : undefined,
         },
         settings,
       ),
@@ -340,17 +347,7 @@ export class AiService {
     );
 
     const parsed = parseExperienceResult(data);
-
-    if (!jdAlignment) {
-      return parsed;
-    }
-
-    return alignExperienceResultWithJd(parsed, {
-      isMostRecent,
-      languages: jdAlignment.languages,
-      requiredSkills: jdAlignment.requiredSkills,
-      companySkillsCount: options?.companySkillsCount,
-    });
+    return parsed;
   }
 
   buildExperienceSystemInstructions(options: {

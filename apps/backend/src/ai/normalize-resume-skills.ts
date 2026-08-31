@@ -1,6 +1,7 @@
 import {
   SKILL_CATEGORIES,
   normalizeSkillCategories,
+  mergeJdSkillsIntoCoreTechnologies,
   type ResumeSettings,
   type SkillCategory,
 } from '@resume-builder/shared';
@@ -69,6 +70,7 @@ export function enrichSkillsWithSources(
   sources: {
     baselineSkills?: Array<{ category: string; items: string[] }>;
     roleSkills?: string[];
+    jdSkills?: string[];
   },
   settings: ResumeSettings,
 ): Array<{ category: string; items: string[] }> {
@@ -135,7 +137,24 @@ export function enrichSkillsWithSources(
     }
   }
 
-  return finalizeSkillsMap(skillsByCategory, enabled, settings.skillsPerCategoryCount);
+  const categorized = finalizeSkillsMap(
+    skillsByCategory,
+    enabled,
+    settings.skillsPerCategoryCount,
+  );
+
+  if (
+    settings.includeJdSkillsInCoreTechnologies &&
+    (sources.jdSkills?.length ?? 0) > 0
+  ) {
+    return mergeJdSkillsIntoCoreTechnologies(
+      categorized,
+      sources.jdSkills ?? [],
+      [...enabled],
+    );
+  }
+
+  return categorized;
 }
 
 export function normalizeGeneratedSkills(

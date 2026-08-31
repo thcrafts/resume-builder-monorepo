@@ -50,6 +50,7 @@ export function normalizeResumeExperienceBullets(
   resumeJson: ResumeData,
   maxBulletsPerRole: number = MAX_EXPERIENCE_BULLETS_PER_ROLE,
   companySkillsCount = 0,
+  options?: { preserveCompanySkills?: boolean },
 ): ResumeData {
   if (!Array.isArray(resumeJson.experience)) {
     return resumeJson;
@@ -74,9 +75,9 @@ export function normalizeResumeExperienceBullets(
         .map((skill) => coerceToPlainText(skill))
         .filter(Boolean);
       const trimmedSkills =
-        companySkillsCount > 0
-          ? plainSkills.slice(0, companySkillsCount)
-          : plainSkills;
+        options?.preserveCompanySkills || companySkillsCount <= 0
+          ? plainSkills
+          : plainSkills.slice(0, companySkillsCount);
 
       return {
         ...entry,

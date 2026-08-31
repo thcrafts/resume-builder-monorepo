@@ -15,6 +15,8 @@ import {
   computeYearsOfExperienceFromEducation,
   buildCompactJdContextForPrompt,
   formatJdAlignmentForPrompt,
+  collectJdSkills,
+  distributeJdSkillsAcrossExperience,
   type CompanyEntry,
 } from '@resume-builder/shared';
 import { AiService } from '../ai/ai.service';
@@ -242,6 +244,26 @@ export class ChunkedResumeBuilder {
     ]);
     steps.push({ step: 'summary', model: summaryModel });
 
+    const jdSkills = collectJdSkills(jdAlignment);
+    const distributedSkills = distributeJdSkillsAcrossExperience(
+      sortedCompanies.map((company) => ({
+        id: company.id,
+        skills: experienceByCompanyId.get(company.id)?.skills ?? [],
+      })),
+      jdSkills,
+      options.resumeSettings.companySkillsCount,
+    );
+
+    for (const entry of distributedSkills) {
+      const existing = experienceByCompanyId.get(entry.id);
+      if (existing) {
+        experienceByCompanyId.set(entry.id, {
+          ...existing,
+          skills: entry.skills,
+        });
+      }
+    }
+
     this.gateway.emitProgress(options.resumeId, { step: 'skills' });
 
     const skillsContext = {
@@ -261,6 +283,7 @@ export class ChunkedResumeBuilder {
       options.apiKeys,
       skillsModel,
       skillsContext,
+      jdSkills,
     );
     steps.push({ step: 'skills', model: skillsModel });
 
@@ -279,6 +302,7 @@ export class ChunkedResumeBuilder {
       assembled,
       options.resumeSettings.achievementsCount,
       options.resumeSettings.companySkillsCount,
+      { preserveCompanySkills: jdSkills.length > 0 },
     );
 
     return {

@@ -518,6 +518,10 @@ const Profile: React.FC = () => {
                     "showCompanySkills",
                     "Show company skills on PDF",
                   ],
+                  [
+                    "includeJdSkillsInCoreTechnologies",
+                    "Include all JD skills in Core Technologies",
+                  ],
                 ] as const
               ).map(([key, label]) => (
                 <label key={key} className="flex items-center gap-2 text-sm">

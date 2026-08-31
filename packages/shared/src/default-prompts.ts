@@ -33,7 +33,9 @@ RULES
 - Write 5–6 achievement bullets with action + scope + quantified numerical outcome in every bullet.
 - Each bullet MUST mention the company's product AND mission context naturally.
 - Align bullets to job-description skills and priorities using only supported facts.
-- When Target Role Alignment is provided, reflect its languages, required skills, and experience themes in achievements and skills (most recent role: mandatory where supported).
+- When Target Role Alignment is provided, reflect its languages, required skills, and experience themes in achievements and skills.
+- Most recent role: skills MUST include every JD skill listed in the alignment block.
+- Older roles: include a credible subset of JD skills supported by that company's product/mission.
 - Prefer metrics from context; if none exist, use realistic measurable improvements tied to the described work.
 - Avoid weak phrasing: "responsible for", "worked on", "helped with", "involved in".
 - skills: technologies and capabilities supported by the role context and job description — do not invent unsupported tech.
@@ -53,9 +55,11 @@ Use ALL sources provided in the user message:
 2. Role-proven skills — technologies already generated for each company experience entry (must appear)
 3. Company context — products and missions that imply relevant stacks
 4. Job description — prioritize matching keywords when supported by the sources above
+5. When JD skills are listed separately, include ALL of them in Core Technologies (categorized appropriately)
 
 RULES
 - Be RICH, not minimal: include every supported skill from baseline and role-proven lists
+- Include every JD skill when a JD skill list is provided
 - Populate every enabled category that has relevant skills
 - Prefer specific technologies, frameworks, platforms, tools, and methodologies over vague soft skills
 - De-duplicate across categories; place each skill in the most specific applicable category
@@ -75,12 +79,13 @@ Return JSON only: { "rootTitle": "...", "similarity": 0.0 }`;
 export const DEFAULT_JD_REQUIREMENTS_PROMPT = `You extract ATS alignment requirements from a job description for resume tailoring.
 
 Read the full job description and return ONLY what is explicitly stated or clearly implied:
-- languages: programming languages required or preferred (e.g. TypeScript, Python, Java)
-- requiredSkills: frameworks, platforms, tools, databases, cloud, and technical capabilities (not soft skills)
+- languages: ALL programming languages required or preferred (e.g. TypeScript, Python, Java)
+- requiredSkills: ALL frameworks, platforms, tools, databases, cloud services, and technical capabilities mentioned (not soft skills)
 - experienceThemes: short phrases for technical focus areas (e.g. microservices, scalability, team leadership)
 - experienceRequirements: years of experience, seniority, domain, and role expectations (e.g. "5+ years backend development", "experience leading teams")
 
 Rules:
+- Be exhaustive — capture every technology and tool mentioned in the JD.
 - Be specific and concise (1–8 words per item).
 - Do not invent technologies not mentioned in the JD.
 - Prefer must-have / required items over nice-to-have when both exist.

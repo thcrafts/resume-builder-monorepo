@@ -95,4 +95,27 @@ describe('enrichSkillsWithSources', () => {
       ]),
     );
   });
+
+  it('merges JD skills into core technologies when enabled', () => {
+    const result = enrichSkillsWithSources(
+      [{ category: 'Backend', items: ['Node.js'] }],
+      {
+        jdSkills: ['TypeScript', 'React', 'AWS'],
+      },
+      {
+        ...DEFAULT_RESUME_SETTINGS,
+        skillCategories: ['Languages', 'Frontend', 'Backend', 'Cloud & DevOps'],
+        skillsPerCategoryCount: 0,
+        includeJdSkillsInCoreTechnologies: true,
+      },
+    );
+
+    expect(result).toEqual(
+      expect.arrayContaining([
+        { category: 'Languages', items: ['TypeScript'] },
+        { category: 'Frontend', items: ['React'] },
+        { category: 'Cloud & DevOps', items: ['AWS'] },
+      ]),
+    );
+  });
 });

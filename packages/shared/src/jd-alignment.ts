@@ -159,11 +159,11 @@ export function mergeJdAlignment(
     languages: dedupeCaseInsensitive([
       ...normalizeStringArray(fromModel?.languages, 8),
       ...heuristic.languages,
-    ]).slice(0, 10),
+    ]).slice(0, 15),
     requiredSkills: dedupeCaseInsensitive([
-      ...normalizeStringArray(fromModel?.requiredSkills, 16),
+      ...normalizeStringArray(fromModel?.requiredSkills, 40),
       ...heuristic.requiredSkills,
-    ]).slice(0, 20),
+    ]).slice(0, 40),
     experienceThemes: dedupeCaseInsensitive([
       ...normalizeStringArray(fromModel?.experienceThemes, 8),
       ...heuristic.experienceThemes,
@@ -209,12 +209,21 @@ export function buildExperienceAlignmentUserBlock(options: {
 
   if (options.isMostRecent) {
     const excerpt = options.jobDescriptionExcerpt?.trim() ?? '';
+    const allJdSkills = dedupeCaseInsensitive([
+      ...options.alignment.languages,
+      ...options.alignment.requiredSkills,
+    ]);
+    const jdSkillLine =
+      allJdSkills.length > 0
+        ? `ALL JD skills (mandatory in skills array): ${allJdSkills.join(', ')}`
+        : '';
     return [
       'TARGET ROLE ALIGNMENT (MOST RECENT ROLE — mandatory)',
       'Achievements and skills MUST reflect these JD requirements wherever supported by the company product/mission/context.',
-      '- Include JD languages in skills when plausible for this role.',
+      '- The skills array MUST include every JD skill listed below.',
       '- At least 4 achievement bullets must explicitly name technologies from the lists below.',
       '- Weave experience themes and requirements into achievement scope/outcomes.',
+      jdSkillLine,
       alignmentText,
       excerpt ? `Job description excerpt:\n${excerpt}` : '',
     ]
@@ -222,11 +231,23 @@ export function buildExperienceAlignmentUserBlock(options: {
       .join('\n');
   }
 
+  const partialJdSkills = dedupeCaseInsensitive([
+    ...options.alignment.languages,
+    ...options.alignment.requiredSkills,
+  ]);
+  const partialSkillLine =
+    partialJdSkills.length > 0
+      ? `Include a credible subset of these JD skills in skills when supported by this company: ${partialJdSkills.join(', ')}`
+      : '';
+
   return [
     'TARGET ROLE ALIGNMENT (older role — apply only where supported by this company context)',
     'Mirror JD languages/skills/themes only when credible for this specific company, product, and mission.',
+    partialSkillLine,
     alignmentText,
-  ].join('\n');
+  ]
+    .filter(Boolean)
+    .join('\n');
 }
 
 /** Compact JD context for summary/skills steps (alignment + optional short excerpt). */

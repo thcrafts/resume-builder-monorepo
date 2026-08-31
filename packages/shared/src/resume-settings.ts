@@ -34,6 +34,8 @@ export interface ResumeSettings {
   achievementsCount: number;
   skillsPerCategoryCount: number;
   companySkillsCount: number;
+  /** When true, Core Technologies includes all JD-extracted skills. */
+  includeJdSkillsInCoreTechnologies: boolean;
 }
 
 export interface ResumePdfSettings {
@@ -60,6 +62,7 @@ export const DEFAULT_RESUME_SETTINGS: ResumeSettings = {
   achievementsCount: 6,
   skillsPerCategoryCount: 0,
   companySkillsCount: 10,
+  includeJdSkillsInCoreTechnologies: true,
 };
 
 export const DEFAULT_RESUME_PDF_SETTINGS: ResumePdfSettings = {
@@ -165,6 +168,10 @@ export function resolveResumeSettings(
       base.companySkillsCount,
       DEFAULT_RESUME_SETTINGS.companySkillsCount,
     ),
+    includeJdSkillsInCoreTechnologies:
+      partial?.includeJdSkillsInCoreTechnologies ??
+      base.includeJdSkillsInCoreTechnologies ??
+      true,
   };
 }
 
@@ -192,7 +199,8 @@ export function resumeSettingsEqual(
     a.responsibilitiesCount !== b.responsibilitiesCount ||
     a.achievementsCount !== b.achievementsCount ||
     a.skillsPerCategoryCount !== b.skillsPerCategoryCount ||
-    a.companySkillsCount !== b.companySkillsCount
+    a.companySkillsCount !== b.companySkillsCount ||
+    a.includeJdSkillsInCoreTechnologies !== b.includeJdSkillsInCoreTechnologies
   ) {
     return false;
   }

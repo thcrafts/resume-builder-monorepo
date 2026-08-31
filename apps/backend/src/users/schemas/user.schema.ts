@@ -41,6 +41,9 @@ export class ResumeSettingsEmbedded {
 
   @Prop({ default: DEFAULT_RESUME_SETTINGS.companySkillsCount })
   companySkillsCount: number;
+
+  @Prop({ default: DEFAULT_RESUME_SETTINGS.includeJdSkillsInCoreTechnologies })
+  includeJdSkillsInCoreTechnologies: boolean;
 }
 
 @Schema()

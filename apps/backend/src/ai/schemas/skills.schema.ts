@@ -3,10 +3,15 @@ import { coerceToPlainText } from './experience.schema';
 export function buildSkillsJsonSchema(options: {
   skillCategories: string[];
   skillsPerCategoryCount?: number;
+  minSkillsPerCategory?: number;
 }) {
   const perCategoryLimit =
     options.skillsPerCategoryCount && options.skillsPerCategoryCount > 0
       ? options.skillsPerCategoryCount
+      : undefined;
+  const perCategoryMin =
+    perCategoryLimit && options.minSkillsPerCategory
+      ? Math.min(options.minSkillsPerCategory, perCategoryLimit)
       : undefined;
 
   return {
@@ -24,7 +29,7 @@ export function buildSkillsJsonSchema(options: {
             },
             items: {
               type: 'array',
-              minItems: 1,
+              ...(perCategoryMin ? { minItems: perCategoryMin } : { minItems: 1 }),
               ...(perCategoryLimit ? { maxItems: perCategoryLimit } : {}),
               items: { type: 'string', minLength: 1 },
             },

@@ -48,22 +48,23 @@ When years of experience are provided, you MUST state them exactly as "N+ years 
 The summary must reflect seniority, align with the job description, stay truthful, and avoid generic filler.
 Return JSON only: { "summary": "..." }`;
 
-export const DEFAULT_SKILLS_PROMPT = `You are an expert resume writer. Build a rich, comprehensive, ATS-friendly TECHNICAL SKILLS section for the resume.
+export const DEFAULT_SKILLS_PROMPT = `You are an expert resume writer. Build an ATS-friendly TECHNICAL SKILLS (Core Technologies) section for the resume.
 
 Use ALL sources provided in the user message:
-1. Baseline skills — the candidate's core inventory (include generously)
+1. Baseline skills — the candidate's core inventory
 2. Role-proven skills — technologies already generated for each company experience entry (must appear)
 3. Company context — products and missions that imply relevant stacks
 4. Job description — prioritize matching keywords when supported by the sources above
 5. When JD skills are listed separately, include ALL of them in Core Technologies (categorized appropriately)
 
 RULES
-- Be RICH, not minimal: include every supported skill from baseline and role-proven lists
 - Include every JD skill when a JD skill list is provided
-- Populate every enabled category that has relevant skills
+- Include supported skills from baseline and role-proven lists — do not invent unsupported tech
+- When a per-category max is provided, each included category should have between 6 and that max skills (6 is the floor)
+- Category sizes must look realistic and vary within that range (e.g. 6 in Testing, 9 in Backend). Do not pad every category to the max.
+- Skip categories with no supported skills. Do not invent filler skills to reach a count.
 - Prefer specific technologies, frameworks, platforms, tools, and methodologies over vague soft skills
 - De-duplicate across categories; place each skill in the most specific applicable category
-- You may include JD-relevant skills clearly implied by role skills, products, missions, or baseline — do not invent unsupported tech
 - Keep items concise (1–4 words each) and ATS-friendly
 - Return JSON only matching the provided schema: { "skills": [{ "category": "Backend", "items": ["Node.js", "Express"] }] }
 - category and each items entry must be plain strings (not objects)`;

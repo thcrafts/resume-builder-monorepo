@@ -22,6 +22,7 @@ import {
   SKILLS_MAX_TOKENS,
   EXPERIENCE_MAX_TOKENS,
   TITLE_SIMILARITY_THRESHOLD,
+  MIN_SKILLS_PER_CATEGORY,
   type CompanyEntry,
   type CandidateProfileData,
   type JdAlignmentRequirements,
@@ -231,18 +232,20 @@ export class AiService {
     userPromptParts.push(
       `Output goals:
 - Enabled categories: ${settings.skillCategories.join(', ')}
-- Be RICH: include all supported skills from baseline and role-proven lists
 - ${
         settings.skillsPerCategoryCount > 0
-          ? `Optional soft max ${settings.skillsPerCategoryCount} items per category`
+          ? `Each included category: ${MIN_SKILLS_PER_CATEGORY}–${settings.skillsPerCategoryCount} skills (min ${MIN_SKILLS_PER_CATEGORY}, max ${settings.skillsPerCategoryCount})`
           : 'No per-category item limit — include every supported skill'
       }
-- Populate as many relevant enabled categories as possible (~${targetCategories} when supported)`,
+- Do NOT pad every category to the same count. Sizes must vary within the min–max range.
+- Include JD skills and other supported skills only; never invent filler
+- Use only relevant enabled categories (up to ${targetCategories}); omit empty ones`,
     );
 
     const skillsSchema = buildSkillsJsonSchema({
       skillCategories: settings.skillCategories,
       skillsPerCategoryCount: settings.skillsPerCategoryCount,
+      minSkillsPerCategory: MIN_SKILLS_PER_CATEGORY,
     });
     const systemPrompt = `${DEFAULT_SKILLS_PROMPT}\n\nSchema:\n${JSON.stringify(skillsSchema)}`;
 

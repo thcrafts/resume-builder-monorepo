@@ -50,6 +50,7 @@ import {
   MIN_COMPANY_SKILL_COUNT,
   MAX_COMPANY_SKILL_COUNT,
   MAX_SKILLS_PER_CATEGORY,
+  MIN_SKILLS_PER_CATEGORY,
   MAX_EXPERIENCE_BULLETS_PER_ROLE,
   getSkillCategoryLabel,
   resolveResumeSettings,
@@ -597,9 +598,10 @@ const Profile: React.FC = () => {
                   />
                 </div>
                 <div className="space-y-1">
-                  <Label>Skills per category</Label>
+                  <Label>Skills per category (max)</Label>
                   <p className="text-xs text-muted-foreground">
-                    Main skills section (0 = unlimited / richest)
+                    Each category: {MIN_SKILLS_PER_CATEGORY}–{MAX_SKILLS_PER_CATEGORY}{" "}
+                    skills (default max 10; 0 = unlimited)
                   </p>
                   <Input
                     type="number"
@@ -609,10 +611,17 @@ const Profile: React.FC = () => {
                     onChange={(e) =>
                       setResumeSettingsForm((prev) => ({
                         ...prev,
-                        skillsPerCategoryCount: Math.min(
-                          MAX_SKILLS_PER_CATEGORY,
-                          Math.max(0, Number(e.target.value) || 0),
-                        ),
+                        skillsPerCategoryCount:
+                          Number(e.target.value) === 0
+                            ? 0
+                            : Math.min(
+                                MAX_SKILLS_PER_CATEGORY,
+                                Math.max(
+                                  MIN_SKILLS_PER_CATEGORY,
+                                  Number(e.target.value) ||
+                                    DEFAULT_RESUME_SETTINGS.skillsPerCategoryCount,
+                                ),
+                              ),
                       }))
                     }
                   />

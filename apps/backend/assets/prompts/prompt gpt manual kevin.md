@@ -268,14 +268,13 @@ Canonical categories (use when the API JSON schema is enforced):
 Languages, Backend, Frontend, AI & Automation, Cloud & DevOps, Database, Tools, Testing, Industry, Methodology, Mobile
 
 Category selection:
-- Parse the job description and include only categories required by mandatory JD requirements
-- Use at most 5 categories total
+- Parse the job description and include categories required by mandatory JD requirements
 - Do not include empty categories
-- Do not include preferred, nice-to-have, or bonus skills unless they are explicitly required in the JD
-- Each included category must contain at most 5 skills
-- Each skill must be a required skill stated in the job description
-- Every skill must appear in, or be clearly supported by, the experience section
-- Do not add skills that are not required by the JD
+- Prefer required JD skills; include preferred/nice-to-have only when clearly supported by experience
+- Each included category has a MAXIMUM skill count from resume settings (default 10) — this is a ceiling, not a fill target
+- Category sizes must vary realistically (do not pad every category to the max)
+- Every skill must appear in, or be clearly supported by, the experience section / baseline skills
+- Do not invent unsupported skills
 
 EXPERIENCE FORMAT (CRITICAL)
 For EACH experience entry:
@@ -400,7 +399,7 @@ Silently verify:
 - Valid JSON only (no markdown, comments, trailing commas, or extra keys)
 - Contact information preserved exactly
 - Root title and most recent role title use the normalized JD title
-- Skills use at most 5 categories and at most 5 required JD skills per category
+- Skills respect the configured per-category max (ceiling only; counts may vary and be lower)
 - Every experience entry has responsibilities: []
 - Every experience entry has 5 to 6 achievement bullets
 - Every bullet is one sentence, 18–28 words, ends with a period, and has no "- "

@@ -2,6 +2,9 @@ import {
   SKILL_CATEGORIES,
   normalizeSkillCategories,
   mergeJdSkillsIntoCoreTechnologies,
+  isSkillCovered,
+  categorizeJdSkill,
+  MIN_SKILLS_PER_CATEGORY,
   type ResumeSettings,
   type SkillCategory,
 } from '@resume-builder/shared';
@@ -141,16 +144,33 @@ export function enrichSkillsWithSources(
     skillsByCategory,
     enabled,
     settings.skillsPerCategoryCount,
+    {
+      minPerCategory: MIN_SKILLS_PER_CATEGORY,
+      baselineSkills: sources.baselineSkills,
+      roleSkills: sources.roleSkills,
+      jdSkills: sources.jdSkills,
+    },
   );
 
   if (
     settings.includeJdSkillsInCoreTechnologies &&
     (sources.jdSkills?.length ?? 0) > 0
   ) {
-    return mergeJdSkillsIntoCoreTechnologies(
+    const withJd = mergeJdSkillsIntoCoreTechnologies(
       categorized,
       sources.jdSkills ?? [],
       [...enabled],
+    );
+    return applyPerCategoryBounds(
+      withJd,
+      settings.skillsPerCategoryCount,
+      sources.jdSkills,
+      {
+        minPerCategory: MIN_SKILLS_PER_CATEGORY,
+        baselineSkills: sources.baselineSkills,
+        roleSkills: sources.roleSkills,
+        jdSkills: sources.jdSkills,
+      },
     );
   }
 
@@ -176,13 +196,128 @@ export function normalizeGeneratedSkills(
   return finalizeSkillsMap(skillsByCategory, enabled, settings.skillsPerCategoryCount);
 }
 
+function collectSourcePool(sources: {
+  baselineSkills?: Array<{ category: string; items: string[] }>;
+  roleSkills?: string[];
+  jdSkills?: string[];
+}): string[] {
+  const baseline = (sources.baselineSkills ?? []).flatMap((entry) => entry.items ?? []);
+  const role = sources.roleSkills ?? [];
+  const jd = sources.jdSkills ?? [];
+  return dedupeItems([...baseline, ...role, ...jd]);
+}
+
+function buildCategoryPool(
+  category: SkillCategory,
+  sources: {
+    baselineSkills?: Array<{ category: string; items: string[] }>;
+    roleSkills?: string[];
+    jdSkills?: string[];
+  },
+): string[] {
+  const baseline = (sources.baselineSkills ?? [])
+    .filter((entry) => resolveSkillCategory(entry.category) === category)
+    .flatMap((entry) => entry.items ?? []);
+
+  const related = collectSourcePool(sources).filter(
+    (skill) => categorizeJdSkill(skill) === category,
+  );
+
+  return dedupeItems([...baseline, ...related]);
+}
+
+function padCategoryToMinimum(
+  category: SkillCategory,
+  entry: { category: string; items: string[] },
+  minCount: number,
+  sources: {
+    baselineSkills?: Array<{ category: string; items: string[] }>;
+    roleSkills?: string[];
+    jdSkills?: string[];
+  },
+): { category: string; items: string[] } {
+  if (minCount <= 0 || entry.items.length >= minCount) {
+    return entry;
+  }
+
+  const pool = buildCategoryPool(category, sources);
+  const items = [...entry.items];
+  for (const candidate of pool) {
+    if (items.length >= minCount) {
+      break;
+    }
+    if (!isSkillCovered(candidate, items)) {
+      items.push(candidate);
+    }
+  }
+
+  return { category: entry.category, items };
+}
+
+function applyPerCategoryBounds(
+  skills: Array<{ category: string; items: string[] }>,
+  skillsPerCategoryCount: number,
+  prioritySkills: string[] = [],
+  options?: {
+    minPerCategory?: number;
+    baselineSkills?: Array<{ category: string; items: string[] }>;
+    roleSkills?: string[];
+    jdSkills?: string[];
+  },
+): Array<{ category: string; items: string[] }> {
+  const minCount =
+    skillsPerCategoryCount > 0
+      ? Math.min(options?.minPerCategory ?? MIN_SKILLS_PER_CATEGORY, skillsPerCategoryCount)
+      : 0;
+
+  return skills
+    .map((entry) => {
+      const canonicalCategory = resolveSkillCategory(entry.category);
+      if (!canonicalCategory) {
+        return entry;
+      }
+
+      const priority = entry.items.filter((item) =>
+        isSkillCovered(item, prioritySkills),
+      );
+      const remainder = entry.items.filter(
+        (item) => !isSkillCovered(item, prioritySkills),
+      );
+      let items = [...priority, ...remainder];
+      if (skillsPerCategoryCount > 0) {
+        items = items.slice(0, skillsPerCategoryCount);
+      }
+      return padCategoryToMinimum(
+        canonicalCategory,
+        { category: entry.category, items },
+        minCount,
+        {
+          baselineSkills: options?.baselineSkills,
+          roleSkills: options?.roleSkills,
+          jdSkills: options?.jdSkills,
+        },
+      );
+    })
+    .filter((entry) => entry.items.length > 0);
+}
+
 function finalizeSkillsMap(
   skillsByCategory: Map<SkillCategory, string[]>,
   enabled: Set<SkillCategory>,
   skillsPerCategoryCount: number,
+  options?: {
+    minPerCategory?: number;
+    baselineSkills?: Array<{ category: string; items: string[] }>;
+    roleSkills?: string[];
+    jdSkills?: string[];
+  },
 ): Array<{ category: string; items: string[] }> {
   const perCategoryLimit =
     skillsPerCategoryCount > 0 ? skillsPerCategoryCount : undefined;
+  const minCount =
+    perCategoryLimit && (options?.minPerCategory ?? MIN_SKILLS_PER_CATEGORY) > 0
+      ? Math.min(options?.minPerCategory ?? MIN_SKILLS_PER_CATEGORY, perCategoryLimit)
+      : 0;
 
   return SKILL_CATEGORIES.reduce<Array<{ category: string; items: string[] }>>(
     (results, category) => {
@@ -190,15 +325,34 @@ function finalizeSkillsMap(
         return results;
       }
 
-      const items = skillsByCategory.get(category) ?? [];
+      let items = skillsByCategory.get(category) ?? [];
       if (items.length === 0) {
         return results;
       }
 
-      results.push({
-        category,
-        items: perCategoryLimit ? items.slice(0, perCategoryLimit) : items,
-      });
+      if (perCategoryLimit) {
+        items = items.slice(0, perCategoryLimit);
+      }
+
+      if (minCount > 0) {
+        const padded = padCategoryToMinimum(
+          category,
+          { category, items },
+          minCount,
+          {
+            baselineSkills: options?.baselineSkills,
+            roleSkills: options?.roleSkills,
+            jdSkills: options?.jdSkills,
+          },
+        );
+        items = padded.items;
+      }
+
+      if (items.length === 0) {
+        return results;
+      }
+
+      results.push({ category, items });
       return results;
     },
     [],

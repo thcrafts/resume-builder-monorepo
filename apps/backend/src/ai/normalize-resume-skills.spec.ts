@@ -105,7 +105,7 @@ describe('enrichSkillsWithSources', () => {
       {
         ...DEFAULT_RESUME_SETTINGS,
         skillCategories: ['Languages', 'Frontend', 'Backend', 'Cloud & DevOps'],
-        skillsPerCategoryCount: 0,
+        skillsPerCategoryCount: 10,
         includeJdSkillsInCoreTechnologies: true,
       },
     );
@@ -117,5 +117,61 @@ describe('enrichSkillsWithSources', () => {
         { category: 'Cloud & DevOps', items: ['AWS'] },
       ]),
     );
+  });
+
+  it('caps core technologies at skillsPerCategoryCount, prioritizing JD skills', () => {
+    const result = enrichSkillsWithSources(
+      [
+        {
+          category: 'Backend',
+          items: [
+            'Node.js',
+            'Express',
+            'NestJS',
+            'Fastify',
+            'Koa',
+            'Hapi',
+            'Restify',
+            'Adonis',
+            'Feathers',
+            'LoopBack',
+            'TypeORM',
+          ],
+        },
+      ],
+      {
+        jdSkills: ['GraphQL'],
+      },
+      {
+        ...DEFAULT_RESUME_SETTINGS,
+        skillCategories: ['Backend'],
+        skillsPerCategoryCount: 10,
+        includeJdSkillsInCoreTechnologies: true,
+      },
+    );
+
+    expect(result[0]?.items).toHaveLength(10);
+    expect(result[0]?.items).toContain('GraphQL');
+  });
+
+  it('pads categories up to the minimum of 6 when enough source skills exist', () => {
+    const result = enrichSkillsWithSources(
+      [{ category: 'Backend', items: ['Node.js', 'Express'] }],
+      {
+        baselineSkills: [
+          {
+            category: 'Backend',
+            items: ['NestJS', 'Fastify', 'Koa', 'Hapi', 'Restify'],
+          },
+        ],
+      },
+      {
+        ...DEFAULT_RESUME_SETTINGS,
+        skillCategories: ['Backend'],
+        skillsPerCategoryCount: 10,
+      },
+    );
+
+    expect(result[0]?.items.length).toBeGreaterThanOrEqual(6);
   });
 });

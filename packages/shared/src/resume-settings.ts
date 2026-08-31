@@ -49,7 +49,9 @@ export interface ResumePdfSettings {
 export const MAX_EXPERIENCE_BULLETS_PER_ROLE = 6;
 export const MIN_COMPANY_SKILL_COUNT = 7;
 export const MAX_COMPANY_SKILL_COUNT = 12;
-/** 0 = no limit (rich technical skills section). Soft upper clamp only. */
+export const MIN_SKILLS_PER_CATEGORY = 6;
+export const DEFAULT_SKILLS_PER_CATEGORY_COUNT = 10;
+/** 0 = no limit. Upper clamp for profile UI. */
 export const MAX_SKILLS_PER_CATEGORY = 40;
 
 export const DEFAULT_RESUME_SETTINGS: ResumeSettings = {
@@ -60,7 +62,7 @@ export const DEFAULT_RESUME_SETTINGS: ResumeSettings = {
   useDefaultOutputFormat: true,
   responsibilitiesCount: 0,
   achievementsCount: 6,
-  skillsPerCategoryCount: 0,
+  skillsPerCategoryCount: DEFAULT_SKILLS_PER_CATEGORY_COUNT,
   companySkillsCount: 10,
   includeJdSkillsInCoreTechnologies: true,
 };
@@ -98,7 +100,20 @@ function clampAchievementCount(value: unknown, fallback: number): number {
 }
 
 function clampSkillsPerCategoryCount(value: unknown, fallback: number): number {
-  return clampCount(value, fallback, MAX_SKILLS_PER_CATEGORY);
+  const parsed = typeof value === 'number' ? value : Number(value);
+  if (!Number.isFinite(parsed)) {
+    return fallback;
+  }
+
+  const rounded = Math.round(parsed);
+  if (rounded === 0) {
+    return 0;
+  }
+
+  return Math.min(
+    MAX_SKILLS_PER_CATEGORY,
+    Math.max(MIN_SKILLS_PER_CATEGORY, rounded),
+  );
 }
 
 function clampCompanySkillCount(value: unknown, fallback: number): number {

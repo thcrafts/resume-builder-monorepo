@@ -1,7 +1,8 @@
-import type {
-  CandidateProfileData,
-  CompanyEntry,
-  ContactEntry,
+import {
+  computeYearsOfExperienceFromEducation,
+  type CandidateProfileData,
+  type CompanyEntry,
+  type ContactEntry,
 } from '@resume-builder/shared';
 import { randomUUID } from 'crypto';
 
@@ -62,6 +63,8 @@ export function normalizeCandidateProfile(
       }))
     : [];
 
+  const yearsOfExperience = computeYearsOfExperienceFromEducation(education) ?? undefined;
+
   return {
     professionalTitle: trimString(profile?.professionalTitle, 200),
     education,
@@ -69,6 +72,7 @@ export function normalizeCandidateProfile(
       ? profile.certifications
       : [],
     baselineSkills,
+    ...(yearsOfExperience != null ? { yearsOfExperience } : {}),
   };
 }
 

@@ -1,3 +1,4 @@
+export * from './jd-alignment';
 export * from './resume-settings';
 export * from './default-prompts';
 export * from './ai-models';

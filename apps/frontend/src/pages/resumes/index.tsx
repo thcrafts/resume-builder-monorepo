@@ -68,7 +68,7 @@ const getLocalDateString = (date = new Date()) => {
   return `${year}-${month}-${day}`;
 };
 
-type GenerateProgressStep = "title" | "summary" | "skills" | "experience";
+type GenerateProgressStep = "title" | "jd-requirements" | "summary" | "skills" | "experience";
 
 type GenerateProgress = {
   step: GenerateProgressStep;
@@ -124,8 +124,12 @@ const matchesChipFilter = (resume: ResumeResponse, filter: ChipFilter) => {
 function formatProgressLabel(progress?: GenerateProgress): string | null {
   if (!progress) return null;
   const stepLabel =
-    progress.step.charAt(0).toUpperCase() + progress.step.slice(1);
-  if (progress.index != null && progress.total != null) {
+    progress.step === "jd-requirements"
+      ? "JD requirements"
+      : progress.step === "experience"
+        ? "Experience"
+        : progress.step.charAt(0).toUpperCase() + progress.step.slice(1);
+  if (progress.step === "experience" && progress.index != null && progress.total != null) {
     return `${stepLabel} ${progress.index}/${progress.total}`;
   }
   return stepLabel;

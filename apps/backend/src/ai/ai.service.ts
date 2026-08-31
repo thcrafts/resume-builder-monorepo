@@ -8,20 +8,26 @@ import {
   DEFAULT_COVER_LETTER_PROMPT,
   DEFAULT_QUESTIONS_PROMPT,
   DEFAULT_TITLE_MATCH_PROMPT,
+  DEFAULT_JD_REQUIREMENTS_PROMPT,
   DEFAULT_SUMMARY_PROMPT,
   DEFAULT_SKILLS_PROMPT,
   DEFAULT_TITLE_MATCH_MODEL,
+  DEFAULT_JD_EXTRACTION_MODEL,
   DEFAULT_SUMMARY_MODEL,
   DEFAULT_SKILLS_MODEL,
   DEFAULT_EXPERIENCE_MODEL,
   TITLE_MATCH_MAX_TOKENS,
+  JD_EXTRACTION_MAX_TOKENS,
   SUMMARY_MAX_TOKENS,
   SKILLS_MAX_TOKENS,
   EXPERIENCE_MAX_TOKENS,
-  JD_EXPERIENCE_TRUNCATE_CHARS,
   TITLE_SIMILARITY_THRESHOLD,
   type CompanyEntry,
   type CandidateProfileData,
+  type JdAlignmentRequirements,
+  buildExperienceAlignmentUserBlock,
+  JD_MOST_RECENT_EXCERPT_CHARS,
+  applySummaryExperienceYears,
 } from '@resume-builder/shared';
 import { cleanText } from './clean-text';
 import { prepareResumeGenerationInstructions } from './prepare-resume-instructions';
@@ -33,10 +39,15 @@ import {
   resolveFinalTitle,
   titleMatchJsonSchema,
 } from './schemas/title-match.schema';
+import {
+  parseJdRequirementsResult,
+  jdRequirementsJsonSchema,
+} from './schemas/jd-requirements.schema';
 import { parseSummaryResult, summaryJsonSchema } from './schemas/summary.schema';
 import { parseSkillsResult, buildSkillsJsonSchema, buildSkillsFallback } from './schemas/skills.schema';
 import {
   parseExperienceResult,
+  alignExperienceResultWithJd,
   experienceJsonSchema,
 } from './schemas/experience.schema';
 import { prepareCompanyExperienceInstructions } from './prepare-company-experience-instructions';
@@ -129,19 +140,43 @@ export class AiService {
     return { match, finalTitle };
   }
 
-  async generateSummaryChunk(
+  async extractJdRequirements(
     jobDescription: string,
+    apiKeys?: UserApiKeys,
+    model = DEFAULT_JD_EXTRACTION_MODEL,
+  ): Promise<JdAlignmentRequirements> {
+    const systemPrompt = `${DEFAULT_JD_REQUIREMENTS_PROMPT}\n\nSchema:\n${JSON.stringify(jdRequirementsJsonSchema)}`;
+
+    const { data } = await this.openRouterService.createJsonCompletion<unknown>(
+      systemPrompt,
+      `Job Description:\n${cleanText(jobDescription)}`,
+      model,
+      JD_EXTRACTION_MAX_TOKENS,
+      apiKeys,
+    );
+
+    return parseJdRequirementsResult(data, jobDescription);
+  }
+
+  async generateSummaryChunk(
+    jobContext: string,
     finalTitle: string,
     companySummaries: string[],
     userInstructions: string | undefined,
     apiKeys?: UserApiKeys,
     model = DEFAULT_SUMMARY_MODEL,
+    yearsOfExperience?: number | null,
   ) {
     const parts = [
-      `Job Description:\n${cleanText(jobDescription)}`,
+      `Job Context:\n${cleanText(jobContext)}`,
       `Resume Title: ${finalTitle}`,
       `Companies:\n${companySummaries.join('\n')}`,
     ];
+    if (yearsOfExperience != null) {
+      parts.push(
+        `Years of experience (MANDATORY — use exactly this number): ${yearsOfExperience}+ years of experience`,
+      );
+    }
     if (userInstructions?.trim()) {
       parts.push(`Additional Instructions:\n${cleanText(userInstructions)}`);
     }
@@ -156,11 +191,17 @@ export class AiService {
       apiKeys,
     );
 
-    return parseSummaryResult(data);
+    const parsed = parseSummaryResult(data);
+    if (yearsOfExperience != null) {
+      return {
+        summary: applySummaryExperienceYears(parsed.summary, yearsOfExperience),
+      };
+    }
+    return parsed;
   }
 
   async generateSkillsChunk(
-    jobDescription: string,
+    jobContext: string,
     baselineSkills: CandidateProfileData['baselineSkills'],
     resumeSettings: ResumeSettings,
     apiKeys?: UserApiKeys,
@@ -171,7 +212,7 @@ export class AiService {
     const targetCategories = settings.skillCategories.length;
 
     const userPromptParts = [
-      `Job Description:\n${cleanText(jobDescription)}`,
+      `Job Context:\n${cleanText(jobContext)}`,
       `Baseline Skills:\n${JSON.stringify(baselineSkills)}`,
     ];
 
@@ -251,14 +292,32 @@ export class AiService {
     systemInstructions: string,
     apiKeys?: UserApiKeys,
     model = DEFAULT_EXPERIENCE_MODEL,
+    options?: {
+      jdAlignment: JdAlignmentRequirements;
+      isMostRecent: boolean;
+      companySkillsCount?: number;
+    },
   ) {
-    let jd = cleanText(jobDescription);
-    if (jd.length > JD_EXPERIENCE_TRUNCATE_CHARS) {
-      jd = jd.slice(0, JD_EXPERIENCE_TRUNCATE_CHARS);
+    const jdAlignment = options?.jdAlignment;
+    const isMostRecent = options?.isMostRecent ?? false;
+
+    let jdExcerpt = '';
+    if (isMostRecent) {
+      const jd = cleanText(jobDescription);
+      jdExcerpt =
+        jd.length > JD_MOST_RECENT_EXCERPT_CHARS
+          ? jd.slice(0, JD_MOST_RECENT_EXCERPT_CHARS)
+          : jd;
     }
 
-    const userPrompt = [
-      `Job Description:\n${jd}`,
+    const userPromptParts = [
+      jdAlignment
+        ? buildExperienceAlignmentUserBlock({
+            alignment: jdAlignment,
+            isMostRecent,
+            jobDescriptionExcerpt: jdExcerpt,
+          })
+        : `Job Description:\n${cleanText(jobDescription).slice(0, JD_MOST_RECENT_EXCERPT_CHARS)}`,
       `Company Context:\n${JSON.stringify({
         company: company.company,
         title: company.title,
@@ -268,18 +327,30 @@ export class AiService {
         product: company.product,
         mission: company.mission,
         context: company.context,
+        isMostRecentRole: isMostRecent,
       })}`,
-    ].join('\n\n');
+    ];
 
     const { data } = await this.openRouterService.createJsonCompletion<unknown>(
       systemInstructions,
-      userPrompt,
+      userPromptParts.join('\n\n'),
       model,
       EXPERIENCE_MAX_TOKENS,
       apiKeys,
     );
 
-    return parseExperienceResult(data);
+    const parsed = parseExperienceResult(data);
+
+    if (!jdAlignment) {
+      return parsed;
+    }
+
+    return alignExperienceResultWithJd(parsed, {
+      isMostRecent,
+      languages: jdAlignment.languages,
+      requiredSkills: jdAlignment.requiredSkills,
+      companySkillsCount: options?.companySkillsCount,
+    });
   }
 
   buildExperienceSystemInstructions(options: {

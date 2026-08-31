@@ -63,7 +63,7 @@ const fromJsonSchema = yup
 type AiGenerateFormData = yup.InferType<typeof aiGenerateSchema>;
 type FromJsonFormData = yup.InferType<typeof fromJsonSchema>;
 
-type ProgressStep = "title" | "summary" | "skills" | "experience";
+type ProgressStep = "title" | "jd-requirements" | "summary" | "skills" | "experience";
 
 const CreateResume: React.FC = () => {
   const { catalog } = useAiModels();
@@ -362,7 +362,9 @@ const CreateResume: React.FC = () => {
   const progressLabel = progress
     ? progress.step === "experience" && progress.index && progress.total
       ? `Experience ${progress.index}/${progress.total}`
-      : progress.step.charAt(0).toUpperCase() + progress.step.slice(1)
+      : progress.step === "jd-requirements"
+        ? "JD requirements"
+        : progress.step.charAt(0).toUpperCase() + progress.step.slice(1)
     : null;
 
   return (
@@ -455,7 +457,7 @@ const CreateResume: React.FC = () => {
               <Textarea rows={10} {...aiForm.register("jobDescription")} />
             </div>
             <p className="text-xs text-muted-foreground">
-              Uses chunked generation (title → summary → skills → experience) with
+              Uses chunked generation (title → JD requirements → summary → skills → experience) with
               fixed per-step models.
             </p>
             <Button

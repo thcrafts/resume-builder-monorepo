@@ -21,7 +21,7 @@ export class ResumesGateway {
   emitProgress(
     id: string,
     payload: {
-      step: 'title' | 'summary' | 'skills' | 'experience';
+      step: 'title' | 'jd-requirements' | 'summary' | 'skills' | 'experience';
       index?: number;
       total?: number;
     },

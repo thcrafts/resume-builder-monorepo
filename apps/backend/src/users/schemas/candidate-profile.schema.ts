@@ -61,6 +61,9 @@ export class CandidateProfileEmbedded {
 
   @Prop({ type: [SkillCategoryEmbedded], default: [] })
   baselineSkills: SkillCategoryEmbedded[];
+
+  @Prop()
+  yearsOfExperience?: number;
 }
 
 @Schema({ _id: false })

@@ -38,6 +38,8 @@ export interface CandidateProfileData {
   education: EducationEntry[];
   certifications: CertificationEntry[];
   baselineSkills: SkillCategoryEntry[];
+  /** Derived from education graduation dates when the profile is saved. */
+  yearsOfExperience?: number;
 }
 
 export interface CompanyEntry {
@@ -183,4 +185,53 @@ export function sortCompaniesByOrder(companies: CompanyEntry[]): CompanyEntry[] 
 export function getMostRecentCompany(companies: CompanyEntry[]): CompanyEntry | undefined {
   const sorted = sortCompaniesByOrder(companies);
   return sorted[0];
+}
+
+/** Parse the graduation year from an education date_range (uses the end date when a range is given). */
+export function parseGraduationYearFromDateRange(dateRange: string): number | null {
+  const trimmed = dateRange.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  const rangeMatch = trimmed.match(/^(.+?)\s*(?:-|–|—|\sto\s)\s*(.+)$/i);
+  const datePart = (rangeMatch ? rangeMatch[2] : trimmed).trim();
+
+  const matches = datePart.match(/\b(19|20)\d{2}\b/g);
+  if (!matches?.length) {
+    return null;
+  }
+
+  return Math.max(...matches.map(Number));
+}
+
+/** Years of experience = current year minus earliest parsed graduation year across education entries. */
+export function computeYearsOfExperienceFromEducation(
+  education: EducationEntry[],
+  referenceDate: Date = new Date(),
+): number | null {
+  const graduationYears = education
+    .map((entry) => parseGraduationYearFromDateRange(entry.date_range))
+    .filter((year): year is number => year !== null);
+
+  if (graduationYears.length === 0) {
+    return null;
+  }
+
+  const graduationYear = Math.min(...graduationYears);
+  return Math.max(0, referenceDate.getFullYear() - graduationYear);
+}
+
+/** Ensure the summary states the required years-of-experience phrase. */
+export function applySummaryExperienceYears(summary: string, years: number): string {
+  if (!Number.isFinite(years) || years < 0) {
+    return summary;
+  }
+
+  const phrase = `${years}+ years of experience`;
+  if (/\d+\+?\s*years(?:\s+of\s+experience)?/i.test(summary)) {
+    return summary.replace(/\d+\+?\s*years(?:\s+of\s+experience)?/gi, phrase);
+  }
+
+  return summary;
 }

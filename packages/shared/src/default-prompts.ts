@@ -33,6 +33,7 @@ RULES
 - Write 5–6 achievement bullets with action + scope + quantified numerical outcome in every bullet.
 - Each bullet MUST mention the company's product AND mission context naturally.
 - Align bullets to job-description skills and priorities using only supported facts.
+- When Target Role Alignment is provided, reflect its languages, required skills, and experience themes in achievements and skills (most recent role: mandatory where supported).
 - Prefer metrics from context; if none exist, use realistic measurable improvements tied to the described work.
 - Avoid weak phrasing: "responsible for", "worked on", "helped with", "involved in".
 - skills: technologies and capabilities supported by the role context and job description — do not invent unsupported tech.
@@ -41,6 +42,7 @@ RULES
 export const DEFAULT_SUMMARY_PROMPT = `You are an expert resume writer. Write a concise, ATS-friendly professional summary.
 
 Use the job description, final resume title, and company/product context provided.
+When years of experience are provided, you MUST state them exactly as "N+ years of experience" using that number — do not estimate or change it.
 The summary must reflect seniority, align with the job description, stay truthful, and avoid generic filler.
 Return JSON only: { "summary": "..." }`;
 
@@ -69,3 +71,17 @@ Given the job description, the candidate's professional title, and their company
 - Compare similarity between the candidate's professional title and your inferred root title (0.0–1.0).
 
 Return JSON only: { "rootTitle": "...", "similarity": 0.0 }`;
+
+export const DEFAULT_JD_REQUIREMENTS_PROMPT = `You extract ATS alignment requirements from a job description for resume tailoring.
+
+Read the full job description and return ONLY what is explicitly stated or clearly implied:
+- languages: programming languages required or preferred (e.g. TypeScript, Python, Java)
+- requiredSkills: frameworks, platforms, tools, databases, cloud, and technical capabilities (not soft skills)
+- experienceThemes: short phrases for technical focus areas (e.g. microservices, scalability, team leadership)
+- experienceRequirements: years of experience, seniority, domain, and role expectations (e.g. "5+ years backend development", "experience leading teams")
+
+Rules:
+- Be specific and concise (1–8 words per item).
+- Do not invent technologies not mentioned in the JD.
+- Prefer must-have / required items over nice-to-have when both exist.
+- Return JSON only matching the provided schema.`;

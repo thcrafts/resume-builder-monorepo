@@ -1,6 +1,9 @@
 import {
   validateCandidateProfile,
   TITLE_SIMILARITY_THRESHOLD,
+  parseGraduationYearFromDateRange,
+  computeYearsOfExperienceFromEducation,
+  applySummaryExperienceYears,
 } from '@resume-builder/shared';
 
 describe('validateCandidateProfile', () => {
@@ -88,5 +91,62 @@ describe('validateCandidateProfile', () => {
 
   it('exports title similarity threshold of 0.8', () => {
     expect(TITLE_SIMILARITY_THRESHOLD).toBe(0.8);
+  });
+});
+
+describe('parseGraduationYearFromDateRange', () => {
+  it('parses end year from a range', () => {
+    expect(parseGraduationYearFromDateRange('2010 – 2014')).toBe(2014);
+    expect(parseGraduationYearFromDateRange('2015 - 2019')).toBe(2019);
+  });
+
+  it('parses a single graduation date', () => {
+    expect(parseGraduationYearFromDateRange('05/2019')).toBe(2019);
+    expect(parseGraduationYearFromDateRange('May 2019')).toBe(2019);
+    expect(parseGraduationYearFromDateRange('2019')).toBe(2019);
+  });
+
+  it('returns null for empty or unparseable values', () => {
+    expect(parseGraduationYearFromDateRange('')).toBeNull();
+    expect(parseGraduationYearFromDateRange('Present')).toBeNull();
+  });
+});
+
+describe('computeYearsOfExperienceFromEducation', () => {
+  const referenceDate = new Date('2026-08-30');
+
+  it('computes years from earliest graduation year', () => {
+    const years = computeYearsOfExperienceFromEducation(
+      [
+        { degree: 'BS', institution: 'A', date_range: '2010 – 2014' },
+        { degree: 'MS', institution: 'B', date_range: '2014 – 2016' },
+      ],
+      referenceDate,
+    );
+    expect(years).toBe(12);
+  });
+
+  it('returns null when no graduation year can be parsed', () => {
+    expect(
+      computeYearsOfExperienceFromEducation(
+        [{ degree: 'BS', institution: 'A', date_range: 'TBD' }],
+        referenceDate,
+      ),
+    ).toBeNull();
+  });
+});
+
+describe('applySummaryExperienceYears', () => {
+  it('replaces an incorrect years phrase', () => {
+    const summary =
+      'Senior Engineer with 5+ years of experience building distributed systems.';
+    expect(applySummaryExperienceYears(summary, 12)).toBe(
+      'Senior Engineer with 12+ years of experience building distributed systems.',
+    );
+  });
+
+  it('leaves summary unchanged when years phrase is missing', () => {
+    const summary = 'Senior Engineer building distributed systems.';
+    expect(applySummaryExperienceYears(summary, 12)).toBe(summary);
   });
 });

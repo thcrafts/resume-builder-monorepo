@@ -64,7 +64,21 @@ describe('distributeJdSkillsAcrossExperience', () => {
     expect(result[0].skills).toEqual(
       expect.arrayContaining(['TypeScript', 'React', 'AWS']),
     );
-    expect(getUncoveredJdSkills(jdSkills.slice(0, 3), result.flatMap((r) => r.skills))).toEqual([]);
+    expect(
+      getUncoveredJdSkills(['TypeScript', 'React', 'AWS'], result.flatMap((r) => r.skills)),
+    ).toEqual([]);
+  });
+
+  it('normalizes AWS services when distributing JD skills', () => {
+    const result = distributeJdSkillsAcrossExperience(
+      [{ id: 'recent', skills: ['Node.js', 'EC2', 'RDS'] }],
+      ['TypeScript', 'EC2', 'RDS'],
+      10,
+    );
+
+    expect(result[0].skills).toContain('AWS');
+    expect(result[0].skills).not.toContain('EC2');
+    expect(result[0].skills).not.toContain('RDS');
   });
 });
 

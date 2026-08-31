@@ -38,7 +38,8 @@ RULES
 - Older roles: include a credible subset of JD skills supported by that company's product/mission.
 - Prefer metrics from context; if none exist, use realistic measurable improvements tied to the described work.
 - Avoid weak phrasing: "responsible for", "worked on", "helped with", "involved in".
-- skills: technologies and capabilities supported by the role context and job description — do not invent unsupported tech.
+- skills: concrete TECH STACK names only (languages, frameworks, databases, cloud platforms, tools). No compliance, design practices, or soft skills.
+- Use cloud platform names (AWS, Azure, GCP) — not individual services (EC2, RDS, S3 map to AWS).
 - Return JSON only matching the provided schema.`;
 
 export const DEFAULT_SUMMARY_PROMPT = `You are an expert resume writer. Write a concise, ATS-friendly professional summary.
@@ -82,6 +83,7 @@ export const DEFAULT_JD_REQUIREMENTS_PROMPT = `You extract ATS alignment require
 Read the full job description and return ONLY what is explicitly stated or clearly implied:
 - languages: ALL programming languages required or preferred (e.g. TypeScript, Python, Java)
 - requiredSkills: ALL frameworks, platforms, tools, databases, cloud services, and technical capabilities mentioned (not soft skills)
+- Do NOT include compliance, regulations, certifications, or design practices (e.g. HIPAA, SOC 2, database design, query optimization) — those belong in experience bullets, not skills.
 - experienceThemes: short phrases for technical focus areas (e.g. microservices, scalability, team leadership)
 - experienceRequirements: years of experience, seniority, domain, and role expectations (e.g. "5+ years backend development", "experience leading teams")
 

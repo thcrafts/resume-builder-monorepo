@@ -1,3 +1,5 @@
+import { normalizeTechStackSkills } from '@resume-builder/shared';
+
 export function buildExperienceJsonSchema(options?: {
   companySkillsCount?: number;
   achievementsCount?: number;
@@ -110,8 +112,10 @@ export function parseExperienceResult(raw: unknown): ExperienceChunkResult {
 
   return {
     achievements,
-    skills: Array.isArray(skills)
-      ? skills.map(coerceToPlainText).filter(Boolean)
-      : [],
+    skills: normalizeTechStackSkills(
+      Array.isArray(skills)
+        ? skills.map(coerceToPlainText).filter(Boolean)
+        : [],
+    ),
   };
 }

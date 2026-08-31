@@ -1,6 +1,6 @@
 import type { ResumeData } from 'src/resumes/templates';
 import { MAX_EXPERIENCE_BULLETS_PER_ROLE } from './resume-settings';
-import { DEFAULT_RESUME_SETTINGS } from '@resume-builder/shared';
+import { DEFAULT_RESUME_SETTINGS, normalizeTechStackSkills } from '@resume-builder/shared';
 import { coerceToPlainText } from './schemas/experience.schema';
 
 export const MAX_WORDS_PER_EXPERIENCE_BULLET = 28;
@@ -71,9 +71,9 @@ export function normalizeResumeExperienceBullets(
         ? entry.achievements
         : [];
       const skills = Array.isArray(entry.skills) ? entry.skills : [];
-      const plainSkills = skills
-        .map((skill) => coerceToPlainText(skill))
-        .filter(Boolean);
+      const plainSkills = normalizeTechStackSkills(
+        skills.map((skill) => coerceToPlainText(skill)).filter(Boolean),
+      );
       const trimmedSkills =
         options?.preserveCompanySkills || companySkillsCount <= 0
           ? plainSkills

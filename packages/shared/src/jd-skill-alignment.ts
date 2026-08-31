@@ -3,6 +3,11 @@ import {
   SKILL_CATEGORIES,
   type SkillCategory,
 } from './resume-settings';
+import {
+  normalizeTechStackSkills,
+  techStackSkillsMatch,
+  isNonTechStackSkill,
+} from './tech-stack-skills';
 
 export interface CompanyExperienceSkills {
   id: string;
@@ -37,20 +42,20 @@ export function collectJdSkills(alignment: JdAlignmentRequirements): string[] {
   ]);
 }
 
+/** JD skills filtered to concrete tech stacks (no compliance/themes; AWS not EC2/RDS). */
+export function collectJdTechStackSkills(
+  alignment: JdAlignmentRequirements,
+): string[] {
+  return normalizeTechStackSkills(collectJdSkills(alignment));
+}
+
 export function isSkillCovered(skill: string, skills: string[]): boolean {
   const key = skill.trim().toLowerCase();
   if (!key) {
     return false;
   }
 
-  return skills.some((candidate) => {
-    const candidateKey = candidate.trim().toLowerCase();
-    return (
-      candidateKey === key ||
-      candidateKey.includes(key) ||
-      key.includes(candidateKey)
-    );
-  });
+  return skills.some((candidate) => techStackSkillsMatch(skill, candidate));
 }
 
 export function getUncoveredJdSkills(
@@ -93,10 +98,12 @@ export function distributeJdSkillsAcrossExperience(
     return companies;
   }
 
-  const jdSkillSet = dedupeSkillsCaseInsensitive(jdSkills);
+  const jdSkillSet = dedupeSkillsCaseInsensitive(
+    normalizeTechStackSkills(jdSkills),
+  );
   const result = companies.map((company) => ({
     id: company.id,
-    skills: dedupeSkillsCaseInsensitive(company.skills),
+    skills: normalizeTechStackSkills(company.skills),
   }));
 
   if (jdSkillSet.length === 0) {
@@ -160,14 +167,42 @@ export function distributeJdSkillsAcrossExperience(
 
     return {
       id: company.id,
-      skills: trimSkillsPreservingRequired(
-        company.skills,
-        protectedJd,
-        minCount,
+      skills: normalizeTechStackSkills(
+        trimSkillsPreservingRequired(company.skills, protectedJd, minCount),
       ),
     };
   });
 }
+
+/** Pre-assign JD tech-stack skills per company before AI generation. */
+export function planJdTechStackPerCompany(
+  companies: Array<{ id: string }>,
+  jdSkills: string[],
+): Map<string, string[]> {
+  const techSkills = normalizeTechStackSkills(jdSkills);
+  const plan = new Map<string, string[]>();
+
+  if (companies.length === 0 || techSkills.length === 0) {
+    return plan;
+  }
+
+  plan.set(companies[0].id, [...techSkills]);
+
+  const older = companies.slice(1);
+  older.forEach((company, index) => {
+    const subset = techSkills.filter((_, skillIndex) => {
+      if (older.length === 0) {
+        return false;
+      }
+      return skillIndex % older.length === index;
+    });
+    plan.set(company.id, subset.length > 0 ? subset : techSkills.slice(0, 3));
+  });
+
+  return plan;
+}
+
+export { isNonTechStackSkill };
 
 const LANGUAGE_TERMS = new Set(
   [

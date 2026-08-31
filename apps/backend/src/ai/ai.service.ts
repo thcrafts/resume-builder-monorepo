@@ -29,6 +29,7 @@ import {
   buildExperienceAlignmentUserBlock,
   JD_MOST_RECENT_EXCERPT_CHARS,
   applySummaryExperienceYears,
+  normalizeTechStackSkills,
 } from '@resume-builder/shared';
 import { cleanText } from './clean-text';
 import { prepareResumeGenerationInstructions } from './prepare-resume-instructions';
@@ -306,10 +307,12 @@ export class AiService {
       jdAlignment: JdAlignmentRequirements;
       isMostRecent: boolean;
       companySkillsCount?: number;
+      assignedTechStackSkills?: string[];
     },
   ) {
     const jdAlignment = options?.jdAlignment;
     const isMostRecent = options?.isMostRecent ?? false;
+    const assignedTechStackSkills = options?.assignedTechStackSkills ?? [];
 
     let jdExcerpt = '';
     if (isMostRecent) {
@@ -326,6 +329,7 @@ export class AiService {
             alignment: jdAlignment,
             isMostRecent,
             jobDescriptionExcerpt: jdExcerpt,
+            assignedTechStackSkills,
           })
         : `Job Description:\n${cleanText(jobDescription).slice(0, JD_MOST_RECENT_EXCERPT_CHARS)}`,
       `Company Context:\n${JSON.stringify({
@@ -350,7 +354,13 @@ export class AiService {
     );
 
     const parsed = parseExperienceResult(data);
-    return parsed;
+    return {
+      ...parsed,
+      skills: normalizeTechStackSkills([
+        ...assignedTechStackSkills,
+        ...parsed.skills,
+      ]),
+    };
   }
 
   buildExperienceSystemInstructions(options: {

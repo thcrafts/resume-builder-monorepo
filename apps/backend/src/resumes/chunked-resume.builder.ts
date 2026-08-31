@@ -15,8 +15,9 @@ import {
   computeYearsOfExperienceFromEducation,
   buildCompactJdContextForPrompt,
   formatJdAlignmentForPrompt,
-  collectJdSkills,
+  collectJdTechStackSkills,
   distributeJdSkillsAcrossExperience,
+  planJdTechStackPerCompany,
   type CompanyEntry,
 } from '@resume-builder/shared';
 import { AiService } from '../ai/ai.service';
@@ -184,6 +185,12 @@ export class ChunkedResumeBuilder {
       achievementsCount: options.resumeSettings.achievementsCount,
     });
 
+    const jdTechStackSkills = collectJdTechStackSkills(jdAlignment);
+    const jdSkillsByCompany = planJdTechStackPerCompany(
+      sortedCompanies.map((company) => ({ id: company.id })),
+      jdTechStackSkills,
+    );
+
     const total = sortedCompanies.length;
     const experienceByCompanyId = new Map<
       string,
@@ -223,6 +230,8 @@ export class ChunkedResumeBuilder {
                 jdAlignment,
                 isMostRecent: company.id === mostRecentCompany?.id,
                 companySkillsCount: options.resumeSettings.companySkillsCount,
+                assignedTechStackSkills:
+                  jdSkillsByCompany.get(company.id) ?? [],
               },
             );
             experienceByCompanyId.set(company.id, result);
@@ -244,13 +253,12 @@ export class ChunkedResumeBuilder {
     ]);
     steps.push({ step: 'summary', model: summaryModel });
 
-    const jdSkills = collectJdSkills(jdAlignment);
     const distributedSkills = distributeJdSkillsAcrossExperience(
       sortedCompanies.map((company) => ({
         id: company.id,
         skills: experienceByCompanyId.get(company.id)?.skills ?? [],
       })),
-      jdSkills,
+      jdTechStackSkills,
       options.resumeSettings.companySkillsCount,
     );
 
@@ -283,7 +291,7 @@ export class ChunkedResumeBuilder {
       options.apiKeys,
       skillsModel,
       skillsContext,
-      jdSkills,
+      jdTechStackSkills,
     );
     steps.push({ step: 'skills', model: skillsModel });
 
@@ -302,7 +310,7 @@ export class ChunkedResumeBuilder {
       assembled,
       options.resumeSettings.achievementsCount,
       options.resumeSettings.companySkillsCount,
-      { preserveCompanySkills: jdSkills.length > 0 },
+      { preserveCompanySkills: jdTechStackSkills.length > 0 },
     );
 
     return {

@@ -123,6 +123,8 @@ const Profile: React.FC = () => {
   const [revealingKeys, setRevealingKeys] = React.useState(false);
   const [openrouterUsage, setOpenrouterUsage] =
     React.useState<OpenRouterKeyUsage | null>(null);
+  const [loadingOpenrouterUsage, setLoadingOpenrouterUsage] =
+    React.useState(false);
   const [securityError, setSecurityError] = React.useState<string | null>(null);
   const [changingPassword, setChangingPassword] = React.useState(false);
 
@@ -801,15 +803,26 @@ const Profile: React.FC = () => {
               <Button
                 type="button"
                 variant="outline"
+                disabled={loadingOpenrouterUsage}
                 onClick={async () => {
+                  setLoadingOpenrouterUsage(true);
                   try {
                     setOpenrouterUsage(await getOpenrouterUsage());
                   } catch {
                     toast.error("Failed to load usage");
+                  } finally {
+                    setLoadingOpenrouterUsage(false);
                   }
                 }}
               >
-                Refresh usage
+                {loadingOpenrouterUsage ? (
+                  <>
+                    <Spinner className="mr-2 h-4 w-4" />
+                    Refreshing...
+                  </>
+                ) : (
+                  "Refresh usage"
+                )}
               </Button>
               {openrouterUsage ? (
                 <p className="text-sm text-muted-foreground">

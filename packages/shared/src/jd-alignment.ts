@@ -1,3 +1,5 @@
+import { normalizeTechStackSkills } from './tech-stack-skills';
+
 export interface JdAlignmentRequirements {
   languages: string[];
   requiredSkills: string[];
@@ -204,23 +206,28 @@ export function buildExperienceAlignmentUserBlock(options: {
   alignment: JdAlignmentRequirements;
   isMostRecent: boolean;
   jobDescriptionExcerpt?: string;
+  assignedTechStackSkills?: string[];
 }): string {
   const alignmentText = formatJdAlignmentForPrompt(options.alignment);
+  const assignedSkills = normalizeTechStackSkills(
+    options.assignedTechStackSkills ??
+      dedupeCaseInsensitive([
+        ...options.alignment.languages,
+        ...options.alignment.requiredSkills,
+      ]),
+  );
 
   if (options.isMostRecent) {
     const excerpt = options.jobDescriptionExcerpt?.trim() ?? '';
-    const allJdSkills = dedupeCaseInsensitive([
-      ...options.alignment.languages,
-      ...options.alignment.requiredSkills,
-    ]);
     const jdSkillLine =
-      allJdSkills.length > 0
-        ? `ALL JD skills (mandatory in skills array): ${allJdSkills.join(', ')}`
+      assignedSkills.length > 0
+        ? `ALL JD tech-stack skills (mandatory in skills array): ${assignedSkills.join(', ')}`
         : '';
     return [
       'TARGET ROLE ALIGNMENT (MOST RECENT ROLE — mandatory)',
       'Achievements and skills MUST reflect these JD requirements wherever supported by the company product/mission/context.',
-      '- The skills array MUST include every JD skill listed below.',
+      '- The skills array MUST include every JD tech-stack skill listed below (platform names only: AWS not EC2/RDS).',
+      '- skills must be concrete tech stacks only — no compliance, design practices, or soft skills.',
       '- At least 4 achievement bullets must explicitly name technologies from the lists below.',
       '- Weave experience themes and requirements into achievement scope/outcomes.',
       jdSkillLine,
@@ -231,17 +238,14 @@ export function buildExperienceAlignmentUserBlock(options: {
       .join('\n');
   }
 
-  const partialJdSkills = dedupeCaseInsensitive([
-    ...options.alignment.languages,
-    ...options.alignment.requiredSkills,
-  ]);
   const partialSkillLine =
-    partialJdSkills.length > 0
-      ? `Include a credible subset of these JD skills in skills when supported by this company: ${partialJdSkills.join(', ')}`
+    assignedSkills.length > 0
+      ? `Include a credible subset of these JD tech-stack skills when supported by this company: ${assignedSkills.join(', ')}`
       : '';
 
   return [
     'TARGET ROLE ALIGNMENT (older role — apply only where supported by this company context)',
+    'skills must be concrete tech stacks only — no compliance, design practices, or soft skills.',
     'Mirror JD languages/skills/themes only when credible for this specific company, product, and mission.',
     partialSkillLine,
     alignmentText,

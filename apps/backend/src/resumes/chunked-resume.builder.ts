@@ -230,6 +230,7 @@ export class ChunkedResumeBuilder {
                 jdAlignment,
                 isMostRecent: company.id === mostRecentCompany?.id,
                 companySkillsCount: options.resumeSettings.companySkillsCount,
+                achievementsCount: options.resumeSettings.achievementsCount,
                 assignedTechStackSkills:
                   jdSkillsByCompany.get(company.id) ?? [],
               },

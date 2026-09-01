@@ -33,7 +33,7 @@ describe('parseExperienceResult', () => {
     ).toThrow('Invalid experience achievements response');
   });
 
-  it('drops boolean and true/false leftovers from achievements', () => {
+  it('drops boolean leftovers that would render as False.', () => {
     const result = parseExperienceResult({
       achievements: [
         'Built APIs serving 1M users for the platform.',
@@ -41,6 +41,8 @@ describe('parseExperienceResult', () => {
         true,
         'False',
         'Grew adoption by 25% for the product with AI tools.',
+        'Scaled search index supporting two million daily users.',
+        'Automated release pipelines reducing deploy time by 40%.',
       ],
       skills: ['Node.js', false, 'PostgreSQL'],
     });
@@ -48,6 +50,8 @@ describe('parseExperienceResult', () => {
     expect(result.achievements).toEqual([
       'Built APIs serving 1M users for the platform.',
       'Grew adoption by 25% for the product with AI tools.',
+      'Scaled search index supporting two million daily users.',
+      'Automated release pipelines reducing deploy time by 40%.',
     ]);
     expect(result.skills).toEqual(['Node.js', 'PostgreSQL']);
   });

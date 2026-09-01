@@ -51,7 +51,10 @@ import {
   parseExperienceResult,
   experienceJsonSchema,
 } from './schemas/experience.schema';
-import { prepareCompanyExperienceInstructions } from './prepare-company-experience-instructions';
+import {
+  prepareCompanyExperienceInstructions,
+  stripCompanyNameFromBullets,
+} from './prepare-company-experience-instructions';
 import {
   enrichSkillsWithSources,
   normalizeGeneratedSkills,
@@ -307,12 +310,19 @@ export class AiService {
       jdAlignment: JdAlignmentRequirements;
       isMostRecent: boolean;
       companySkillsCount?: number;
+      achievementsCount?: number;
       assignedTechStackSkills?: string[];
     },
   ) {
     const jdAlignment = options?.jdAlignment;
     const isMostRecent = options?.isMostRecent ?? false;
     const assignedTechStackSkills = options?.assignedTechStackSkills ?? [];
+    const targetAchievements =
+      options?.achievementsCount && options.achievementsCount > 0
+        ? options.achievementsCount
+        : 6;
+    // Accept a near-miss after filtering false pads; retry below this.
+    const minAcceptableAchievements = Math.max(4, targetAchievements - 1);
 
     let jdExcerpt = '';
     if (isMostRecent) {
@@ -345,17 +355,47 @@ export class AiService {
       })}`,
     ];
 
-    const { data } = await this.openRouterService.createJsonCompletion<unknown>(
-      systemInstructions,
-      userPromptParts.join('\n\n'),
-      model,
-      EXPERIENCE_MAX_TOKENS,
-      apiKeys,
-    );
+    const runOnce = async (extraReminder?: string) => {
+      const userPrompt = [
+        ...userPromptParts,
+        extraReminder ? `CRITICAL RETRY:\n${extraReminder}` : '',
+      ]
+        .filter(Boolean)
+        .join('\n\n');
 
-    const parsed = parseExperienceResult(data);
+      const { data } = await this.openRouterService.createJsonCompletion<unknown>(
+        systemInstructions,
+        userPrompt,
+        model,
+        EXPERIENCE_MAX_TOKENS,
+        apiKeys,
+      );
+
+      return parseExperienceResult(data);
+    };
+
+    let parsed = await runOnce();
+    if (parsed.achievements.length < minAcceptableAchievements) {
+      console.warn(
+        `Experience for ${company.company} returned ${parsed.achievements.length}/${targetAchievements} usable bullets; retrying once.`,
+      );
+      parsed = await runOnce(
+        `Return exactly ${targetAchievements} achievement strings. Every item must be a full sentence. Do not use true, false, null, or empty placeholders. Do not include the company name. Include credible numeric improvements in exactly 1-2 bullets; no metrics in the rest.`,
+      );
+    }
+
+    if (parsed.achievements.length < minAcceptableAchievements) {
+      throw new Error(
+        `Experience generation for ${company.company} returned only ${parsed.achievements.length} usable bullets (need at least ${minAcceptableAchievements}).`,
+      );
+    }
+
     return {
       ...parsed,
+      achievements: stripCompanyNameFromBullets(
+        parsed.achievements,
+        company.company,
+      ),
       skills: normalizeTechStackSkills([
         ...assignedTechStackSkills,
         ...parsed.skills,

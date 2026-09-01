@@ -15,7 +15,8 @@ export function buildExperienceJsonSchema(options?: {
     properties: {
       achievements: {
         type: 'array',
-        minItems: achievementsCount,
+        // Prefer exact count, but allow one short to avoid models padding with false.
+        minItems: Math.max(4, achievementsCount - 1),
         maxItems: achievementsCount,
         items: { type: 'string', minLength: 40 },
       },
@@ -105,14 +106,17 @@ export function coerceToPlainText(value: unknown): string {
 
 const INVALID_BULLET_TOKENS = /^(true|false|null|undefined|nan|\[object object\])\.?$/i;
 
-/** Reject boolean leftovers and other non-sentence achievement items. */
+/**
+ * Reject boolean leftovers and empty junk.
+ * Keep the bar low so schema-padded false values are removed without wiping real bullets.
+ */
 export function isUsableExperienceBullet(text: string): boolean {
   const trimmed = text.trim();
   if (!trimmed || INVALID_BULLET_TOKENS.test(trimmed)) {
     return false;
   }
-  // Real achievement bullets are full sentences, not 1–2 token junk.
-  return trimmed.split(/\s+/).filter(Boolean).length >= 6;
+  const words = trimmed.split(/\s+/).filter(Boolean);
+  return words.length >= 4 || trimmed.length >= 24;
 }
 
 export function parseExperienceResult(raw: unknown): ExperienceChunkResult {

@@ -225,11 +225,12 @@ export function buildExperienceAlignmentUserBlock(options: {
         : '';
     return [
       'TARGET ROLE ALIGNMENT (MOST RECENT ROLE — mandatory)',
-      'Achievements and skills MUST reflect these JD requirements wherever supported by the company product/mission/context.',
+      'Achievements and skills MUST reflect these JD requirements wherever supported by the role context.',
       '- The skills array MUST include every JD tech-stack skill listed below (platform names only: AWS not EC2/RDS).',
       '- skills must be concrete tech stacks only — no compliance, design practices, or soft skills.',
       '- At least 4 achievement bullets must explicitly name technologies from the lists below.',
-      '- Weave experience themes and requirements into achievement scope/outcomes.',
+      '- Weave experience themes into achievement scope/outcomes without naming the employer.',
+      '- Do not put the company name in achievement bullets. Include credible numeric improvements in exactly 1–2 bullets; no metrics in the rest.',
       jdSkillLine,
       alignmentText,
       excerpt ? `Job description excerpt:\n${excerpt}` : '',

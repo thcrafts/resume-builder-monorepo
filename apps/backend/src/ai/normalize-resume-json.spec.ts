@@ -6,7 +6,7 @@ import {
 } from './normalize-resume-json';
 
 describe('normalizeExperienceBullet', () => {
-  it('strips leading list markers and allows up to 28 words', () => {
+  it('strips leading list markers and allows up to the word limit', () => {
     const input =
       '- Led cross functional teams to deliver scalable Node.js APIs for enterprise clients worldwide today';
     const result = normalizeExperienceBullet(input);

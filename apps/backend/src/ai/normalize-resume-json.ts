@@ -6,7 +6,7 @@ import {
   isUsableExperienceBullet,
 } from './schemas/experience.schema';
 
-export const MAX_WORDS_PER_EXPERIENCE_BULLET = 28;
+export const MAX_WORDS_PER_EXPERIENCE_BULLET = 40;
 
 const DANGLING_TRAILING_WORDS = new Set([
   'a',
@@ -71,12 +71,11 @@ export function normalizeExperienceBullet(text: unknown): string {
 
   let words = normalized.split(' ').filter(Boolean);
   if (words.length > MAX_WORDS_PER_EXPERIENCE_BULLET) {
-    words = trimDanglingTrailingWords(
+    const truncated = trimDanglingTrailingWords(
       words.slice(0, MAX_WORDS_PER_EXPERIENCE_BULLET),
     );
-    if (words.length < 6) {
-      return '';
-    }
+    // Prefer the truncated sentence; fall back to hard slice if trim wiped too much.
+    words = truncated.length >= 4 ? truncated : words.slice(0, MAX_WORDS_PER_EXPERIENCE_BULLET);
     normalized = words.join(' ');
   }
 

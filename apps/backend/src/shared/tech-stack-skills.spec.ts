@@ -64,8 +64,8 @@ describe('normalizeTechStackSkills', () => {
     expect(techStackSkillsMatch('RDS', 'AWS')).toBe(true);
   });
 
-  it('flags non-tech skills', () => {
-    expect(isNonTechStackSkill('HIPAA compliance')).toBe(true);
-    expect(isNonTechStackSkill('PostgreSQL')).toBe(false);
+  it('flags vague category phrases', () => {
+    expect(isNonTechStackSkill('event-based frameworks')).toBe(true);
+    expect(isNonTechStackSkill('Kafka')).toBe(false);
   });
 });

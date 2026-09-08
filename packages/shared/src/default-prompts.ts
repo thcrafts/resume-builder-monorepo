@@ -26,7 +26,7 @@ export const DEFAULT_COMPANY_EXPERIENCE_PROMPT = `You are an expert resume write
 
 The user message contains the job description and factual company context (company name, title, dates, product, mission, technologies, and any known achievements or metrics).
 
-Generate tailored achievements and role skills for this single company only.
+Generate tailored achievement bullets for this single company only. Do NOT generate a skills list — skills are produced in a separate step.
 
 RULES
 - Keep company, title, date_range, and job_type factual. Never change or infer them.
@@ -41,13 +41,29 @@ RULES
 - When company context provides verified metrics, use them. When none exist, use credible, realistic industry-typical metrics (e.g. "reduced p95 latency ~35%", "cut release cycles from weeks to days") — do not leave all bullets unquantified.
 - Avoid making every bullet follow the same sentence structure or impact pattern.
 - Align achievements with the job description's priorities only where credible for this role.
-- When Target Role Alignment is provided, use it to prioritize relevant languages, frameworks, and themes.
-- Most recent role: skills should cover JD technologies that are required and supported.
-- Older roles: include only a credible subset of JD technologies for that company/period.
+- When Target Role Alignment is provided, weave priority JD technologies into achievement bullets by name.
+- For the most recent role: every JD language listed in Target Role Alignment MUST appear by name in at least one bullet (e.g. if Rust is listed, write a Rust bullet).
+- Do not leave key JD languages only in Core Technologies — company experience must demonstrate them.
 - Avoid weak phrasing: "responsible for", "worked on", "helped with", "involved in".
-- skills: concrete TECH STACK names only (languages, frameworks, databases, cloud platforms, tools). No soft skills, compliance, or design practices.
-- Use AWS / Azure / GCP as platform names (not EC2/RDS/S3 lists).
 - Return JSON only matching the provided schema.`;
+
+export const DEFAULT_EXPERIENCE_SKILLS_PROMPT = `You generate company experience skill lists for an ATS-friendly resume.
+
+The user message contains company context and achievement bullets for a single role. Extract the concrete technologies used in this role.
+
+Return a clean array of named TECH STACK items only — real products, languages, frameworks, databases, cloud platforms, and tools.
+
+RULES
+- ONLY include technologies explicitly mentioned or clearly implied in the achievement bullets
+- Do NOT add JD or target-role skills unless they appear in the bullets
+- Named technologies only: TypeScript, React, Node.js, PostgreSQL, Kafka, AWS, Docker
+- NEVER use vague categories or themes as skills (e.g. "event-based frameworks", "cloud technologies", "modern stack")
+- If a bullet mentions Kafka, include Kafka — do not generalize to vague categories
+- 1–4 words per skill; use standard market names
+- No compliance, regulations, certifications, soft skills, design practices, or achievement sentences
+- Use AWS / Azure / GCP as platform names (not EC2/RDS/S3 lists)
+- When a target count is provided, return about that many skills (all must still be bullet-evidenced)
+- Return JSON only: { "skills": ["TypeScript", "React", "Kafka", "AWS"] }`;
 
 export const DEFAULT_SUMMARY_PROMPT = `You are an expert resume writer. Write a concise, ATS-friendly professional summary.
 

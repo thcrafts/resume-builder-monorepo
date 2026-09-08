@@ -37,7 +37,11 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const handleSessionExpired = useCallback(() => {
     logout();
     toast.error("Your session has expired. Please log in again.");
-    window.location.replace("/login");
+    // Avoid a hard reload loop when already on the login/register screens.
+    if (!window.location.pathname.startsWith("/login") &&
+        !window.location.pathname.startsWith("/register")) {
+      window.location.replace("/login");
+    }
   }, [logout]);
 
   const login = (newToken: string) => {

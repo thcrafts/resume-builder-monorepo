@@ -1,10 +1,6 @@
-import { normalizeTechStackSkills } from '@resume-builder/shared';
-
 export function buildExperienceJsonSchema(options?: {
-  companySkillsCount?: number;
   achievementsCount?: number;
 }) {
-  const companySkillsCount = options?.companySkillsCount ?? 0;
   const achievementsCount =
     options?.achievementsCount && options.achievementsCount > 0
       ? options.achievementsCount
@@ -20,18 +16,8 @@ export function buildExperienceJsonSchema(options?: {
         maxItems: achievementsCount,
         items: { type: 'string', minLength: 40 },
       },
-      skills: {
-        type: 'array',
-        items: { type: 'string', minLength: 1, maxLength: 40 },
-        ...(companySkillsCount > 0
-          ? {
-              minItems: Math.min(companySkillsCount, 12),
-              maxItems: Math.max(companySkillsCount, 12),
-            }
-          : {}),
-      },
     },
-    required: ['achievements', 'skills'],
+    required: ['achievements'],
     additionalProperties: false,
   } as const;
 }
@@ -122,7 +108,6 @@ export function isUsableExperienceBullet(text: string): boolean {
 export function parseExperienceResult(raw: unknown): ExperienceChunkResult {
   const data = raw as Record<string, unknown>;
   const achievementsRaw = data.achievements ?? data.responsibilities;
-  const skills = data.skills;
 
   const achievements = Array.isArray(achievementsRaw)
     ? achievementsRaw
@@ -136,12 +121,6 @@ export function parseExperienceResult(raw: unknown): ExperienceChunkResult {
 
   return {
     achievements,
-    skills: normalizeTechStackSkills(
-      Array.isArray(skills)
-        ? skills
-            .map(coerceToPlainText)
-            .filter((skill) => skill && !INVALID_BULLET_TOKENS.test(skill))
-        : [],
-    ),
+    skills: [],
   };
 }

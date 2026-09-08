@@ -8,6 +8,12 @@ const socketUrl =
 
 export const socket: Socket = io(socketUrl, {
   withCredentials: true,
-  transports: ["websocket", "polling"],
+  // Prefer websocket; polling+upgrade races through Vite's WS proxy cause ECONNABORTED noise.
+  transports: ["websocket"],
+  upgrade: false,
   autoConnect: true,
+  reconnection: true,
+  reconnectionAttempts: Infinity,
+  reconnectionDelay: 1000,
+  reconnectionDelayMax: 5000,
 });

@@ -1,6 +1,6 @@
 import axios, { type AxiosInstance } from "axios";
 import { notifySessionExpired } from "../utils/sessionExpiredHandler";
-import { getAuthHeaders } from "../utils/authSession";
+import { getAuthHeaders, getStoredToken } from "../utils/authSession";
 
 class ApiClient {
   private static instance: ApiClient;
@@ -28,11 +28,14 @@ class ApiClient {
     this.axiosInstance.interceptors.response.use(
       (response) => response,
       (error) => {
-        if (error.response?.status === 401) {
+        // Only expire a real session. Unauthenticated 401s (e.g. /api/ai/models on
+        // the login page when opening via LAN IP with empty localStorage) must not
+        // trigger window.location.replace("/login") or the page reloads forever.
+        if (error.response?.status === 401 && Boolean(getStoredToken())) {
           notifySessionExpired();
         }
         return Promise.reject(error);
-      }
+      },
     );
   }
 

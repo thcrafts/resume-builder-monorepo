@@ -1,6 +1,7 @@
 import * as React from "react";
 import { getAiModels, type AiModelCatalog } from "../../services/aiModelsService";
 import { FALLBACK_CATALOG } from "../../constants/aiModels";
+import { useAuth } from "./AuthContext";
 
 interface AiModelsContextValue {
   catalog: AiModelCatalog;
@@ -14,11 +15,19 @@ const AiModelsContext = React.createContext<AiModelsContextValue | null>(null);
 export const AiModelsProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
+  const { token } = useAuth();
   const [catalog, setCatalog] = React.useState<AiModelCatalog>(FALLBACK_CATALOG);
-  const [loading, setLoading] = React.useState(true);
+  const [loading, setLoading] = React.useState(Boolean(token));
   const [error, setError] = React.useState<string | null>(null);
 
   const refresh = React.useCallback(async () => {
+    if (!token) {
+      setCatalog(FALLBACK_CATALOG);
+      setLoading(false);
+      setError(null);
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
@@ -30,7 +39,7 @@ export const AiModelsProvider: React.FC<{ children: React.ReactNode }> = ({
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [token]);
 
   React.useEffect(() => {
     void refresh();

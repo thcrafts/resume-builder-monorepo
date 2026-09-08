@@ -4,31 +4,29 @@ describe('parseExperienceResult', () => {
   it('accepts achievements bullets', () => {
     const result = parseExperienceResult({
       achievements: ['Built APIs serving 1M users across the platform.'],
-      skills: ['Node.js', 'PostgreSQL'],
     });
 
     expect(result.achievements).toEqual([
       'Built APIs serving 1M users across the platform.',
     ]);
-    expect(result.skills).toEqual(['Node.js', 'PostgreSQL']);
+    expect(result.skills).toEqual([]);
   });
 
   it('falls back to responsibilities when achievements are missing', () => {
     const result = parseExperienceResult({
       responsibilities: ['Led migration reducing latency by 30% for checkout.'],
-      skills: ['AWS'],
     });
 
     expect(result.achievements).toEqual([
       'Led migration reducing latency by 30% for checkout.',
     ]);
+    expect(result.skills).toEqual([]);
   });
 
   it('rejects empty achievement bullets after trimming', () => {
     expect(() =>
       parseExperienceResult({
         achievements: ['   '],
-        skills: ['React'],
       }),
     ).toThrow('Invalid experience achievements response');
   });
@@ -44,7 +42,6 @@ describe('parseExperienceResult', () => {
         'Scaled search index supporting two million daily users.',
         'Automated release pipelines reducing deploy time by 40%.',
       ],
-      skills: ['Node.js', false, 'PostgreSQL'],
     });
 
     expect(result.achievements).toEqual([
@@ -53,7 +50,7 @@ describe('parseExperienceResult', () => {
       'Scaled search index supporting two million daily users.',
       'Automated release pipelines reducing deploy time by 40%.',
     ]);
-    expect(result.skills).toEqual(['Node.js', 'PostgreSQL']);
+    expect(result.skills).toEqual([]);
   });
 
   it('coerces object-shaped achievements into plain text', () => {
@@ -63,7 +60,6 @@ describe('parseExperienceResult', () => {
         { bullet: 'Cut latency by 40% across checkout flows today.' },
         { description: 'Grew adoption by 25% for the product line.' },
       ],
-      skills: [{ name: 'Node.js' }, 'PostgreSQL'],
     });
 
     expect(result.achievements).toEqual([
@@ -71,7 +67,7 @@ describe('parseExperienceResult', () => {
       'Cut latency by 40% across checkout flows today.',
       'Grew adoption by 25% for the product line.',
     ]);
-    expect(result.skills).toEqual(['Node.js', 'PostgreSQL']);
+    expect(result.skills).toEqual([]);
   });
 });
 

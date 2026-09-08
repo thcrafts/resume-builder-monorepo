@@ -32,6 +32,14 @@ const NON_TECH_SKILL_PATTERNS: RegExp[] = [
   /\bcode review\b/i,
   /\boptimization\b/i,
   /\bdesign patterns?\b/i,
+  /\bevent[- ]based\b/i,
+  /\bevent[- ]driven\b/i,
+  /\bcloud technologies\b/i,
+  /\bweb technologies\b/i,
+  /\bmodern stack\b/i,
+  /\bvarious (tools|technologies)\b/i,
+  /\bmultiple (languages|frameworks|tools)\b/i,
+  /-based frameworks?\b/i,
 ];
 
 const AWS_SERVICE_TERMS = [

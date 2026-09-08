@@ -1,5 +1,3 @@
-import { normalizeTechStackSkills } from './tech-stack-skills';
-
 export interface JdAlignmentRequirements {
   languages: string[];
   requiredSkills: string[];
@@ -206,32 +204,36 @@ export function buildExperienceAlignmentUserBlock(options: {
   alignment: JdAlignmentRequirements;
   isMostRecent: boolean;
   jobDescriptionExcerpt?: string;
-  assignedTechStackSkills?: string[];
 }): string {
   const alignmentText = formatJdAlignmentForPrompt(options.alignment);
-  const assignedSkills = normalizeTechStackSkills(
-    options.assignedTechStackSkills ??
-      dedupeCaseInsensitive([
-        ...options.alignment.languages,
-        ...options.alignment.requiredSkills,
-      ]),
-  );
+  const priorityLanguages = dedupeCaseInsensitive(options.alignment.languages);
+  const prioritySkills = dedupeCaseInsensitive(options.alignment.requiredSkills);
+  const priorityTech = dedupeCaseInsensitive([
+    ...priorityLanguages,
+    ...prioritySkills,
+  ]);
 
   if (options.isMostRecent) {
     const excerpt = options.jobDescriptionExcerpt?.trim() ?? '';
-    const jdSkillLine =
-      assignedSkills.length > 0
-        ? `ALL JD tech-stack skills (mandatory in skills array): ${assignedSkills.join(', ')}`
+    const languageLine =
+      priorityLanguages.length > 0
+        ? `JD languages that MUST appear by name in at least 1–2 achievement bullets: ${priorityLanguages.join(', ')}`
+        : '';
+    const techLine =
+      priorityTech.length > 0
+        ? `Priority JD technologies to weave across bullets (name them explicitly where credible): ${priorityTech.join(', ')}`
         : '';
     return [
-      'TARGET ROLE ALIGNMENT (MOST RECENT ROLE — mandatory)',
-      'Achievements and skills MUST reflect these JD requirements wherever supported by the role context.',
-      '- The skills array MUST include every JD tech-stack skill listed below (platform names only: AWS not EC2/RDS).',
-      '- skills must be concrete tech stacks only — no compliance, design practices, or soft skills.',
-      '- At least 4 achievement bullets must explicitly name technologies from the lists below.',
+      'TARGET ROLE ALIGNMENT (MOST RECENT ROLE)',
+      'Achievement bullets must demonstrate JD-relevant technical experience so Core Technologies and company experience stay aligned.',
+      '- Name specific JD technologies in bullets — do not leave key JD languages (e.g. Rust, Go, TypeScript) only in Core Technologies.',
+      '- Every JD language listed below MUST appear by name in at least one achievement bullet.',
+      '- Cover a credible mix of JD frameworks/tools across the bullets (not every skill in every bullet).',
+      '- Keep bullets credible for this company/product/mission; do not invent unrelated product work.',
       '- Weave experience themes into achievement scope/outcomes without naming the employer.',
       '- Do not put the company name in achievement bullets. Include credible numeric improvements in exactly 1–2 bullets; no metrics in the rest.',
-      jdSkillLine,
+      languageLine,
+      techLine,
       alignmentText,
       excerpt ? `Job description excerpt:\n${excerpt}` : '',
     ]
@@ -239,16 +241,15 @@ export function buildExperienceAlignmentUserBlock(options: {
       .join('\n');
   }
 
-  const partialSkillLine =
-    assignedSkills.length > 0
-      ? `Include a credible subset of these JD tech-stack skills when supported by this company: ${assignedSkills.join(', ')}`
+  const olderTechLine =
+    priorityTech.length > 0
+      ? `Optional JD technologies to mention only when credible for this company/period: ${priorityTech.slice(0, 6).join(', ')}`
       : '';
 
   return [
     'TARGET ROLE ALIGNMENT (older role — apply only where supported by this company context)',
-    'skills must be concrete tech stacks only — no compliance, design practices, or soft skills.',
     'Mirror JD languages/skills/themes only when credible for this specific company, product, and mission.',
-    partialSkillLine,
+    olderTechLine,
     alignmentText,
   ]
     .filter(Boolean)

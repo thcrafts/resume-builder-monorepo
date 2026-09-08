@@ -7,6 +7,7 @@ import {
   DEFAULT_SKILLS_MODEL,
   DEFAULT_EXPERIENCE_MODEL,
   EXPERIENCE_MODEL_FALLBACK,
+  DEFAULT_EXPERIENCE_SKILLS_MODEL,
   EXPERIENCE_CONCURRENCY_LIMIT,
   JD_TITLE_MATCH_CHARS,
   JD_SUMMARY_EXCERPT_CHARS,
@@ -16,8 +17,6 @@ import {
   buildCompactJdContextForPrompt,
   formatJdAlignmentForPrompt,
   collectJdTechStackSkills,
-  distributeJdSkillsAcrossExperience,
-  planJdTechStackPerCompany,
   type CompanyEntry,
 } from '@resume-builder/shared';
 import { AiService } from '../ai/ai.service';
@@ -128,7 +127,7 @@ export class ChunkedResumeBuilder {
     const cleanedJd = cleanText(options.jobDescription);
     const titleJd = cleanedJd.slice(0, JD_TITLE_MATCH_CHARS);
 
-    const [titleModel, jdModel, summaryModel, experienceModel, skillsModel] =
+    const [titleModel, jdModel, summaryModel, experienceModel, skillsModel, experienceSkillsModel] =
       await Promise.all([
         this.resolveModelId(DEFAULT_TITLE_MATCH_MODEL, DEFAULT_TITLE_MATCH_MODEL),
         this.resolveModelId(
@@ -138,6 +137,10 @@ export class ChunkedResumeBuilder {
         this.resolveModelId(DEFAULT_SUMMARY_MODEL, DEFAULT_SUMMARY_MODEL),
         this.resolveModelId(DEFAULT_EXPERIENCE_MODEL, EXPERIENCE_MODEL_FALLBACK),
         this.resolveModelId(DEFAULT_SKILLS_MODEL, DEFAULT_SKILLS_MODEL),
+        this.resolveModelId(
+          DEFAULT_EXPERIENCE_SKILLS_MODEL,
+          DEFAULT_EXPERIENCE_SKILLS_MODEL,
+        ),
       ]);
 
     this.gateway.emitProgress(options.resumeId, { step: 'title' });
@@ -186,10 +189,6 @@ export class ChunkedResumeBuilder {
     });
 
     const jdTechStackSkills = collectJdTechStackSkills(jdAlignment);
-    const jdSkillsByCompany = planJdTechStackPerCompany(
-      sortedCompanies.map((company) => ({ id: company.id })),
-      jdTechStackSkills,
-    );
 
     const total = sortedCompanies.length;
     const experienceByCompanyId = new Map<
@@ -231,8 +230,7 @@ export class ChunkedResumeBuilder {
                 isMostRecent: company.id === mostRecentCompany?.id,
                 companySkillsCount: options.resumeSettings.companySkillsCount,
                 achievementsCount: options.resumeSettings.achievementsCount,
-                assignedTechStackSkills:
-                  jdSkillsByCompany.get(company.id) ?? [],
+                experienceSkillsModel,
               },
             );
             experienceByCompanyId.set(company.id, result);
@@ -253,25 +251,6 @@ export class ChunkedResumeBuilder {
       ),
     ]);
     steps.push({ step: 'summary', model: summaryModel });
-
-    const distributedSkills = distributeJdSkillsAcrossExperience(
-      sortedCompanies.map((company) => ({
-        id: company.id,
-        skills: experienceByCompanyId.get(company.id)?.skills ?? [],
-      })),
-      jdTechStackSkills,
-      options.resumeSettings.companySkillsCount,
-    );
-
-    for (const entry of distributedSkills) {
-      const existing = experienceByCompanyId.get(entry.id);
-      if (existing) {
-        experienceByCompanyId.set(entry.id, {
-          ...existing,
-          skills: entry.skills,
-        });
-      }
-    }
 
     this.gateway.emitProgress(options.resumeId, { step: 'skills' });
 
@@ -311,7 +290,6 @@ export class ChunkedResumeBuilder {
       assembled,
       options.resumeSettings.achievementsCount,
       options.resumeSettings.companySkillsCount,
-      { preserveCompanySkills: jdTechStackSkills.length > 0 },
     );
 
     return {

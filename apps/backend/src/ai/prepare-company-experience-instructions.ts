@@ -46,20 +46,19 @@ export function prepareCompanyExperienceInstructions(options: {
     parts.push(`USER EXPERIENCE PROMPT:\n${custom}`);
   }
 
-  const companySkillsCount = options.companySkillsCount ?? 0;
   const achievementsCount =
     options.achievementsCount && options.achievementsCount > 0
       ? options.achievementsCount
       : 6;
   const experienceJsonSchema = buildExperienceJsonSchema({
-    companySkillsCount,
     achievementsCount,
   });
 
   parts.push(`MANDATORY OUTPUT RULES
 - Return valid JSON only matching this schema:
 ${JSON.stringify(experienceJsonSchema, null, 2)}
-- PRIMARY: achievements must contain exactly ${achievementsCount} full resume bullet sentences as plain strings (not objects).
+- achievements must contain exactly ${achievementsCount} full resume bullet sentences as plain strings (not objects).
+- Do NOT return a skills field — skills are generated separately.
 - Example (with metric — required in 1–2 bullets): "Cut p95 API latency 40% by redesigning the caching layer."
 - Example (no metric — use for the remaining bullets): "Led checkout rewrite for the payments platform, improving reliability under peak traffic."
 - Do NOT return objects like {"text":"..."} — each achievements array item must be a string.
@@ -68,15 +67,9 @@ ${JSON.stringify(experienceJsonSchema, null, 2)}
 - Do NOT force product or mission wording into every bullet.
 - Each achievement is one sentence: strong action + what was built/owned + technical context + impact.
 - Numerical improvements (%, ms, $, users, x, weeks) REQUIRED in exactly 1–2 bullets total. The remaining bullets must have no numeric improvement metrics.
-- SECONDARY: skills are short TECH STACK names only (1–4 words): languages, frameworks, databases, cloud platforms, tools.
-- Never put compliance, design practices, soft skills, or achievement sentences in skills.
-- Use AWS (not EC2/RDS/S3), Azure (not individual Azure services), GCP (not individual GCP services).
+- When Target Role Alignment lists JD languages, name each of those languages in at least one achievement bullet.
 - Do not include a responsibilities field.
-- Do not invent employers, dates, or unsupported technologies.${
-    companySkillsCount > 0
-      ? `\n- skills: about ${companySkillsCount} role-relevant technologies (7-12 is fine).`
-      : ''
-  }`);
+- Do not invent employers, dates, or unsupported technologies.`);
 
   const overlay = options.industryOverlay?.trim();
   if (overlay) {

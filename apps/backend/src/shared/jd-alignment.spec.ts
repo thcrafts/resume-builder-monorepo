@@ -40,10 +40,10 @@ describe('jd alignment', () => {
     );
   });
 
-  it('emphasizes mandatory alignment for most recent role', () => {
+  it('requires JD languages in most recent role bullets', () => {
     const block = buildExperienceAlignmentUserBlock({
       alignment: {
-        languages: ['TypeScript'],
+        languages: ['Rust', 'TypeScript'],
         requiredSkills: ['React'],
         experienceThemes: ['scalability'],
         experienceRequirements: ['5+ years backend development'],
@@ -52,7 +52,9 @@ describe('jd alignment', () => {
       jobDescriptionExcerpt: 'Build payment APIs.',
     });
 
-    expect(block).toContain('MOST RECENT ROLE — mandatory');
+    expect(block).toContain('MOST RECENT ROLE');
+    expect(block).toContain('MUST appear by name');
+    expect(block).toContain('Rust');
     expect(block).toContain('TypeScript');
     expect(block).toContain('Build payment APIs.');
   });

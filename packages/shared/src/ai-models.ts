@@ -15,12 +15,15 @@ export const DEFAULT_SUMMARY_MODEL = 'anthropic/claude-sonnet-4.6';
 export const DEFAULT_SKILLS_MODEL = 'openai/gpt-4o-mini';
 export const DEFAULT_EXPERIENCE_MODEL = 'openai/gpt-5.4-mini';
 export const EXPERIENCE_MODEL_FALLBACK = 'openai/gpt-4o-mini';
+/** Cheap pass to normalize messy company experience skill lists. */
+export const DEFAULT_EXPERIENCE_SKILLS_MODEL = 'openai/gpt-4o-mini';
 
 export const TITLE_MATCH_MAX_TOKENS = 256;
 export const JD_EXTRACTION_MAX_TOKENS = 512;
 export const SUMMARY_MAX_TOKENS = 512;
 export const SKILLS_MAX_TOKENS = 4096;
 export const EXPERIENCE_MAX_TOKENS = 2048;
+export const EXPERIENCE_SKILLS_MAX_TOKENS = 512;
 
 export const EXPERIENCE_CONCURRENCY_LIMIT = 3;
 /** Full JD excerpt only for the most recent company (saves tokens on older roles). */

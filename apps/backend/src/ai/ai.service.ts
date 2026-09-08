@@ -11,16 +11,19 @@ import {
   DEFAULT_JD_REQUIREMENTS_PROMPT,
   DEFAULT_SUMMARY_PROMPT,
   DEFAULT_SKILLS_PROMPT,
+  DEFAULT_EXPERIENCE_SKILLS_PROMPT,
   DEFAULT_TITLE_MATCH_MODEL,
   DEFAULT_JD_EXTRACTION_MODEL,
   DEFAULT_SUMMARY_MODEL,
   DEFAULT_SKILLS_MODEL,
   DEFAULT_EXPERIENCE_MODEL,
+  DEFAULT_EXPERIENCE_SKILLS_MODEL,
   TITLE_MATCH_MAX_TOKENS,
   JD_EXTRACTION_MAX_TOKENS,
   SUMMARY_MAX_TOKENS,
   SKILLS_MAX_TOKENS,
   EXPERIENCE_MAX_TOKENS,
+  EXPERIENCE_SKILLS_MAX_TOKENS,
   TITLE_SIMILARITY_THRESHOLD,
   MIN_SKILLS_PER_CATEGORY,
   type CompanyEntry,
@@ -55,6 +58,15 @@ import {
   prepareCompanyExperienceInstructions,
   stripCompanyNameFromBullets,
 } from './prepare-company-experience-instructions';
+import {
+  buildExperienceSkillsUserPrompt,
+  buildEvidenceBasedSkillsFallback,
+  finalizeCompanyExperienceSkills,
+} from './generate-company-experience-skills';
+import {
+  experienceSkillsJsonSchema,
+  parseExperienceSkillsResult,
+} from './schemas/experience-skills.schema';
 import {
   enrichSkillsWithSources,
   normalizeGeneratedSkills,
@@ -300,6 +312,62 @@ export class AiService {
     };
   }
 
+  async generateCompanyExperienceSkills(
+    company: CompanyEntry,
+    achievements: string[],
+    apiKeys?: UserApiKeys,
+    model = DEFAULT_EXPERIENCE_SKILLS_MODEL,
+    options?: {
+      companySkillsCount?: number;
+      isMostRecent?: boolean;
+      jdAlignment?: JdAlignmentRequirements;
+      jobDescriptionExcerpt?: string;
+    },
+  ): Promise<string[]> {
+    const companySkillsCount = options?.companySkillsCount ?? 0;
+
+    if (achievements.length === 0) {
+      return [];
+    }
+
+    try {
+      const systemPrompt = `${DEFAULT_EXPERIENCE_SKILLS_PROMPT}\n\nSchema:\n${JSON.stringify(experienceSkillsJsonSchema)}`;
+      const userPrompt = buildExperienceSkillsUserPrompt({
+        company,
+        achievements,
+        companySkillsCount,
+        isMostRecent: options?.isMostRecent,
+        jdAlignment: options?.jdAlignment,
+        jobDescriptionExcerpt: options?.jobDescriptionExcerpt,
+      });
+
+      const { data } = await this.openRouterService.createJsonCompletion<unknown>(
+        systemPrompt,
+        userPrompt,
+        model,
+        EXPERIENCE_SKILLS_MAX_TOKENS,
+        apiKeys,
+      );
+
+      const parsed = parseExperienceSkillsResult(data);
+      return finalizeCompanyExperienceSkills(
+        parsed.skills,
+        achievements,
+        companySkillsCount,
+      );
+    } catch (error) {
+      console.warn(
+        `Experience skills generation failed for ${company.company}; using evidence-based fallback.`,
+        error,
+      );
+      return buildEvidenceBasedSkillsFallback(
+        achievements,
+        options?.jdAlignment,
+        companySkillsCount,
+      );
+    }
+  }
+
   async generateCompanyExperience(
     jobDescription: string,
     company: CompanyEntry,
@@ -311,12 +379,11 @@ export class AiService {
       isMostRecent: boolean;
       companySkillsCount?: number;
       achievementsCount?: number;
-      assignedTechStackSkills?: string[];
+      experienceSkillsModel?: string;
     },
   ) {
     const jdAlignment = options?.jdAlignment;
     const isMostRecent = options?.isMostRecent ?? false;
-    const assignedTechStackSkills = options?.assignedTechStackSkills ?? [];
     const targetAchievements =
       options?.achievementsCount && options.achievementsCount > 0
         ? options.achievementsCount
@@ -339,7 +406,6 @@ export class AiService {
             alignment: jdAlignment,
             isMostRecent,
             jobDescriptionExcerpt: jdExcerpt,
-            assignedTechStackSkills,
           })
         : `Job Description:\n${cleanText(jobDescription).slice(0, JD_MOST_RECENT_EXCERPT_CHARS)}`,
       `Company Context:\n${JSON.stringify({
@@ -380,7 +446,7 @@ export class AiService {
         `Experience for ${company.company} returned ${parsed.achievements.length}/${targetAchievements} usable bullets; retrying once.`,
       );
       parsed = await runOnce(
-        `Return exactly ${targetAchievements} achievement strings. Every item must be a full sentence. Do not use true, false, null, or empty placeholders. Do not include the company name. Include credible numeric improvements in exactly 1-2 bullets; no metrics in the rest.`,
+        `Return exactly ${targetAchievements} achievement strings. Every item must be a full sentence. Do not use true, false, null, or empty placeholders. Do not include the company name. Include credible numeric improvements in exactly 1-2 bullets; no metrics in the rest. Name every JD language from Target Role Alignment in at least one bullet.`,
       );
     }
 
@@ -390,16 +456,26 @@ export class AiService {
       );
     }
 
+    const achievements = stripCompanyNameFromBullets(
+      parsed.achievements,
+      company.company,
+    );
+    const skills = await this.generateCompanyExperienceSkills(
+      company,
+      achievements,
+      apiKeys,
+      options?.experienceSkillsModel ?? DEFAULT_EXPERIENCE_SKILLS_MODEL,
+      {
+        companySkillsCount: options?.companySkillsCount,
+        isMostRecent,
+        jdAlignment,
+        jobDescriptionExcerpt: jdExcerpt,
+      },
+    );
+
     return {
-      ...parsed,
-      achievements: stripCompanyNameFromBullets(
-        parsed.achievements,
-        company.company,
-      ),
-      skills: normalizeTechStackSkills([
-        ...assignedTechStackSkills,
-        ...parsed.skills,
-      ]),
+      achievements,
+      skills,
     };
   }
 

@@ -26,6 +26,8 @@ export const EXPERIENCE_MAX_TOKENS = 2048;
 export const EXPERIENCE_SKILLS_MAX_TOKENS = 512;
 
 export const EXPERIENCE_CONCURRENCY_LIMIT = 3;
+/** Soft cap: how many AI resume jobs a user may run at once. */
+export const MAX_CONCURRENT_RESUME_GENERATIONS = 3;
 /** Full JD excerpt only for the most recent company (saves tokens on older roles). */
 export const JD_MOST_RECENT_EXCERPT_CHARS = 2500;
 /** Truncated JD for cheap title-match step. */

@@ -24,13 +24,12 @@ import {
   clearDuplicateResumeDraft,
   loadDuplicateResumeDraft,
 } from "../../constants/duplicateResumeDraft";
-import { socket } from "./socket";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Textarea } from "../../components/ui/textarea";
 import { Label } from "../../components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
-import { Alert, Checkbox, Spinner } from "../../components/ui/misc";
+import { Alert, Checkbox } from "../../components/ui/misc";
 
 const aiGenerateSchema = yup
   .object({
@@ -63,8 +62,6 @@ const fromJsonSchema = yup
 type AiGenerateFormData = yup.InferType<typeof aiGenerateSchema>;
 type FromJsonFormData = yup.InferType<typeof fromJsonSchema>;
 
-type ProgressStep = "title" | "jd-requirements" | "summary" | "skills" | "experience";
-
 const CreateResume: React.FC = () => {
   const { catalog } = useAiModels();
   const navigate = useNavigate();
@@ -78,12 +75,6 @@ const CreateResume: React.FC = () => {
   const [aiVersion, setAiVersion] = React.useState("anthropic/claude-sonnet-4.6");
   const [profile, setProfile] = React.useState<UserResponse | null>(null);
   const [submitError, setSubmitError] = React.useState<string | null>(null);
-  const [activeResumeId, setActiveResumeId] = React.useState<string | null>(null);
-  const [progress, setProgress] = React.useState<{
-    step: ProgressStep;
-    index?: number;
-    total?: number;
-  } | null>(null);
 
   const apiKeyWarning = React.useMemo(
     () => getApiKeyWarning(profile),
@@ -178,51 +169,6 @@ const CreateResume: React.FC = () => {
       });
   }, [fromJsonParam, catalog]);
 
-  React.useEffect(() => {
-    if (!activeResumeId) return;
-
-    const onProgress = (payload: {
-      id: string;
-      step: ProgressStep;
-      index?: number;
-      total?: number;
-    }) => {
-      if (payload.id !== activeResumeId) return;
-      setProgress({
-        step: payload.step,
-        index: payload.index,
-        total: payload.total,
-      });
-    };
-
-    const onDone = (payload: { id: string }) => {
-      if (payload.id !== activeResumeId) return;
-      setProgress(null);
-      setActiveResumeId(null);
-      toast.success("Resume generated");
-      navigate("/resumes");
-    };
-
-    const onFailed = (payload: { id: string; message?: string }) => {
-      if (payload.id !== activeResumeId) return;
-      setProgress(null);
-      setActiveResumeId(null);
-      setIsSubmitting(false);
-      const message = payload.message || "Resume generation failed";
-      setSubmitError(message);
-      toast.error(message);
-    };
-
-    socket.on("generate:progress", onProgress);
-    socket.on("generate:done", onDone);
-    socket.on("generate:failed", onFailed);
-    return () => {
-      socket.off("generate:progress", onProgress);
-      socket.off("generate:done", onDone);
-      socket.off("generate:failed", onFailed);
-    };
-  }, [activeResumeId, navigate]);
-
   const handleGenerateFromJsonChange = (checked: boolean) => {
     if (checked) {
       const aiValues = aiForm.getValues();
@@ -275,11 +221,21 @@ const CreateResume: React.FC = () => {
       const response = await generateResumeStream(payload);
 
       if (response.resumeId) {
-        setActiveResumeId(response.resumeId);
-        setProgress({ step: "title" });
-        toast.success("Resume generation started");
+        // Fire-and-forget: return to the list so another job can be started.
+        toast.success(
+          "Resume generation started — track progress on the Resumes page",
+        );
+        aiForm.reset({
+          companyName: "",
+          roleType: "",
+          jobDescription: "",
+        });
+        navigate("/resumes");
         return;
       }
+
+      setSubmitError("Failed to start resume generation");
+      setIsSubmitting(false);
     } catch (error: unknown) {
       const err = error as {
         response?: { data?: { message?: string } };
@@ -359,14 +315,6 @@ const CreateResume: React.FC = () => {
     }
   };
 
-  const progressLabel = progress
-    ? progress.step === "experience" && progress.index && progress.total
-      ? `Experience ${progress.index}/${progress.total}`
-      : progress.step === "jd-requirements"
-        ? "JD requirements"
-        : progress.step.charAt(0).toUpperCase() + progress.step.slice(1)
-    : null;
-
   return (
     <Card className="mx-auto max-w-3xl">
       <CardHeader className="flex flex-row items-center justify-between">
@@ -398,14 +346,10 @@ const CreateResume: React.FC = () => {
           </Alert>
         ) : null}
 
-        {progressLabel ? (
-          <Alert variant="default" className="flex items-center gap-3">
-            <Spinner />
-            <span>
-              Generating… current step: <strong>{progressLabel}</strong>
-            </span>
-          </Alert>
-        ) : null}
+        <Alert variant="default">
+          You can start multiple AI resume jobs. After you submit, you&apos;ll
+          return to Resumes where each job shows its own progress.
+        </Alert>
 
         {submitError ? <Alert variant="destructive">{submitError}</Alert> : null}
 
@@ -457,15 +401,15 @@ const CreateResume: React.FC = () => {
               <Textarea rows={10} {...aiForm.register("jobDescription")} />
             </div>
             <p className="text-xs text-muted-foreground">
-              Uses chunked generation (title → JD requirements → summary → skills → experience) with
-              fixed per-step models.
+              Uses chunked generation (title → JD requirements → summary → skills → experience).
+              Multiple jobs can run at the same time — progress appears on the Resumes page.
             </p>
             <Button
               type="submit"
               disabled={isAiGenerateDisabled}
               className="w-full"
             >
-              {isSubmitting ? "Generating…" : "Generate resume"}
+              {isSubmitting ? "Starting…" : "Generate resume"}
             </Button>
           </form>
         )}

@@ -324,6 +324,7 @@ const Resumes: React.FC = () => {
 
     function onGenerateDone({ id }: GenerateDonePayload) {
       clearProgress(String(id));
+      let matchedCompany = "";
       let matched = false;
       setResumes((prev) => {
         matched = prev.some((resume) => String(resume._id) === String(id));
@@ -331,20 +332,29 @@ const Resumes: React.FC = () => {
           return prev;
         }
 
-        return prev.map((resume) =>
-          String(resume._id) === String(id)
-            ? { ...resume, status: "completed", failureMessage: undefined }
-            : resume,
-        );
+        return prev.map((resume) => {
+          if (String(resume._id) !== String(id)) {
+            return resume;
+          }
+          matchedCompany = resume.companyName;
+          return { ...resume, status: "completed", failureMessage: undefined };
+        });
       });
 
       if (!matched) {
         void loadResumesRef.current(filtersRef.current, { silent: true });
       }
+
+      toast.success(
+        matchedCompany
+          ? `Resume ready: ${matchedCompany}`
+          : "Resume generated successfully",
+      );
     }
 
     function onGenerateFailed({ id, message }: GenerateDonePayload) {
       clearProgress(String(id));
+      let matchedCompany = "";
       let matched = false;
       setResumes((prev) => {
         matched = prev.some((resume) => String(resume._id) === String(id));
@@ -352,20 +362,28 @@ const Resumes: React.FC = () => {
           return prev;
         }
 
-        return prev.map((resume) =>
-          String(resume._id) === String(id)
-            ? { ...resume, status: "failed", failureMessage: message }
-            : resume,
-        );
+        return prev.map((resume) => {
+          if (String(resume._id) !== String(id)) {
+            return resume;
+          }
+          matchedCompany = resume.companyName;
+          return { ...resume, status: "failed", failureMessage: message };
+        });
       });
 
       if (!matched) {
         void loadResumesRef.current(filtersRef.current, { silent: true });
       }
 
-      if (message) {
-        toast.error(message);
-      }
+      toast.error(
+        message
+          ? matchedCompany
+            ? `${matchedCompany}: ${message}`
+            : message
+          : matchedCompany
+            ? `Resume failed: ${matchedCompany}`
+            : "Resume generation failed",
+      );
     }
 
     function onGenerateProgress({

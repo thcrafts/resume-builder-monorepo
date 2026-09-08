@@ -28,6 +28,7 @@ import { ResumeGenerationService } from './resume-generation.service';
 import {
   isValidTemplate,
   MISSING_OPENROUTER_KEY_MESSAGE,
+  MAX_CONCURRENT_RESUME_GENERATIONS,
 } from '@resume-builder/shared';
 
 const SAMPLE_RESUME_JSON_PATH = join(
@@ -122,6 +123,7 @@ export class ResumesService {
     }
 
     await this.validateApiKeyForGeneration(userId);
+    await this.assertUnderGenerationConcurrencyCap(userId);
 
     await this.resumeModel
       .updateOne(
@@ -193,6 +195,8 @@ export class ResumesService {
     aiModel?: string,
     aiVersion?: string,
   ) {
+    await this.assertUnderGenerationConcurrencyCap(userId);
+
     const resume = new this.resumeModel({
       userId,
       companyName,
@@ -205,6 +209,19 @@ export class ResumesService {
 
     const savedResume = await resume.save();
     return savedResume;
+  }
+
+  async countInProgressGenerations(userId: string): Promise<number> {
+    return this.resumeModel.countDocuments({ userId, status: 'in_progress' });
+  }
+
+  async assertUnderGenerationConcurrencyCap(userId: string): Promise<void> {
+    const inProgress = await this.countInProgressGenerations(userId);
+    if (inProgress >= MAX_CONCURRENT_RESUME_GENERATIONS) {
+      throw new BadRequestException(
+        `You already have ${inProgress} resumes generating. Wait for one to finish (max ${MAX_CONCURRENT_RESUME_GENERATIONS} at once).`,
+      );
+    }
   }
 
   /**

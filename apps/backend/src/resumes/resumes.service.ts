@@ -523,6 +523,29 @@ export class ResumesService {
     return this.resumeModel.findOne({ _id: id, userId }).exec();
   }
 
+  async updateResumeMetadata(
+    id: string,
+    userId: string,
+    updates: { companyName: string; roleType: string },
+  ): Promise<Resume> {
+    const resume = await this.resumeModel
+      .findOneAndUpdate(
+        { _id: id, userId },
+        {
+          companyName: updates.companyName.trim(),
+          roleType: updates.roleType.trim(),
+        },
+        { new: true },
+      )
+      .exec();
+
+    if (!resume) {
+      throw new NotFoundException(`Resume with id ${id} not found`);
+    }
+
+    return resume;
+  }
+
 
   async generateCoverLetterForResume(
     id: string,

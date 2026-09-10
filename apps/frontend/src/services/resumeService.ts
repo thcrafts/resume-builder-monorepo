@@ -207,6 +207,16 @@ export const getResume = async (id: string) => {
   return res.data;
 };
 
+export interface UpdateResumeDto {
+  companyName: string;
+  roleType: string;
+}
+
+export const updateResume = async (id: string, data: UpdateResumeDto) => {
+  const res = await api.put<ResumeResponse>(`/api/resumes/${id}`, data);
+  return res.data;
+};
+
 export const deleteResume = async (id: string) => {
   const res = await api.delete<{ message: string }>(`/api/resumes/${id}`);
   return res.data;

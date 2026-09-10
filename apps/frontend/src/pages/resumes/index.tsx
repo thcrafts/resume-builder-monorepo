@@ -10,6 +10,7 @@ import {
   Eye,
   Copy,
   Pencil,
+  FilePenLine,
   Settings,
   LogOut,
   Sun,
@@ -21,6 +22,7 @@ import {
   getResumes,
   getResume,
   deleteResume,
+  updateResume,
   bulkDeleteResumes,
   downloadResume,
   generateCoverLetter,
@@ -48,6 +50,8 @@ import { getAxiosErrorStatus } from "../../utils/authSession";
 import { downloadPdfWithOverwrite } from "../../utils/downloadPdfWithOverwrite";
 import { socket } from "./socket";
 import { Button } from "../../components/ui/button";
+import { Input } from "../../components/ui/input";
+import { Label } from "../../components/ui/label";
 import { Card, CardContent } from "../../components/ui/card";
 import { Dialog } from "../../components/ui/dialog";
 import {
@@ -167,6 +171,11 @@ const Resumes: React.FC = () => {
   const [editingResumeId, setEditingResumeId] = React.useState<string | null>(
     null,
   );
+  const [metadataResume, setMetadataResume] =
+    React.useState<ResumeResponse | null>(null);
+  const [metadataCompanyName, setMetadataCompanyName] = React.useState("");
+  const [metadataRoleType, setMetadataRoleType] = React.useState("");
+  const [savingMetadata, setSavingMetadata] = React.useState(false);
   const [questionsResumeId, setQuestionsResumeId] = React.useState<
     string | null
   >(null);
@@ -645,6 +654,65 @@ const Resumes: React.FC = () => {
     }
   };
 
+  const handleOpenMetadataEdit = (resume: ResumeResponse) => {
+    setMetadataResume(resume);
+    setMetadataCompanyName(resume.companyName);
+    setMetadataRoleType(resume.roleType);
+  };
+
+  const handleCloseMetadataEdit = () => {
+    if (savingMetadata) return;
+    setMetadataResume(null);
+    setMetadataCompanyName("");
+    setMetadataRoleType("");
+  };
+
+  const handleSaveMetadata = async () => {
+    if (!metadataResume) return;
+
+    const companyName = metadataCompanyName.trim();
+    const roleType = metadataRoleType.trim();
+    if (!companyName || !roleType) {
+      toast.warning("Company name and role are required");
+      return;
+    }
+
+    setSavingMetadata(true);
+    try {
+      const updated = await updateResume(metadataResume._id, {
+        companyName,
+        roleType,
+      });
+      setResumes((prev) =>
+        prev.map((resume) =>
+          String(resume._id) === String(updated._id)
+            ? {
+                ...resume,
+                companyName: updated.companyName,
+                roleType: updated.roleType,
+              }
+            : resume,
+        ),
+      );
+      toast.success("Company and role updated");
+      setMetadataResume(null);
+      setMetadataCompanyName("");
+      setMetadataRoleType("");
+    } catch (error: unknown) {
+      const err = error as {
+        response?: { data?: { message?: string | string[] } };
+        message?: string;
+      };
+      const rawMessage = err.response?.data?.message ?? err.message;
+      const message = Array.isArray(rawMessage)
+        ? rawMessage.join(", ")
+        : rawMessage || "Failed to update resume";
+      toast.error(message);
+    } finally {
+      setSavingMetadata(false);
+    }
+  };
+
   const handleEditResume = async (resume: ResumeResponse) => {
     if (resume.status !== "completed") {
       toast.warning("Only completed resumes can be edited");
@@ -1029,7 +1097,7 @@ const Resumes: React.FC = () => {
                 <TableHead className="text-center">AI Version</TableHead>
                 <TableHead className="text-center">Status</TableHead>
                 <TableHead className="text-center">Date</TableHead>
-                <TableHead className="text-center" colSpan={5}>
+                <TableHead className="text-center" colSpan={6}>
                   Actions
                 </TableHead>
               </TableRow>
@@ -1049,10 +1117,24 @@ const Resumes: React.FC = () => {
                       />
                     </TableCell>
                     <TableCell className="text-center">
-                      {resume.companyName}
+                      <button
+                        type="button"
+                        className="rounded px-1 py-0.5 hover:bg-accent hover:text-accent-foreground"
+                        title="Edit company name"
+                        onClick={() => handleOpenMetadataEdit(resume)}
+                      >
+                        {resume.companyName}
+                      </button>
                     </TableCell>
                     <TableCell className="text-center">
-                      {resume.roleType}
+                      <button
+                        type="button"
+                        className="rounded px-1 py-0.5 hover:bg-accent hover:text-accent-foreground"
+                        title="Edit role"
+                        onClick={() => handleOpenMetadataEdit(resume)}
+                      >
+                        {resume.roleType}
+                      </button>
                     </TableCell>
                     <TableCell className="text-center">
                       {resume.jobDescription ? (
@@ -1198,6 +1280,18 @@ const Resumes: React.FC = () => {
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8"
+                        onClick={() => handleOpenMetadataEdit(resume)}
+                        title="Edit company & role"
+                      >
+                        <FilePenLine className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
                         onClick={() => handleEditResume(resume)}
                         title="Edit in Generate from JSON"
                         disabled={
@@ -1231,6 +1325,56 @@ const Resumes: React.FC = () => {
           </Table>
         </Card>
       )}
+
+      <Dialog
+        open={Boolean(metadataResume)}
+        onOpenChange={(open) => {
+          if (!open) handleCloseMetadataEdit();
+        }}
+        title="Edit company & role"
+        description="Update how this resume appears in your list. PDF contents are unchanged."
+        footer={
+          <>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleCloseMetadataEdit}
+              disabled={savingMetadata}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={() => void handleSaveMetadata()}
+              disabled={savingMetadata}
+            >
+              {savingMetadata ? "Saving…" : "Save"}
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="metadata-company">Company name</Label>
+            <Input
+              id="metadata-company"
+              value={metadataCompanyName}
+              onChange={(event) => setMetadataCompanyName(event.target.value)}
+              disabled={savingMetadata}
+              autoFocus
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="metadata-role">Role</Label>
+            <Input
+              id="metadata-role"
+              value={metadataRoleType}
+              onChange={(event) => setMetadataRoleType(event.target.value)}
+              disabled={savingMetadata}
+            />
+          </div>
+        </div>
+      </Dialog>
 
       <Dialog
         open={deleteDialogOpen}

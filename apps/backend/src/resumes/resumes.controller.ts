@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Delete, UseGuards, Body, Request, UsePipes, Param, Res, Query, NotFoundException } from '@nestjs/common';
+import { Controller, Post, Get, Delete, Put, UseGuards, Body, Request, UsePipes, Param, Res, Query, NotFoundException } from '@nestjs/common';
 import { type Response } from 'express';
 
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
@@ -22,6 +22,10 @@ import {
   answerQuestionsSchema,
 } from './dto/answer-questions.dto';
 import { type FromJsonDto, fromJsonSchema } from './dto/from-json.dto';
+import {
+  type UpdateResumeDto,
+  updateResumeSchema,
+} from './dto/update-resume.dto';
 import { sendAttachment } from '../common/download-headers';
 import { formatAiProviderError } from '../ai/format-ai-error';
 import { sanitizeFilename } from '@resume-builder/shared';
@@ -324,6 +328,21 @@ export class ResumesController {
   @Get(':id')
   async findOne(@Request() req, @Param('id') id: string) {
     return this.resumesService.findOne(id, req.user._id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Put(':id')
+  @UsePipes(new ZodValidationPipe(updateResumeSchema))
+  async update(
+    @Request() req,
+    @Param('id') id: string,
+    @Body() updateResumeDto: UpdateResumeDto,
+  ) {
+    return this.resumesService.updateResumeMetadata(
+      id,
+      req.user._id,
+      updateResumeDto,
+    );
   }
 
   @UseGuards(JwtAuthGuard)

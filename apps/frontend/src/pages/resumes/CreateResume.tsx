@@ -133,7 +133,7 @@ const CreateResume: React.FC = () => {
             catalog,
           );
           setGenerateFromJson(true);
-          setAiModel(resolved.aiModel);
+          setAiModel(resolved.aiModel);Tod
           setAiVersion(resolved.aiVersion);
           jsonForm.reset({
             companyName: duplicateDraft.companyName,

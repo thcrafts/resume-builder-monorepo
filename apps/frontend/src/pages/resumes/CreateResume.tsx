@@ -118,34 +118,42 @@ const CreateResume: React.FC = () => {
     },
   });
 
+  const duplicateDraftAppliedRef = React.useRef(false);
+
   React.useEffect(() => {
     const duplicateDraft = loadDuplicateResumeDraft();
+
+    // Apply edit/duplicate draft immediately so Resume JSON is visible
+    // without waiting on profile. Clear only after a successful apply.
+    if (duplicateDraft && !duplicateDraftAppliedRef.current) {
+      duplicateDraftAppliedRef.current = true;
+      const resolved = resolveModelSelectionInCatalog(
+        duplicateDraft.aiModel,
+        duplicateDraft.aiVersion,
+        catalog,
+      );
+      setGenerateFromJson(true);
+      setAiModel(resolved.aiModel);
+      setAiVersion(resolved.aiVersion);
+      jsonForm.reset({
+        companyName: duplicateDraft.companyName,
+        roleType: duplicateDraft.roleType,
+        jobDescription: duplicateDraft.jobDescription,
+        jsonContent: duplicateDraft.jsonContent,
+      });
+      aiForm.reset({
+        companyName: duplicateDraft.companyName,
+        roleType: duplicateDraft.roleType,
+        jobDescription: duplicateDraft.jobDescription,
+      });
+      clearDuplicateResumeDraft();
+    }
 
     getProfile()
       .then((loadedProfile) => {
         setProfile(loadedProfile);
 
-        if (duplicateDraft) {
-          clearDuplicateResumeDraft();
-          const resolved = resolveModelSelectionInCatalog(
-            duplicateDraft.aiModel,
-            duplicateDraft.aiVersion,
-            catalog,
-          );
-          setGenerateFromJson(true);
-          setAiModel(resolved.aiModel);Tod
-          setAiVersion(resolved.aiVersion);
-          jsonForm.reset({
-            companyName: duplicateDraft.companyName,
-            roleType: duplicateDraft.roleType,
-            jobDescription: duplicateDraft.jobDescription,
-            jsonContent: duplicateDraft.jsonContent,
-          });
-          aiForm.reset({
-            companyName: duplicateDraft.companyName,
-            roleType: duplicateDraft.roleType,
-            jobDescription: duplicateDraft.jobDescription,
-          });
+        if (duplicateDraftAppliedRef.current) {
           return;
         }
 
@@ -167,6 +175,8 @@ const CreateResume: React.FC = () => {
       .catch(() => {
         // optional
       });
+    // Forms are stable from useForm; intentionally omit from deps.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fromJsonParam, catalog]);
 
   const handleGenerateFromJsonChange = (checked: boolean) => {

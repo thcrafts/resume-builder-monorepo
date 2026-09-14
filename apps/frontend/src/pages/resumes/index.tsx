@@ -5,7 +5,8 @@ import {
   Download,
   Code,
   FileText,
-  ClipboardCheck,
+  CircleCheck,
+  MailCheck,
   MessageSquare,
   Eye,
   Copy,
@@ -44,6 +45,10 @@ import {
   resolveModelSelectionInCatalog,
 } from "../../constants/aiModels";
 import { saveDuplicateResumeDraft } from "../../constants/duplicateResumeDraft";
+import {
+  loadDownloadedResumePdfIds,
+  markResumePdfDownloaded,
+} from "../../constants/downloadedResumePdfs";
 import type { ProtectedLayoutContext } from "../../components/common/ProtectedLayout";
 import { ResumeFiltersBar } from "./ResumeFiltersBar";
 import { getAxiosErrorStatus } from "../../utils/authSession";
@@ -165,6 +170,9 @@ const Resumes: React.FC = () => {
   const [generatingCoverLetterId, setGeneratingCoverLetterId] = React.useState<
     string | null
   >(null);
+  const [downloadedResumeIds, setDownloadedResumeIds] = React.useState<
+    Set<string>
+  >(() => loadDownloadedResumePdfIds());
   const [retryingResumeId, setRetryingResumeId] = React.useState<string | null>(
     null,
   );
@@ -542,6 +550,13 @@ const Resumes: React.FC = () => {
       const result = await downloadPdfWithOverwrite(pdfBlob, {
         contentDisposition: response.headers["content-disposition"],
         fallbackFilename: "resume.pdf",
+      });
+
+      markResumePdfDownloaded(id);
+      setDownloadedResumeIds((prev) => {
+        const next = new Set(prev);
+        next.add(id);
+        return next;
       });
 
       if (result.mode === "overwrite") {
@@ -1214,12 +1229,23 @@ const Resumes: React.FC = () => {
                         type="button"
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8"
+                        className={cn(
+                          "h-8 w-8",
+                          downloadedResumeIds.has(resume._id) && "text-success",
+                        )}
                         onClick={() => handleDownloadResume(resume._id)}
-                        title="Download PDF"
+                        title={
+                          downloadedResumeIds.has(resume._id)
+                            ? "Download PDF (already downloaded)"
+                            : "Download PDF"
+                        }
                         disabled={resume.status !== "completed"}
                       >
-                        <Download className="h-4 w-4" />
+                        {downloadedResumeIds.has(resume._id) ? (
+                          <CircleCheck className="h-4 w-4" />
+                        ) : (
+                          <Download className="h-4 w-4" />
+                        )}
                       </Button>
                     </TableCell>
                     <TableCell className="text-center">
@@ -1229,7 +1255,7 @@ const Resumes: React.FC = () => {
                         size="icon"
                         className={cn(
                           "h-8 w-8",
-                          resume.coverLetter?.trim() && "text-success",
+                          resume.coverLetter?.trim() && "text-primary",
                         )}
                         onClick={() => handleGenerateCoverLetter(resume._id)}
                         title={
@@ -1248,7 +1274,7 @@ const Resumes: React.FC = () => {
                         {generatingCoverLetterId === resume._id ? (
                           <Spinner className="h-4 w-4" />
                         ) : resume.coverLetter?.trim() ? (
-                          <ClipboardCheck className="h-4 w-4" />
+                          <MailCheck className="h-4 w-4" />
                         ) : (
                           <FileText className="h-4 w-4" />
                         )}

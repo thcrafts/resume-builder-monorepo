@@ -26,10 +26,11 @@ import {
   updateResume,
   bulkDeleteResumes,
   downloadResume,
-  generateCoverLetter,
+  downloadCoverLetter,
   retryResume,
   type ResumeResponse,
   type FilterResumeParams,
+  type CoverLetterFormat,
 } from "../../services/resumeService";
 import { toast } from "react-toastify";
 import moment from "moment";
@@ -170,6 +171,12 @@ const Resumes: React.FC = () => {
   const [generatingCoverLetterId, setGeneratingCoverLetterId] = React.useState<
     string | null
   >(null);
+  const [coverLetterMenu, setCoverLetterMenu] = React.useState<{
+    resume: ResumeResponse;
+    top: number;
+    left: number;
+  } | null>(null);
+  const coverLetterMenuRef = React.useRef<HTMLDivElement>(null);
   const [downloadedResumeIds, setDownloadedResumeIds] = React.useState<
     Set<string>
   >(() => loadDownloadedResumePdfIds());
@@ -232,6 +239,27 @@ const Resumes: React.FC = () => {
       window.removeEventListener("keydown", onKeyDown);
     };
   }, [avatarMenuOpen]);
+
+  React.useEffect(() => {
+    if (!coverLetterMenu) return;
+    const onPointerDown = (event: MouseEvent) => {
+      if (
+        coverLetterMenuRef.current &&
+        !coverLetterMenuRef.current.contains(event.target as Node)
+      ) {
+        setCoverLetterMenu(null);
+      }
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setCoverLetterMenu(null);
+    };
+    window.addEventListener("mousedown", onPointerDown);
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("mousedown", onPointerDown);
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [coverLetterMenu]);
 
   const handleSettingsClick = () => {
     setAvatarMenuOpen(false);
@@ -579,31 +607,78 @@ const Resumes: React.FC = () => {
     }
   };
 
-  const handleGenerateCoverLetter = async (id: string) => {
-    setGeneratingCoverLetterId(id);
-    try {
-      const response = await generateCoverLetter(id);
-      const pdfBlob = response.data;
-
-      const result = await downloadPdfWithOverwrite(pdfBlob, {
-        contentDisposition: response.headers["content-disposition"],
-        fallbackFilename: "Cover_Letter.pdf",
-      });
-
-      if (result.mode === "overwrite") {
-        toast.success(
-          `Cover letter downloaded (replaced existing ${result.filename})`,
-        );
-      } else if (result.mode === "created") {
-        toast.success(
-          `Cover letter saved as ${result.filename}. Next download with this name will replace it automatically.`,
-        );
-      } else {
-        toast.success("Cover letter generated and downloaded successfully!");
+  const triggerBlobDownload = (
+    blob: Blob,
+    headers: Record<string, string>,
+    fallbackFilename: string,
+  ) => {
+    const contentDisposition = headers["content-disposition"];
+    let filename = fallbackFilename;
+    if (contentDisposition) {
+      const filenameMatch = contentDisposition.match(
+        /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/,
+      );
+      if (filenameMatch?.[1]) {
+        filename = filenameMatch[1].replace(/['"]/g, "");
       }
+    }
+
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+    return filename;
+  };
+
+  const handleDownloadCoverLetter = async (
+    resume: ResumeResponse,
+    format: CoverLetterFormat,
+  ) => {
+    setCoverLetterMenu(null);
+    setGeneratingCoverLetterId(resume._id);
+    try {
+      const response = await downloadCoverLetter(resume._id, format);
+
+      if (format === "pdf") {
+        const result = await downloadPdfWithOverwrite(response.data, {
+          contentDisposition: response.headers["content-disposition"],
+          fallbackFilename: "Cover_Letter.pdf",
+        });
+        if (result.mode === "overwrite") {
+          toast.success(
+            `Cover letter downloaded (replaced existing ${result.filename})`,
+          );
+        } else if (result.mode === "created") {
+          toast.success(
+            `Cover letter saved as ${result.filename}. Next download with this name will replace it automatically.`,
+          );
+        } else {
+          toast.success(
+            resume.coverLetter?.trim()
+              ? "Cover letter downloaded as PDF"
+              : "Cover letter generated and downloaded as PDF",
+          );
+        }
+      } else {
+        triggerBlobDownload(
+          response.data,
+          response.headers,
+          "Cover_Letter.txt",
+        );
+        toast.success(
+          resume.coverLetter?.trim()
+            ? "Cover letter downloaded as TXT"
+            : "Cover letter generated and downloaded as TXT",
+        );
+      }
+
       setResumes((prev) =>
         prev.map((r) =>
-          r._id === id
+          r._id === resume._id
             ? { ...r, coverLetter: r.coverLetter || "generated" }
             : r,
         ),
@@ -617,7 +692,7 @@ const Resumes: React.FC = () => {
         response?: { data?: Blob };
         message?: string;
       };
-      let message = "Failed to generate cover letter";
+      let message = "Failed to download cover letter";
 
       if (err.response?.data instanceof Blob) {
         try {
@@ -1257,13 +1332,23 @@ const Resumes: React.FC = () => {
                           "h-8 w-8",
                           resume.coverLetter?.trim() && "text-primary",
                         )}
-                        onClick={() => handleGenerateCoverLetter(resume._id)}
+                        onMouseDown={(event) => event.stopPropagation()}
+                        onClick={(event) => {
+                          const rect = event.currentTarget.getBoundingClientRect();
+                          setCoverLetterMenu((current) =>
+                            current?.resume._id === resume._id
+                              ? null
+                              : {
+                                  resume,
+                                  top: rect.bottom + 4,
+                                  left: Math.max(8, rect.right - 160),
+                                },
+                          );
+                        }}
                         title={
                           resume.generationSource === "manual"
                             ? "Cover letter not available for manual resumes"
-                            : resume.coverLetter?.trim()
-                              ? "Download cover letter (already generated)"
-                              : "Generate cover letter"
+                            : "Download cover letter (PDF or TXT)"
                         }
                         disabled={
                           resume.status !== "completed" ||
@@ -1529,6 +1614,33 @@ const Resumes: React.FC = () => {
       >
         <p className="text-sm">Are you sure you want to log out?</p>
       </Dialog>
+
+      {coverLetterMenu ? (
+        <div
+          ref={coverLetterMenuRef}
+          className="fixed z-50 w-40 rounded-md border border-border bg-card py-1 text-left shadow-lg"
+          style={{ top: coverLetterMenu.top, left: coverLetterMenu.left }}
+        >
+          <button
+            type="button"
+            className="flex w-full px-3 py-2 text-left text-sm hover:bg-accent"
+            onClick={() =>
+              void handleDownloadCoverLetter(coverLetterMenu.resume, "pdf")
+            }
+          >
+            Download PDF
+          </button>
+          <button
+            type="button"
+            className="flex w-full px-3 py-2 text-left text-sm hover:bg-accent"
+            onClick={() =>
+              void handleDownloadCoverLetter(coverLetterMenu.resume, "txt")
+            }
+          >
+            Download TXT
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 };

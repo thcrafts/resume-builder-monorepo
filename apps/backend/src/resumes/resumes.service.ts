@@ -547,10 +547,11 @@ export class ResumesService {
   }
 
 
-  async generateCoverLetterForResume(
-    id: string,
-    userId: string,
-  ): Promise<{ pdfBuffer: Buffer; userName: string }> {
+  async ensureCoverLetterText(id: string, userId: string): Promise<{
+    coverLetterText: string;
+    userName: string;
+    createdAt: Date;
+  }> {
     const resume = await this.resumeModel.findOne({ _id: id, userId }).exec();
 
     if (!resume) {
@@ -595,19 +596,34 @@ export class ResumesService {
         user.coverLetterPrompt,
       );
 
-      formattedCoverLetter = this.coverLetterPdfService.normalizeCoverLetterText(coverLetterText);
+      formattedCoverLetter =
+        this.coverLetterPdfService.normalizeCoverLetterText(coverLetterText);
       await this.updateCoverLetter(id, userId, formattedCoverLetter);
     }
 
+    return {
+      coverLetterText: formattedCoverLetter,
+      userName: user.name,
+      createdAt: resume.createdAt,
+    };
+  }
+
+  async generateCoverLetterForResume(
+    id: string,
+    userId: string,
+  ): Promise<{ pdfBuffer: Buffer; userName: string }> {
+    const { coverLetterText, userName, createdAt } =
+      await this.ensureCoverLetterText(id, userId);
+
     const pdfBuffer = await this.coverLetterPdfService.generatePdf(
-      user.name,
-      formattedCoverLetter,
-      resume.createdAt,
+      userName,
+      coverLetterText,
+      createdAt,
     );
 
     return {
       pdfBuffer,
-      userName: user.name,
+      userName,
     };
   }
 

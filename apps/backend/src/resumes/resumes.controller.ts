@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Delete, Put, UseGuards, Body, Request, UsePipes, Param, Res, Query, NotFoundException } from '@nestjs/common';
+import { Controller, Post, Get, Delete, Put, UseGuards, Body, Request, UsePipes, Param, Res, Query, NotFoundException, BadRequestException } from '@nestjs/common';
 import { type Response } from 'express';
 
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
@@ -311,17 +311,44 @@ export class ResumesController {
   async downloadCoverLetter(
     @Request() req,
     @Param('id') id: string,
+    @Query('format') format: string | undefined,
     @Res() res: Response,
   ) {
+    const normalizedFormat = (format || 'pdf').toLowerCase();
+
+    if (normalizedFormat === 'txt') {
+      const { coverLetterText, userName } =
+        await this.resumesService.ensureCoverLetterText(id, req.user._id);
+      sendAttachment(
+        res,
+        'text/plain; charset=utf-8',
+        `${sanitizeFilename(userName)}_Cover_Letter.txt`,
+        coverLetterText,
+      );
+      return;
+    }
+
+    if (normalizedFormat !== 'pdf') {
+      throw new BadRequestException(
+        `Unsupported cover letter format: ${format}. Use pdf or txt.`,
+      );
+    }
+
+    const { userName } = await this.resumesService.ensureCoverLetterText(
+      id,
+      req.user._id,
+    );
     const pdfBuffer = await this.resumesService.downloadCoverLetterPDF(
       id,
       req.user._id,
     );
 
-    const userName = req.user.name;
-    const filename = `${sanitizeFilename(userName)}_Cover_Letter.pdf`;
-
-    sendAttachment(res, 'application/pdf', filename, pdfBuffer);
+    sendAttachment(
+      res,
+      'application/pdf',
+      `${sanitizeFilename(userName)}_Cover_Letter.pdf`,
+      pdfBuffer,
+    );
   }
 
   @UseGuards(JwtAuthGuard)

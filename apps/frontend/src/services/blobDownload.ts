@@ -18,6 +18,22 @@ function normalizeHeaders(headers: Headers): Record<string, string> {
   return normalized;
 }
 
+async function errorMessage(response: Response): Promise<string> {
+  let message = `Download failed (${response.status})`;
+  try {
+    const text = await response.text();
+    const parsed = JSON.parse(text) as { message?: string | string[] };
+    if (parsed.message) {
+      message = Array.isArray(parsed.message)
+        ? parsed.message.join(", ")
+        : parsed.message;
+    }
+  } catch {
+    // keep default
+  }
+  return message;
+}
+
 function handleUnauthorizedResponse(response: Response): void {
   if (response.status === 401) {
     notifySessionExpired();
@@ -48,7 +64,7 @@ export async function fetchBlobDownload(
 
   if (!response.ok) {
     handleUnauthorizedResponse(response);
-    throw new Error(`Download failed (${response.status})`);
+    throw new Error(await errorMessage(response));
   }
 
   return {
@@ -78,7 +94,7 @@ export async function fetchBlobPost(
 
   if (!response.ok) {
     handleUnauthorizedResponse(response);
-    throw new Error(`Download failed (${response.status})`);
+    throw new Error(await errorMessage(response));
   }
 
   return {

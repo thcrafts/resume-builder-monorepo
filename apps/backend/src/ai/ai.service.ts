@@ -1,7 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { ResumeData } from 'src/resumes/templates';
 import { resolveApiModelId } from './ai-models';
-import { buildResumeJsonSchema } from './resume-json-schema';
 import type { ResumeSettings } from './resume-settings';
 import { resolveResumeSettings } from './resume-settings';
 import {
@@ -21,11 +19,9 @@ import {
   TITLE_MATCH_MAX_TOKENS,
   JD_EXTRACTION_MAX_TOKENS,
   SUMMARY_MAX_TOKENS,
-  SUMMARY_SKILL_MENTION_LIMIT,
   SKILLS_MAX_TOKENS,
   EXPERIENCE_MAX_TOKENS,
   EXPERIENCE_SKILLS_MAX_TOKENS,
-  TITLE_SIMILARITY_THRESHOLD,
   MIN_SKILLS_PER_CATEGORY,
   type CompanyEntry,
   type CandidateProfileData,
@@ -33,12 +29,10 @@ import {
   buildExperienceAlignmentUserBlock,
   JD_MOST_RECENT_EXCERPT_CHARS,
   applySummaryExperienceYears,
-  normalizeTechStackSkills,
 } from '@resume-builder/shared';
 import { cleanText } from './clean-text';
-import { prepareResumeGenerationInstructions } from './prepare-resume-instructions';
+import { buildSummaryChunkUserPrompt } from './generate-summary-prompt';
 import type { UserApiKeys } from './user-api-keys';
-import { normalizeResumeExperienceBullets } from './normalize-resume-json';
 import { OpenRouterService } from '../openrouter/openrouter.service';
 import {
   parseTitleMatchResult,
@@ -53,7 +47,6 @@ import { parseSummaryResult, summaryJsonSchema } from './schemas/summary.schema'
 import { parseSkillsResult, buildSkillsJsonSchema, buildSkillsFallback } from './schemas/skills.schema';
 import {
   parseExperienceResult,
-  experienceJsonSchema,
 } from './schemas/experience.schema';
 import {
   prepareCompanyExperienceInstructions,
@@ -87,43 +80,6 @@ export interface SkillsGenerationContext {
 export class AiService {
   constructor(private readonly openRouterService: OpenRouterService) {}
 
-  async generateResume(
-    jobDescription: string,
-    userInstructions: string,
-    aiProvider: string = 'anthropic',
-    aiVersion: string = 'anthropic/claude-sonnet-4.6',
-    apiKeys?: UserApiKeys,
-    resumeSettings?: Partial<ResumeSettings>,
-  ): Promise<{ resumeJson: ResumeData; threadId: string }> {
-    if (!userInstructions || !userInstructions.trim()) {
-      throw new Error('User instructions are required and cannot be empty');
-    }
-
-    const settings = resolveResumeSettings(resumeSettings);
-    const resumeJsonSchema = settings.useDefaultOutputFormat
-      ? buildResumeJsonSchema(settings)
-      : undefined;
-    const fullInstructions = prepareResumeGenerationInstructions(
-      userInstructions,
-      resumeJsonSchema,
-    );
-    const cleanedJobDescription = cleanText(jobDescription);
-    const apiModelId = resolveApiModelId(aiProvider, aiVersion);
-
-    const { resumeJson, responseId } = await this.openRouterService.generateResume(
-      cleanedJobDescription,
-      fullInstructions,
-      apiModelId,
-      apiKeys,
-      true,
-    );
-
-    return {
-      resumeJson: normalizeResumeExperienceBullets(resumeJson),
-      threadId: responseId,
-    };
-  }
-
   async matchTitle(
     jobDescription: string,
     professionalTitle: string,
@@ -148,11 +104,7 @@ export class AiService {
     );
 
     const match = parseTitleMatchResult(data);
-    const finalTitle = resolveFinalTitle(
-      professionalTitle,
-      match,
-      TITLE_SIMILARITY_THRESHOLD,
-    );
+    const finalTitle = resolveFinalTitle(professionalTitle, match);
 
     return { match, finalTitle };
   }
@@ -187,44 +139,22 @@ export class AiService {
     keyModernSkills: string[] = [],
     mandatoryExperience: string[] = [],
   ) {
-    const parts = [
-      `Job Context:\n${cleanText(jobContext)}`,
-      `Resume Title: ${finalTitle}`,
-      `Companies:\n${companySummaries.join('\n')}`,
-    ];
-    if (yearsOfExperience != null) {
-      parts.push(
-        `Years of experience (MANDATORY — use exactly this number): ${yearsOfExperience}+ years of experience`,
-      );
-    }
-    parts.push(
-      'Length: 4–5 sentences, 100–120 words. Do not go below 100 words or above 120 words.',
-    );
-    if (mandatorySkills.length > 0) {
-      parts.push(
-        `Mandatory JD skills to INCLUDE (name them in the real-project story; ADD with modern skillsets; do not dump a list): ${mandatorySkills.join(', ')}`,
-      );
-    }
-    if (mandatoryExperience.length > 0) {
-      parts.push(
-        `Mandatory JD experience to INCLUDE (years, seniority, domain/themes — reflect realistically): ${mandatoryExperience.join('; ')}`,
-      );
-    }
-    const modernToMention = keyModernSkills.slice(0, SUMMARY_SKILL_MENTION_LIMIT);
-    if (modernToMention.length > 0) {
-      parts.push(
-        `Candidate modern skillsets to ADD with that story: ${modernToMention.join(', ')}`,
-      );
-    }
-    if (userInstructions?.trim()) {
-      parts.push(`Additional Instructions:\n${cleanText(userInstructions)}`);
-    }
+    const userPrompt = buildSummaryChunkUserPrompt({
+      jobContext,
+      finalTitle,
+      companySummaries,
+      yearsOfExperience,
+      mandatorySkills,
+      keyModernSkills,
+      mandatoryExperience,
+      userInstructions,
+    });
 
     const systemPrompt = `${DEFAULT_SUMMARY_PROMPT}\n\nSchema:\n${JSON.stringify(summaryJsonSchema)}`;
 
     const { data } = await this.openRouterService.createJsonCompletion<unknown>(
       systemPrompt,
-      parts.join('\n\n'),
+      userPrompt,
       model,
       SUMMARY_MAX_TOKENS,
       apiKeys,

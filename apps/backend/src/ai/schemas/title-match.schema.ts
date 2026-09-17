@@ -31,7 +31,6 @@ export function parseTitleMatchResult(raw: unknown): TitleMatchResult {
 export function resolveFinalTitle(
   professionalTitle: string,
   match: TitleMatchResult,
-  _threshold = 0.8,
 ): string {
   const preserved = professionalTitle.trim();
   if (preserved) {

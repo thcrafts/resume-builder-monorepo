@@ -79,7 +79,7 @@ describe('assembleResumeJson', () => {
     expect(result.certifications).toEqual([{ name: 'AWS SAA' }]);
     expect(result.experience).toHaveLength(2);
     expect(result.experience?.[0]?.company).toBe('Acme');
-    expect(result.experience?.[0]?.title).toBe('Senior Backend Engineer');
+    expect(result.experience?.[0]?.title).toBe('Senior Engineer');
     expect(result.experience?.[0]?.achievements?.[0]).toContain('Acme Platform');
     expect(result.experience?.[0]?.responsibilities).toEqual([]);
     expect(result.experience?.[1]?.title).toBe('Engineer');

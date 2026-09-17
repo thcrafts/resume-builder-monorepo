@@ -31,10 +31,11 @@ export function parseTitleMatchResult(raw: unknown): TitleMatchResult {
 export function resolveFinalTitle(
   professionalTitle: string,
   match: TitleMatchResult,
-  threshold = 0.8,
+  _threshold = 0.8,
 ): string {
-  if (match.similarity >= threshold && professionalTitle.trim()) {
-    return professionalTitle.trim();
+  const preserved = professionalTitle.trim();
+  if (preserved) {
+    return preserved;
   }
   return match.rootTitle;
 }

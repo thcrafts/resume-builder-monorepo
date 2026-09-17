@@ -7,7 +7,6 @@ import type {
 import {
   getPrimaryContact,
   sortCompaniesByOrder,
-  getMostRecentCompany,
 } from '@resume-builder/shared';
 import type { ExperienceChunkResult } from './schemas/experience.schema';
 
@@ -25,17 +24,12 @@ export interface AssembleResumeInput {
 export function assembleResumeJson(input: AssembleResumeInput): ResumeData {
   const primary = getPrimaryContact(input.contacts);
   const sortedCompanies = sortCompaniesByOrder(input.companies);
-  const mostRecent = getMostRecentCompany(input.companies);
 
   const experience = sortedCompanies.map((company) => {
     const chunk = input.experienceByCompanyId.get(company.id);
-    const title =
-      mostRecent && company.id === mostRecent.id
-        ? input.finalTitle
-        : company.title;
 
     return {
-      title,
+      title: company.title,
       company: company.company,
       date_range: company.date_range,
       job_type: company.job_type,

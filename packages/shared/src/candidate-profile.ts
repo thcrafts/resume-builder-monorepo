@@ -1,3 +1,5 @@
+import { SUMMARY_MAX_WORDS } from './ai-models';
+
 export interface ContactEntry {
   id: string;
   label?: string;
@@ -220,6 +222,50 @@ export function computeYearsOfExperienceFromEducation(
 
   const graduationYear = Math.min(...graduationYears);
   return Math.max(0, referenceDate.getFullYear() - graduationYear);
+}
+
+/** Trim an oversized professional summary at sentence boundaries, up to maxWords. */
+export function clampSummaryLength(
+  summary: string,
+  maxWords = SUMMARY_MAX_WORDS,
+): string {
+  const compact = summary.replace(/\s+/g, ' ').trim();
+  if (!compact) {
+    return compact;
+  }
+
+  const countWords = (text: string) =>
+    text.split(/\s+/).filter(Boolean).length;
+
+  if (countWords(compact) <= maxWords) {
+    return compact;
+  }
+
+  const sentences = compact
+    .split(/(?<=[.!?])\s+/)
+    .map((sentence) => sentence.trim())
+    .filter(Boolean);
+
+  const kept: string[] = [];
+  let wordCount = 0;
+  for (const sentence of sentences) {
+    const nextWords = countWords(sentence);
+    if (kept.length > 0 && wordCount + nextWords > maxWords) {
+      break;
+    }
+    if (kept.length === 0 && nextWords > maxWords) {
+      const words = sentence.split(/\s+/).filter(Boolean).slice(0, maxWords);
+      let cut = words.join(' ').replace(/[,:;–—-]+$/, '');
+      if (!/[.!?]$/.test(cut)) {
+        cut += '.';
+      }
+      return cut;
+    }
+    kept.push(sentence);
+    wordCount += nextWords;
+  }
+
+  return kept.join(' ');
 }
 
 /** Ensure the summary states the required years-of-experience phrase. */

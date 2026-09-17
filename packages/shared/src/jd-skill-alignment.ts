@@ -49,6 +49,66 @@ export function collectJdTechStackSkills(
   return normalizeTechStackSkills(collectJdSkills(alignment));
 }
 
+const KEY_MODERN_CATEGORY_HINTS = [
+  'language',
+  'frontend',
+  'backend',
+  'cloud',
+  'devops',
+  'database',
+  'ai',
+  'automation',
+  'mobile',
+  'framework',
+  'tool',
+  'testing',
+] as const;
+
+const SKIP_BASELINE_CATEGORY_HINTS = ['industry', 'methodolog'];
+
+function keyModernCategoryPriority(label: string): number {
+  const lower = label.toLowerCase();
+  const index = KEY_MODERN_CATEGORY_HINTS.findIndex((hint) =>
+    lower.includes(hint),
+  );
+  return index === -1 ? KEY_MODERN_CATEGORY_HINTS.length : index;
+}
+
+/**
+ * Languages, modern frameworks, and key technologies from the candidate skill set.
+ * Skips industry/methodology chips that are not stack items.
+ */
+export function collectKeyModernBaselineSkills(
+  baseline: Array<{ category?: string; items?: string[] }> | undefined,
+): string[] {
+  const categories = [...(baseline ?? [])].sort(
+    (a, b) =>
+      keyModernCategoryPriority(a.category ?? '') -
+      keyModernCategoryPriority(b.category ?? ''),
+  );
+
+  const matched: string[] = [];
+  const fallback: string[] = [];
+
+  for (const category of categories) {
+    const label = (category.category ?? '').toLowerCase();
+    const items = category.items ?? [];
+    if (SKIP_BASELINE_CATEGORY_HINTS.some((hint) => label.includes(hint))) {
+      continue;
+    }
+    if (
+      !label ||
+      KEY_MODERN_CATEGORY_HINTS.some((hint) => label.includes(hint))
+    ) {
+      matched.push(...items);
+    } else {
+      fallback.push(...items);
+    }
+  }
+
+  return normalizeTechStackSkills(matched.length > 0 ? matched : fallback);
+}
+
 export function isSkillCovered(skill: string, skills: string[]): boolean {
   const key = skill.trim().toLowerCase();
   if (!key) {
@@ -174,29 +234,71 @@ export function distributeJdSkillsAcrossExperience(
   });
 }
 
-/** Pre-assign JD tech-stack skills per company before AI generation. */
+/** Recency 0 = most recent role. Expression of JD skills is strongest there and tapers. */
+export const JD_SKILL_RECENCY_RATES = [1, 0.7, 0.45, 0.25] as const;
+
+export function recencyExpressionRate(recencyRank: number): number {
+  const index = Math.min(
+    Math.max(0, recencyRank),
+    JD_SKILL_RECENCY_RATES.length - 1,
+  );
+  return JD_SKILL_RECENCY_RATES[index];
+}
+
+export type RandomFn = () => number;
+
+function shuffleInPlace<T>(items: T[], rng: RandomFn): T[] {
+  for (let i = items.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(rng() * (i + 1));
+    [items[i], items[j]] = [items[j], items[i]];
+  }
+  return items;
+}
+
+export function selectJdSkillsForRecency(
+  jdSkills: string[],
+  recencyRank: number,
+  options?: { previousCount?: number; rng?: RandomFn },
+): string[] {
+  const skills = normalizeTechStackSkills(jdSkills);
+  if (skills.length === 0) {
+    return [];
+  }
+
+  if (recencyRank <= 0) {
+    return skills;
+  }
+
+  const rng = options?.rng ?? Math.random;
+  const rate = recencyExpressionRate(recencyRank);
+  const jitter = 0.5 + 0.5 * rng();
+  let count = Math.floor(skills.length * rate * jitter);
+  const maxVsPrevious =
+    options?.previousCount != null
+      ? Math.max(0, options.previousCount - 1)
+      : skills.length - 1;
+  count = Math.min(count, maxVsPrevious, skills.length - 1);
+  count = Math.max(1, count);
+
+  return shuffleInPlace([...skills], rng).slice(0, count);
+}
+
+/** Pre-assign JD tech-stack skills per company before AI generation (sorted most-recent first). */
 export function planJdTechStackPerCompany(
   companies: Array<{ id: string }>,
   jdSkills: string[],
+  rng: RandomFn = Math.random,
 ): Map<string, string[]> {
-  const techSkills = normalizeTechStackSkills(jdSkills);
   const plan = new Map<string, string[]>();
+  let previousCount = normalizeTechStackSkills(jdSkills).length;
 
-  if (companies.length === 0 || techSkills.length === 0) {
-    return plan;
-  }
-
-  plan.set(companies[0].id, [...techSkills]);
-
-  const older = companies.slice(1);
-  older.forEach((company, index) => {
-    const subset = techSkills.filter((_, skillIndex) => {
-      if (older.length === 0) {
-        return false;
-      }
-      return skillIndex % older.length === index;
+  companies.forEach((company, recencyRank) => {
+    const selected = selectJdSkillsForRecency(jdSkills, recencyRank, {
+      previousCount: recencyRank === 0 ? undefined : previousCount,
+      rng,
     });
-    plan.set(company.id, subset.length > 0 ? subset : techSkills.slice(0, 3));
+    plan.set(company.id, selected);
+    previousCount = selected.length;
   });
 
   return plan;

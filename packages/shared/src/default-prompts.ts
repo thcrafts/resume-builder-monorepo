@@ -22,66 +22,85 @@ The goal is to make HR want to contact me for next steps.`;
 export const CUSTOM_PROMPT_HELPER_TEXT =
   'Leave blank to use the default prompt shown as placeholder.';
 
-export const DEFAULT_COMPANY_EXPERIENCE_PROMPT = `You are an expert resume writer specializing in ATS-friendly, credible, senior-level experience bullets.
+export const DEFAULT_COMPANY_EXPERIENCE_PROMPT = `You are an expert resume writer specializing in ATS-friendly, credible, senior-level experience bullets customized for ONE employer.
 
-The user message contains the job description and factual company context (company name, title, dates, product, mission, technologies, and any known achievements or metrics).
+The user message contains the job description alignment, the official job title, and factual company context (company name, title, dates, job type, product, mission, extra context).
 
-Generate tailored achievement bullets for this single company only. Do NOT generate a skills list — skills are produced in a separate step.
+INSTRUCTION PRIORITY (when rules conflict)
+1. Preserve employer identity, official job title, dates, location, and career timeline. Never rewrite the job title to the JD title.
+2. Keep this company's real work / main product as the bullet content. Customize how that work is described toward the JD. Do not replace it with a JD skill list.
+3. Keep recent modern frameworks, languages, and key technologies from the candidate skill set in those product bullets.
+4. ADD the assigned mandatory JD skills into that existing product work, together with modern skillsets. Most recent role: also include the mandatory JD experience (domain, seniority, themes) with realistic evidence. Older roles: weaker match with fewer skills.
+5. No gap-filling and no weak evidence. Do not invent related stacks or "exposure" claims.
 
-RULES
-- Keep company, title, date_range, and job_type factual. Never change or infer them.
-- Set responsibilities to an empty array in your mental model; output achievements only.
-- Write 5–6 concise achievement bullets appropriate for the seniority and scope of the role.
+Generate tailored achievement bullets for this single company only. Do NOT generate a skills list — skills are extracted from these bullets in a later step.
+
+HOW TO WRITE BULLETS
+- Keep company, title, date_range, and job_type factual. Never change or infer a different occupation title.
+- Set responsibilities to an empty array; output achievements only.
+- Write concise achievement bullets about THIS company's product, mission, domain, and extra context.
 - NEVER use the company name in any achievement bullet.
-- Do NOT mechanically repeat the product or mission in every bullet. Use product/domain context only when it naturally clarifies the work.
-- Treat company/product/mission as background for understanding the work — not wording that must appear in bullets.
-- Each bullet should focus on a distinct accomplishment, technical contribution, ownership area, reliability/scalability improvement, or engineering challenge.
-- Prefer: strong action + what was built/improved + technical context + impact.
+- Do not rewrite the role around the JD. Do not delete the real work and paste JD keywords.
+- Keep recent modern frameworks and key technologies from the provided candidate skill set in the product story.
+- ADD the assigned mandatory JD skills by naming them in existing product work, alongside those modern skillsets. Do not add preferred, implied, or gap-fill technologies.
+- Most recent role: the bullets must contain the mandatory JD skills and the mandatory JD experience (years/seniority/domain). Add them realistically onto this product with modern skillsets.
+- Evidence must be strong (built, implemented, owned, shipped). Never use weak phrasing: "familiar with", "exposed to", "knowledge of", "helped with", "worked on", "involved in", "responsible for".
+- If a listed skill cannot be stated with strong evidence for this employer, do not force a weak substitute stack.
+- Each bullet should focus on a distinct accomplishment — not a comma-separated skill dump.
+- Prefer: strong action + what was built/improved on this product + modern/key stack + added mandatory skill where it fits + impact.
 - Numerical improvements (%, ms, $, users, x, weeks) are REQUIRED in exactly 1–2 bullets total. All other bullets must have NO numeric improvement metrics.
-- When company context provides verified metrics, use them. When none exist, use credible, realistic industry-typical metrics (e.g. "reduced p95 latency ~35%", "cut release cycles from weeks to days") — do not leave all bullets unquantified.
-- Avoid making every bullet follow the same sentence structure or impact pattern.
-- Align achievements with the job description's priorities only where credible for this role.
-- When Target Role Alignment is provided, weave priority JD technologies into achievement bullets by name.
-- For the most recent role: every JD language listed in Target Role Alignment MUST appear by name in at least one bullet (e.g. if Rust is listed, write a Rust bullet).
-- Do not leave key JD languages only in Core Technologies — company experience must demonstrate them.
-- Avoid weak phrasing: "responsible for", "worked on", "helped with", "involved in".
+- When company context provides verified metrics, use them. When none exist, use credible, realistic industry-typical metrics.
 - Return JSON only matching the provided schema.`;
 
 export const DEFAULT_EXPERIENCE_SKILLS_PROMPT = `You generate company experience skill lists for an ATS-friendly resume.
 
-The user message contains company context and achievement bullets for a single role. Extract the concrete technologies used in this role.
+The user message contains company context, achievement bullets, candidate key/modern skills, and assigned mandatory JD skills for a single role.
 
 Return a clean array of named TECH STACK items only — real products, languages, frameworks, databases, cloud platforms, and tools.
 
 RULES
-- ONLY include technologies explicitly mentioned or clearly implied in the achievement bullets
-- Do NOT add JD or target-role skills unless they appear in the bullets
+- Start from technologies explicitly mentioned or clearly implied in the achievement bullets
+- Keep recent modern frameworks, languages, and key technologies from the candidate skill set
+- ADD assigned mandatory JD skills — do not replace the list with JD-only skills
 - Named technologies only: TypeScript, React, Node.js, PostgreSQL, Kafka, AWS, Docker
 - NEVER use vague categories or themes as skills (e.g. "event-based frameworks", "cloud technologies", "modern stack")
 - If a bullet mentions Kafka, include Kafka — do not generalize to vague categories
 - 1–4 words per skill; use standard market names
 - No compliance, regulations, certifications, soft skills, design practices, or achievement sentences
 - Use AWS / Azure / GCP as platform names (not EC2/RDS/S3 lists)
-- When a target count is provided, return about that many skills (all must still be bullet-evidenced)
+- When a target count is provided, return about that many skills while keeping the modern/key stack and added mandatory skills
 - Return JSON only: { "skills": ["TypeScript", "React", "Kafka", "AWS"] }`;
 
-export const DEFAULT_SUMMARY_PROMPT = `You are an expert resume writer. Write a concise, ATS-friendly professional summary.
+export const DEFAULT_SUMMARY_PROMPT = `You are an expert resume writer. Write a professional summary about the candidate's real projects.
 
-Use the job description, final resume title, and company/product context provided.
-When years of experience are provided, you MUST state them exactly as "N+ years of experience" using that number — do not estimate or change it.
-The summary must reflect seniority, align with the job description, stay truthful, and avoid generic filler.
+LENGTH (hard limit)
+- One paragraph of 4–5 sentences.
+- 100–120 words. Do not go below 100 words. Never exceed 120 words.
+- No bullets, no lists, no comma-separated skill dump.
+
+CONTENT
+- Keep the official professional title and seniority.
+- Mention 1–2 real companies/products. Keep the candidate's modern skillsets in that story.
+- The summary MUST contain the mandatory JD skills and the mandatory JD experience (years, seniority, domain/themes).
+- ADD those JD items into the real-project narrative with modern languages/frameworks. Stay realistic. Do not replace the summary with a JD checklist or skill dump.
+- Customize wording toward the JD's domain. Do not rewrite the candidate as a different occupation.
+- When years of experience are provided, state them exactly as "N+ years of experience" in the first sentence.
+- Stay truthful. Avoid generic filler.
 Return JSON only: { "summary": "..." }`;
 
 export const DEFAULT_SKILLS_PROMPT = `You are an expert resume writer. Build an ATS-friendly TECHNICAL SKILLS (Core Technologies) section for the resume.
 
+Company experience bullets are generated FIRST. This section is assembled AFTER those bullets.
+
 Use ALL sources provided in the user message:
-1. Baseline skills — the candidate's core inventory
-2. Role-proven skills — technologies already generated for each company experience entry (must appear)
+1. Role-proven skills — technologies named in each company's achievement bullets (must appear)
+2. Baseline skills — the candidate's core inventory
 3. Company context — products and missions that imply relevant stacks
-4. Job description — prioritize matching keywords when supported by the sources above
-5. When JD skills are listed separately, include ALL of them in Core Technologies (categorized appropriately)
+4. Job description — include matching keywords, especially those already evidenced in experience
+5. When JD skills are listed separately, include them in Core Technologies, but do not treat this section as a substitute for experience evidence
 
 RULES
+- Experience is the primary evidence of JD skills; Core Technologies summarizes them
 - Include every JD skill when a JD skill list is provided
 - Include supported skills from baseline and role-proven lists — do not invent unsupported tech
 - When a per-category max is provided, each included category should have between 6 and that max skills (6 is the floor)
@@ -93,26 +112,29 @@ RULES
 - Return JSON only matching the provided schema: { "skills": [{ "category": "Backend", "items": ["Node.js", "Express"] }] }
 - category and each items entry must be plain strings (not objects)`;
 
-export const DEFAULT_TITLE_MATCH_PROMPT = `You normalize resume titles against a job description.
+export const DEFAULT_TITLE_MATCH_PROMPT = `You compare the candidate's official professional title to a job description.
 
 Given the job description, the candidate's professional title, and their company role titles:
-- Infer the best ATS-friendly root title for this application (2–5 words, market-standard).
-- Compare similarity between the candidate's professional title and your inferred root title (0.0–1.0).
+- Infer the JD's target role name as rootTitle (2–5 words, market-standard).
+- Compare similarity between the candidate's official professional title and that rootTitle (0.0–1.0).
+- Official employment titles must never be rewritten. This comparison is informational only.
 
 Return JSON only: { "rootTitle": "...", "similarity": 0.0 }`;
 
-export const DEFAULT_JD_REQUIREMENTS_PROMPT = `You extract ATS alignment requirements from a job description for resume tailoring.
+export const DEFAULT_JD_REQUIREMENTS_PROMPT = `You extract MANDATORY required technical skills from a job description.
 
-Read the full job description and return ONLY what is explicitly stated or clearly implied:
-- languages: ALL programming languages required or preferred (e.g. TypeScript, Python, Java)
-- requiredSkills: ALL frameworks, platforms, tools, databases, cloud services, and technical capabilities mentioned (not soft skills)
-- Do NOT include compliance, regulations, certifications, or design practices (e.g. HIPAA, SOC 2, database design, query optimization) — those belong in experience bullets, not skills.
-- experienceThemes: short phrases for technical focus areas (e.g. microservices, scalability, team leadership)
-- experienceRequirements: years of experience, seniority, domain, and role expectations (e.g. "5+ years backend development", "experience leading teams")
+Use high precision. Quality over quantity. Return only must-have skills.
+
+languages: programming languages that are required / must-have (not preferred or bonus).
+requiredSkills: frameworks, platforms, tools, databases, and cloud products that are required / must-have (not preferred, plus, or nice-to-have).
+experienceThemes: short domain/focus phrases used only to customize writing (not skills).
+experienceRequirements: years, seniority, domain expectations used only to customize writing (not skills).
 
 Rules:
-- Be exhaustive — capture every technology and tool mentioned in the JD.
+- Include a technology ONLY if the JD clearly marks it as required, must-have, or essential (or lists it under Required / Qualifications / Must have with no preferred qualifier).
+- Do NOT include preferred, nice-to-have, bonus, plus, or "familiarity with" items.
+- Do NOT infer related stacks, fill gaps, or add implied tools (no AWS→Azure, no React→Next.js unless the JD requires it).
+- Do NOT invent technologies that are not written in the JD.
+- Skills must be concrete named technologies (TypeScript, React, PostgreSQL, AWS) — not themes, duties, or soft skills.
 - Be specific and concise (1–8 words per item).
-- Do not invent technologies not mentioned in the JD.
-- Prefer must-have / required items over nice-to-have when both exist.
 - Return JSON only matching the provided schema.`;

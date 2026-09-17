@@ -21,6 +21,7 @@ import {
   TITLE_MATCH_MAX_TOKENS,
   JD_EXTRACTION_MAX_TOKENS,
   SUMMARY_MAX_TOKENS,
+  SUMMARY_SKILL_MENTION_LIMIT,
   SKILLS_MAX_TOKENS,
   EXPERIENCE_MAX_TOKENS,
   EXPERIENCE_SKILLS_MAX_TOKENS,
@@ -159,14 +160,14 @@ export class AiService {
   async extractJdRequirements(
     jobDescription: string,
     apiKeys?: UserApiKeys,
-    model = DEFAULT_JD_EXTRACTION_MODEL,
+    _model = DEFAULT_JD_EXTRACTION_MODEL,
   ): Promise<JdAlignmentRequirements> {
     const systemPrompt = `${DEFAULT_JD_REQUIREMENTS_PROMPT}\n\nSchema:\n${JSON.stringify(jdRequirementsJsonSchema)}`;
 
     const { data } = await this.openRouterService.createJsonCompletion<unknown>(
       systemPrompt,
       `Job Description:\n${cleanText(jobDescription)}`,
-      model,
+      DEFAULT_JD_EXTRACTION_MODEL,
       JD_EXTRACTION_MAX_TOKENS,
       apiKeys,
     );
@@ -182,6 +183,9 @@ export class AiService {
     apiKeys?: UserApiKeys,
     model = DEFAULT_SUMMARY_MODEL,
     yearsOfExperience?: number | null,
+    mandatorySkills: string[] = [],
+    keyModernSkills: string[] = [],
+    mandatoryExperience: string[] = [],
   ) {
     const parts = [
       `Job Context:\n${cleanText(jobContext)}`,
@@ -191,6 +195,25 @@ export class AiService {
     if (yearsOfExperience != null) {
       parts.push(
         `Years of experience (MANDATORY — use exactly this number): ${yearsOfExperience}+ years of experience`,
+      );
+    }
+    parts.push(
+      'Length: 4–5 sentences, 100–120 words. Do not go below 100 words or above 120 words.',
+    );
+    if (mandatorySkills.length > 0) {
+      parts.push(
+        `Mandatory JD skills to INCLUDE (name them in the real-project story; ADD with modern skillsets; do not dump a list): ${mandatorySkills.join(', ')}`,
+      );
+    }
+    if (mandatoryExperience.length > 0) {
+      parts.push(
+        `Mandatory JD experience to INCLUDE (years, seniority, domain/themes — reflect realistically): ${mandatoryExperience.join('; ')}`,
+      );
+    }
+    const modernToMention = keyModernSkills.slice(0, SUMMARY_SKILL_MENTION_LIMIT);
+    if (modernToMention.length > 0) {
+      parts.push(
+        `Candidate modern skillsets to ADD with that story: ${modernToMention.join(', ')}`,
       );
     }
     if (userInstructions?.trim()) {
@@ -320,11 +343,18 @@ export class AiService {
     options?: {
       companySkillsCount?: number;
       isMostRecent?: boolean;
+      recencyRank?: number;
       jdAlignment?: JdAlignmentRequirements;
       jobDescriptionExcerpt?: string;
+      keyModernSkills?: string[];
+      assignedJdSkills?: string[];
     },
   ): Promise<string[]> {
     const companySkillsCount = options?.companySkillsCount ?? 0;
+    const skillExtras = {
+      keyModernSkills: options?.keyModernSkills,
+      mandatoryJdSkills: options?.assignedJdSkills,
+    };
 
     if (achievements.length === 0) {
       return [];
@@ -337,8 +367,11 @@ export class AiService {
         achievements,
         companySkillsCount,
         isMostRecent: options?.isMostRecent,
+        recencyRank: options?.recencyRank,
         jdAlignment: options?.jdAlignment,
         jobDescriptionExcerpt: options?.jobDescriptionExcerpt,
+        keyModernSkills: options?.keyModernSkills,
+        assignedJdSkills: options?.assignedJdSkills,
       });
 
       const { data } = await this.openRouterService.createJsonCompletion<unknown>(
@@ -354,6 +387,7 @@ export class AiService {
         parsed.skills,
         achievements,
         companySkillsCount,
+        skillExtras,
       );
     } catch (error) {
       console.warn(
@@ -364,6 +398,7 @@ export class AiService {
         achievements,
         options?.jdAlignment,
         companySkillsCount,
+        skillExtras,
       );
     }
   }
@@ -377,6 +412,9 @@ export class AiService {
     options?: {
       jdAlignment: JdAlignmentRequirements;
       isMostRecent: boolean;
+      recencyRank?: number;
+      assignedJdSkills?: string[];
+      keyModernSkills?: string[];
       companySkillsCount?: number;
       achievementsCount?: number;
       experienceSkillsModel?: string;
@@ -384,6 +422,9 @@ export class AiService {
   ) {
     const jdAlignment = options?.jdAlignment;
     const isMostRecent = options?.isMostRecent ?? false;
+    const recencyRank = options?.recencyRank ?? (isMostRecent ? 0 : 1);
+    const assignedJdSkills = options?.assignedJdSkills ?? [];
+    const keyModernSkills = options?.keyModernSkills ?? [];
     const targetAchievements =
       options?.achievementsCount && options.achievementsCount > 0
         ? options.achievementsCount
@@ -405,7 +446,17 @@ export class AiService {
         ? buildExperienceAlignmentUserBlock({
             alignment: jdAlignment,
             isMostRecent,
+            recencyRank,
+            assignedJdSkills,
+            keyModernSkills,
             jobDescriptionExcerpt: jdExcerpt,
+            company: {
+              title: company.title,
+              product: company.product,
+              mission: company.mission,
+              job_type: company.job_type,
+              context: company.context,
+            },
           })
         : `Job Description:\n${cleanText(jobDescription).slice(0, JD_MOST_RECENT_EXCERPT_CHARS)}`,
       `Company Context:\n${JSON.stringify({
@@ -418,6 +469,18 @@ export class AiService {
         mission: company.mission,
         context: company.context,
         isMostRecentRole: isMostRecent,
+        keyModernSkills,
+        assignedJdSkillsToAdd: assignedJdSkills,
+        ...(isMostRecent
+          ? {
+              mandatoryJdExperience: jdAlignment
+                ? [
+                    ...jdAlignment.experienceRequirements,
+                    ...jdAlignment.experienceThemes,
+                  ]
+                : [],
+            }
+          : {}),
       })}`,
     ];
 
@@ -446,7 +509,11 @@ export class AiService {
         `Experience for ${company.company} returned ${parsed.achievements.length}/${targetAchievements} usable bullets; retrying once.`,
       );
       parsed = await runOnce(
-        `Return exactly ${targetAchievements} achievement strings. Every item must be a full sentence. Do not use true, false, null, or empty placeholders. Do not include the company name. Include credible numeric improvements in exactly 1-2 bullets; no metrics in the rest. Name every JD language from Target Role Alignment in at least one bullet.`,
+        `Return exactly ${targetAchievements} achievement strings. Every item must be a full sentence. Do not use true, false, null, or empty placeholders. Do not include the company name. Do not change the official job title. Keep this company's main product as the bullet content and keep modern skillsets from the candidate skill set. Customize toward the JD. No gap-fill or weak evidence. Include credible numeric improvements in exactly 1-2 bullets; no metrics in the rest. ADD these mandatory skills into that product work with modern skillsets (do not replace bullets with this list): ${assignedJdSkills.join(', ') || 'must-have JD technologies'}.${
+          isMostRecent
+            ? ' Most recent role: also include the mandatory JD experience realistically on this product.'
+            : ''
+        }`,
       );
     }
 
@@ -468,8 +535,11 @@ export class AiService {
       {
         companySkillsCount: options?.companySkillsCount,
         isMostRecent,
+        recencyRank,
         jdAlignment,
         jobDescriptionExcerpt: jdExcerpt,
+        keyModernSkills,
+        assignedJdSkills,
       },
     );
 

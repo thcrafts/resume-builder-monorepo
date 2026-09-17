@@ -154,24 +154,26 @@ export function mergeJdAlignment(
   jobDescription: string,
 ): JdAlignmentRequirements {
   const heuristic = extractJdRequirementsHeuristic(jobDescription);
+  const languages = normalizeStringArray(fromModel?.languages, 15);
+  const requiredSkills = normalizeStringArray(fromModel?.requiredSkills, 40);
+  const modelEmpty = languages.length === 0 && requiredSkills.length === 0;
 
   return {
-    languages: dedupeCaseInsensitive([
-      ...normalizeStringArray(fromModel?.languages, 8),
-      ...heuristic.languages,
-    ]).slice(0, 15),
-    requiredSkills: dedupeCaseInsensitive([
-      ...normalizeStringArray(fromModel?.requiredSkills, 40),
-      ...heuristic.requiredSkills,
-    ]).slice(0, 40),
-    experienceThemes: dedupeCaseInsensitive([
-      ...normalizeStringArray(fromModel?.experienceThemes, 8),
-      ...heuristic.experienceThemes,
-    ]).slice(0, 10),
-    experienceRequirements: dedupeCaseInsensitive([
-      ...normalizeStringArray(fromModel?.experienceRequirements, 8),
-      ...heuristic.experienceRequirements,
-    ]).slice(0, 10),
+    languages: modelEmpty ? heuristic.languages : languages,
+    requiredSkills: modelEmpty ? heuristic.requiredSkills : requiredSkills,
+    experienceThemes: (() => {
+      const fromModelThemes = normalizeStringArray(fromModel?.experienceThemes, 10);
+      return fromModelThemes.length > 0 ? fromModelThemes : heuristic.experienceThemes;
+    })(),
+    experienceRequirements: (() => {
+      const fromModelReqs = normalizeStringArray(
+        fromModel?.experienceRequirements,
+        10,
+      );
+      return fromModelReqs.length > 0
+        ? fromModelReqs
+        : heuristic.experienceRequirements;
+    })(),
   };
 }
 
@@ -200,57 +202,99 @@ export function formatJdAlignmentForPrompt(
     : 'Languages: (none explicit)\nRequired skills: (infer from job description)\nExperience themes: (infer from job description)';
 }
 
+/** Mandatory JD experience themes + requirements used to customize writing. */
+export function collectMandatoryJdExperience(
+  alignment: JdAlignmentRequirements,
+): string[] {
+  return dedupeCaseInsensitive([
+    ...alignment.experienceRequirements,
+    ...alignment.experienceThemes,
+  ]);
+}
+
 export function buildExperienceAlignmentUserBlock(options: {
   alignment: JdAlignmentRequirements;
   isMostRecent: boolean;
+  recencyRank?: number;
+  assignedJdSkills?: string[];
+  keyModernSkills?: string[];
   jobDescriptionExcerpt?: string;
+  company?: {
+    title: string;
+    product: string;
+    mission: string;
+    job_type?: string;
+    context?: string;
+  };
 }): string {
+  const recencyRank = options.recencyRank ?? (options.isMostRecent ? 0 : 1);
+  const isMostRecent = options.isMostRecent || recencyRank === 0;
+  const assignedJdSkills = dedupeCaseInsensitive(
+    options.assignedJdSkills && options.assignedJdSkills.length > 0
+      ? options.assignedJdSkills
+      : isMostRecent
+        ? [...options.alignment.languages, ...options.alignment.requiredSkills]
+        : [...options.alignment.languages, ...options.alignment.requiredSkills].slice(
+            0,
+            6,
+          ),
+  );
+  const keyModernSkills = dedupeCaseInsensitive(options.keyModernSkills ?? []);
+  const mandatoryExperience = collectMandatoryJdExperience(options.alignment);
   const alignmentText = formatJdAlignmentForPrompt(options.alignment);
-  const priorityLanguages = dedupeCaseInsensitive(options.alignment.languages);
-  const prioritySkills = dedupeCaseInsensitive(options.alignment.requiredSkills);
-  const priorityTech = dedupeCaseInsensitive([
-    ...priorityLanguages,
-    ...prioritySkills,
-  ]);
+  const strength =
+    recencyRank <= 0
+      ? 'STRONGEST (most recent role)'
+      : recencyRank === 1
+        ? 'STRONG (previous role)'
+        : recencyRank === 2
+          ? 'MODERATE (older role)'
+          : 'LIGHT (earliest role)';
 
-  if (options.isMostRecent) {
-    const excerpt = options.jobDescriptionExcerpt?.trim() ?? '';
-    const languageLine =
-      priorityLanguages.length > 0
-        ? `JD languages that MUST appear by name in at least 1–2 achievement bullets: ${priorityLanguages.join(', ')}`
-        : '';
-    const techLine =
-      priorityTech.length > 0
-        ? `Priority JD technologies to weave across bullets (name them explicitly where credible): ${priorityTech.join(', ')}`
-        : '';
-    return [
-      'TARGET ROLE ALIGNMENT (MOST RECENT ROLE)',
-      'Achievement bullets must demonstrate JD-relevant technical experience so Core Technologies and company experience stay aligned.',
-      '- Name specific JD technologies in bullets — do not leave key JD languages (e.g. Rust, Go, TypeScript) only in Core Technologies.',
-      '- Every JD language listed below MUST appear by name in at least one achievement bullet.',
-      '- Cover a credible mix of JD frameworks/tools across the bullets (not every skill in every bullet).',
-      '- Keep bullets credible for this company/product/mission; do not invent unrelated product work.',
-      '- Weave experience themes into achievement scope/outcomes without naming the employer.',
-      '- Do not put the company name in achievement bullets. Include credible numeric improvements in exactly 1–2 bullets; no metrics in the rest.',
-      languageLine,
-      techLine,
-      alignmentText,
-      excerpt ? `Job description excerpt:\n${excerpt}` : '',
-    ]
-      .filter(Boolean)
-      .join('\n');
-  }
+  const company = options.company;
+  const companyLines = company
+    ? [
+        `Official job title (do not change): ${company.title}`,
+        `Product: ${company.product}`,
+        `Mission: ${company.mission}`,
+        company.job_type ? `Role type: ${company.job_type}` : '',
+        company.context ? `Extra company context: ${company.context}` : '',
+      ].filter(Boolean)
+    : [];
 
-  const olderTechLine =
-    priorityTech.length > 0
-      ? `Optional JD technologies to mention only when credible for this company/period: ${priorityTech.slice(0, 6).join(', ')}`
+  const assignedLine =
+    assignedJdSkills.length > 0
+      ? `Mandatory JD skills to ADD (not replace) in THIS role's main-product bullets (recency ${strength}): ${assignedJdSkills.join(', ')}`
+      : 'Mandatory JD skills to ADD: (infer must-have technologies from the job description)';
+  const keyModernLine =
+    keyModernSkills.length > 0
+      ? `Candidate modern skillsets (ADD alongside JD items; do not drop them for a JD-only rewrite): ${keyModernSkills.join(', ')}`
+      : 'Candidate modern skillsets: keep recent languages and frameworks from the candidate skill set in the product story.';
+  const experienceLine =
+    isMostRecent && mandatoryExperience.length > 0
+      ? `Mandatory JD experience to INCLUDE in this most-recent role (reflect realistically in product bullets, with modern skillsets): ${mandatoryExperience.join('; ')}`
       : '';
 
+  const excerpt = options.jobDescriptionExcerpt?.trim() ?? '';
+
   return [
-    'TARGET ROLE ALIGNMENT (older role — apply only where supported by this company context)',
-    'Mirror JD languages/skills/themes only when credible for this specific company, product, and mission.',
-    olderTechLine,
+    `TARGET ROLE ALIGNMENT — ${strength}`,
+    'Write achievement bullets for THIS employer only. Keep the official job title, employer, dates, and location unchanged.',
+    'Do not replace this role with the JD job name (e.g. do not retitle Senior Software Engineer as Low Code Application Developer).',
+    "Keep this company's main product, mission, and extra context as the bullet content. Customize wording toward the JD. Do not replace that work with JD skills.",
+    'Keep recent modern frameworks, languages, and key technologies from the candidate skill set in those product bullets.',
+    'ADD the assigned mandatory skill names into that existing product work with modern skillsets. No gap-fill, no implied stacks, no weak evidence (no "familiar with", "exposed to", "knowledge of").',
+    isMostRecent
+      ? 'Most recent role: INCLUDE the mandatory JD skills and the mandatory JD experience. ADD them realistically onto this company\'s main product together with modern skillsets (built, implemented, owned, shipped). Spread across bullets; do not turn the section into a JD checklist.'
+      : "Older role: weaker match than more recent roles. Keep this company's real work and its modern/key stack. ADD only the assigned (smaller) mandatory subset. Do not invent JD-shaped projects.",
+    '- Prefer one primary accomplishment per bullet; name a modern/key or added mandatory skill only where it belongs in that work.',
+    '- Never put the employer name in bullets. Include credible numeric improvements in exactly 1–2 bullets; no metrics in the rest.',
+    keyModernLine,
+    assignedLine,
+    experienceLine,
+    ...companyLines,
     alignmentText,
+    excerpt && isMostRecent ? `Job description excerpt:\n${excerpt}` : '',
   ]
     .filter(Boolean)
     .join('\n');

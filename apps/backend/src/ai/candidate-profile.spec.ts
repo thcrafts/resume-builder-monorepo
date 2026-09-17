@@ -4,6 +4,8 @@ import {
   parseGraduationYearFromDateRange,
   computeYearsOfExperienceFromEducation,
   applySummaryExperienceYears,
+  clampSummaryLength,
+  SUMMARY_MAX_WORDS,
 } from '@resume-builder/shared';
 
 describe('validateCandidateProfile', () => {
@@ -148,5 +150,42 @@ describe('applySummaryExperienceYears', () => {
   it('leaves summary unchanged when years phrase is missing', () => {
     const summary = 'Senior Engineer building distributed systems.';
     expect(applySummaryExperienceYears(summary, 12)).toBe(summary);
+  });
+});
+
+describe('clampSummaryLength', () => {
+  const filler = (count: number, prefix: string) =>
+    Array.from({ length: count }, (_, i) => `${prefix}${i}`).join(' ');
+
+  it('keeps a short summary unchanged', () => {
+    const summary =
+      'Senior Engineer with 12+ years of experience building payments in TypeScript.';
+    expect(clampSummaryLength(summary)).toBe(summary);
+  });
+
+  it('does not split on abbreviations like Node.js', () => {
+    const summary =
+      'Built APIs in Node.js. Led the checkout rewrite in TypeScript.';
+    expect(clampSummaryLength(summary)).toBe(summary);
+  });
+
+  it('drops extra sentences once the word cap is reached', () => {
+    const first = `Senior Engineer with 12+ years of experience ${filler(40, 'a')}.`;
+    const second = `${filler(40, 'b')}.`;
+    const third = `${filler(40, 'c')}.`;
+    const clamped = clampSummaryLength(`${first} ${second} ${third}`);
+
+    expect(clamped).toContain('a0');
+    expect(clamped).toContain('b0');
+    expect(clamped).not.toContain('c0');
+    expect(clamped.split(/\s+/).filter(Boolean).length).toBeLessThanOrEqual(
+      SUMMARY_MAX_WORDS,
+    );
+  });
+
+  it('hard-cuts a single oversized sentence', () => {
+    const clamped = clampSummaryLength(`${filler(160, 'word')}.`);
+    expect(clamped.split(/\s+/).filter(Boolean)).toHaveLength(SUMMARY_MAX_WORDS);
+    expect(clamped.endsWith('.')).toBe(true);
   });
 });

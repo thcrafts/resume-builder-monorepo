@@ -19,8 +19,13 @@ export const EXPERIENCE_MODEL_FALLBACK = 'openai/gpt-4o-mini';
 export const DEFAULT_EXPERIENCE_SKILLS_MODEL = 'openai/gpt-4o-mini';
 
 export const TITLE_MATCH_MAX_TOKENS = 256;
-export const JD_EXTRACTION_MAX_TOKENS = 512;
+export const JD_EXTRACTION_MAX_TOKENS = 1024;
 export const SUMMARY_MAX_TOKENS = 512;
+/** Target professional summary length is 100–120 words; this is the hard cap. */
+export const SUMMARY_MIN_WORDS = 100;
+export const SUMMARY_MAX_WORDS = 120;
+/** How many JD / modern skill names the summary should try to mention. */
+export const SUMMARY_SKILL_MENTION_LIMIT = 6;
 export const SKILLS_MAX_TOKENS = 4096;
 export const EXPERIENCE_MAX_TOKENS = 2048;
 export const EXPERIENCE_SKILLS_MAX_TOKENS = 512;

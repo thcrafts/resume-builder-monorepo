@@ -10,6 +10,10 @@ describe('prepareCompanyExperienceInstructions', () => {
     expect(result).toContain('MANDATORY OUTPUT RULES');
     expect(result).toContain('achievements');
     expect(result).toContain('NEVER include the company name');
+    expect(result).toContain('NEVER change the official job title');
+    expect(result).toContain('Do not replace company experience with JD skills');
+    expect(result).toContain('Most recent role: include the mandatory JD skills and the mandatory JD experience');
+    expect(result).toContain('No gap-fill, no implied stacks, no weak evidence');
     expect(result).toContain('REQUIRED in exactly 1–2 bullets');
   });
 

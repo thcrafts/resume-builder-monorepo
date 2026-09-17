@@ -1,7 +1,6 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import {
   validateCandidateProfile,
-  DEFAULT_TITLE_MATCH_MODEL,
   DEFAULT_JD_EXTRACTION_MODEL,
   DEFAULT_SUMMARY_MODEL,
   DEFAULT_SKILLS_MODEL,
@@ -9,7 +8,6 @@ import {
   EXPERIENCE_MODEL_FALLBACK,
   DEFAULT_EXPERIENCE_SKILLS_MODEL,
   EXPERIENCE_CONCURRENCY_LIMIT,
-  JD_TITLE_MATCH_CHARS,
   JD_SUMMARY_EXCERPT_CHARS,
   sortCompaniesByOrder,
   getMostRecentCompany,
@@ -17,6 +15,9 @@ import {
   buildCompactJdContextForPrompt,
   formatJdAlignmentForPrompt,
   collectJdTechStackSkills,
+  collectKeyModernBaselineSkills,
+  collectMandatoryJdExperience,
+  planJdTechStackPerCompany,
   type CompanyEntry,
 } from '@resume-builder/shared';
 import { AiService } from '../ai/ai.service';
@@ -125,15 +126,9 @@ export class ChunkedResumeBuilder {
     const steps: GenerationStepMeta[] = [];
     const sortedCompanies = sortCompaniesByOrder(options.user.companies);
     const cleanedJd = cleanText(options.jobDescription);
-    const titleJd = cleanedJd.slice(0, JD_TITLE_MATCH_CHARS);
 
-    const [titleModel, jdModel, summaryModel, experienceModel, skillsModel, experienceSkillsModel] =
+    const [summaryModel, experienceModel, skillsModel, experienceSkillsModel] =
       await Promise.all([
-        this.resolveModelId(DEFAULT_TITLE_MATCH_MODEL, DEFAULT_TITLE_MATCH_MODEL),
-        this.resolveModelId(
-          DEFAULT_JD_EXTRACTION_MODEL,
-          DEFAULT_JD_EXTRACTION_MODEL,
-        ),
         this.resolveModelId(DEFAULT_SUMMARY_MODEL, DEFAULT_SUMMARY_MODEL),
         this.resolveModelId(DEFAULT_EXPERIENCE_MODEL, EXPERIENCE_MODEL_FALLBACK),
         this.resolveModelId(DEFAULT_SKILLS_MODEL, DEFAULT_SKILLS_MODEL),
@@ -144,24 +139,16 @@ export class ChunkedResumeBuilder {
       ]);
 
     this.gateway.emitProgress(options.resumeId, { step: 'title' });
-
-    const { finalTitle } = await this.aiService.matchTitle(
-      titleJd,
-      options.user.candidateProfile.professionalTitle,
-      sortedCompanies.map((c) => c.title),
-      options.apiKeys,
-      titleModel,
-    );
-    steps.push({ step: 'title', model: titleModel });
+    const finalTitle = options.user.candidateProfile.professionalTitle.trim();
+    steps.push({ step: 'title', model: 'profile' });
 
     this.gateway.emitProgress(options.resumeId, { step: 'jd-requirements' });
 
     const jdAlignment = await this.aiService.extractJdRequirements(
       cleanedJd,
       options.apiKeys,
-      jdModel,
     );
-    steps.push({ step: 'jd-requirements', model: jdModel });
+    steps.push({ step: 'jd-requirements', model: DEFAULT_JD_EXTRACTION_MODEL });
 
     const mostRecentCompany = getMostRecentCompany(sortedCompanies);
     const companySummaries = sortedCompanies.map(
@@ -189,6 +176,14 @@ export class ChunkedResumeBuilder {
     });
 
     const jdTechStackSkills = collectJdTechStackSkills(jdAlignment);
+    const keyModernSkills = collectKeyModernBaselineSkills(
+      options.user.candidateProfile.baselineSkills,
+    );
+    const mandatoryJdExperience = collectMandatoryJdExperience(jdAlignment);
+    const jdSkillsByCompanyId = planJdTechStackPerCompany(
+      sortedCompanies,
+      jdTechStackSkills,
+    );
 
     const total = sortedCompanies.length;
     const experienceByCompanyId = new Map<
@@ -207,6 +202,9 @@ export class ChunkedResumeBuilder {
         options.apiKeys,
         summaryModel,
         yearsOfExperience,
+        jdTechStackSkills,
+        keyModernSkills,
+        mandatoryJdExperience,
       ),
       this.runWithConcurrency(
         sortedCompanies,
@@ -228,6 +226,9 @@ export class ChunkedResumeBuilder {
               {
                 jdAlignment,
                 isMostRecent: company.id === mostRecentCompany?.id,
+                recencyRank: index,
+                assignedJdSkills: jdSkillsByCompanyId.get(company.id) ?? [],
+                keyModernSkills,
                 companySkillsCount: options.resumeSettings.companySkillsCount,
                 achievementsCount: options.resumeSettings.achievementsCount,
                 experienceSkillsModel,

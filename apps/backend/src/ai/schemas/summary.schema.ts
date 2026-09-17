@@ -1,3 +1,5 @@
+import { clampSummaryLength } from '@resume-builder/shared';
+
 export const summaryJsonSchema = {
   type: 'object',
   properties: {
@@ -17,5 +19,5 @@ export function parseSummaryResult(raw: unknown): SummaryResult {
   if (!summary) {
     throw new Error('Invalid summary response');
   }
-  return { summary };
+  return { summary: clampSummaryLength(summary) };
 }

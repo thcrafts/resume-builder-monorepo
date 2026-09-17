@@ -1,0 +1,157 @@
+:root {
+  color-scheme: dark;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  font-size: 13px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  width: 380px;
+  min-height: 480px;
+  background: #0f1419;
+  color: #e7ecf1;
+}
+
+#root {
+  min-height: 480px;
+}
+
+.wrap {
+  padding: 14px 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+h1 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 650;
+}
+
+.sub {
+  color: #9aa7b4;
+  font-size: 12px;
+  margin-top: 2px;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: #c5d0da;
+}
+
+input,
+select,
+textarea,
+button {
+  font: inherit;
+}
+
+input,
+select,
+textarea {
+  background: #1a222c;
+  color: #e7ecf1;
+  border: 1px solid #2e3a48;
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+textarea {
+  min-height: 56px;
+  resize: vertical;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+button {
+  border: 0;
+  border-radius: 8px;
+  padding: 9px 12px;
+  cursor: pointer;
+  background: #3b82f6;
+  color: white;
+  font-weight: 600;
+}
+
+button.secondary {
+  background: #243041;
+  color: #d5dee7;
+}
+
+button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+}
+
+.card {
+  background: #151c24;
+  border: 1px solid #263140;
+  border-radius: 10px;
+  padding: 10px;
+}
+
+.status {
+  font-size: 12px;
+  color: #9aa7b4;
+  white-space: pre-wrap;
+}
+
+.banner {
+  background: #1d2836;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 12px;
+}
+
+.banner strong {
+  color: #93c5fd;
+}
+
+.resume {
+  width: 100%;
+}
+
+.error {
+  color: #fca5a5;
+  font-size: 12px;
+}
+
+.check {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+.check input {
+  width: auto;
+}
+
+details {
+  background: #151c24;
+  border: 1px solid #263140;
+  border-radius: 10px;
+  padding: 8px 10px;
+}
+
+details summary {
+  cursor: pointer;
+  font-weight: 600;
+}

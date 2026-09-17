@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { ResumeData } from 'src/resumes/templates';
 import { cleanText } from '../ai/clean-text';
 import { extractJsonText } from '../ai/extract-json-text';
 import { parseQuestionsResponse } from '../ai/parse-questions-response';
@@ -144,17 +143,6 @@ export class OpenRouterService {
     }
   }
 
-  private parseResumeJson(
-    outputText: string,
-    responseId: string,
-  ): { resumeJson: ResumeData; responseId: string } {
-    const { data, responseId: id } = this.parseJsonResponse<ResumeData>(
-      outputText,
-      responseId,
-    );
-    return { resumeJson: data, responseId: id };
-  }
-
   async createJsonCompletion<T>(
     systemPrompt: string,
     userPrompt: string,
@@ -236,39 +224,6 @@ export class OpenRouterService {
       limit: data.limit ?? null,
       limitRemaining: data.limit_remaining ?? null,
     };
-  }
-
-  async generateResume(
-    jobDescription: string,
-    instructions: string,
-    model: string,
-    apiKeys?: UserApiKeys,
-    expectJson = false,
-  ): Promise<{ resumeJson: ResumeData; responseId: string }> {
-    const keys = apiKeys ?? {};
-    const cleanedInstructions = cleanText(instructions);
-    const cleanedJobDescription = cleanText(jobDescription);
-
-    const response = await this.createChatCompletion(keys, {
-      model,
-      max_completion_tokens: 16384,
-      messages: [
-        { role: 'system', content: cleanedInstructions },
-        { role: 'user', content: cleanedJobDescription },
-      ],
-      ...(expectJson
-        ? {
-            response_format: {
-              type: 'json_object',
-            },
-          }
-        : {}),
-    });
-
-    return this.parseResumeJson(
-      this.getMessageContent(response),
-      response.id,
-    );
   }
 
   async generateCoverLetter(

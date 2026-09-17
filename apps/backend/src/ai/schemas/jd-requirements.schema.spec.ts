@@ -1,7 +1,7 @@
 import { parseJdRequirementsResult } from './jd-requirements.schema';
 
 describe('parseJdRequirementsResult', () => {
-  it('parses model output and merges heuristic fallback', () => {
+  it('parses model output and keeps mandatory skills from the model', () => {
     const result = parseJdRequirementsResult(
       {
         languages: ['Go'],
@@ -12,12 +12,10 @@ describe('parseJdRequirementsResult', () => {
       'TypeScript React AWS required. 5+ years backend development.',
     );
 
-    expect(result.languages).toEqual(
-      expect.arrayContaining(['Go', 'TypeScript']),
-    );
-    expect(result.requiredSkills).toEqual(
-      expect.arrayContaining(['Kubernetes', 'React', 'AWS']),
-    );
+    expect(result.languages).toEqual(['Go']);
+    expect(result.requiredSkills).toEqual(['Kubernetes']);
+    expect(result.languages).not.toContain('TypeScript');
+    expect(result.requiredSkills).not.toContain('React');
     expect(result.experienceRequirements.length).toBeGreaterThan(0);
   });
 });

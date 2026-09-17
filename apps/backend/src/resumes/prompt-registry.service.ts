@@ -25,6 +25,50 @@ const SUPPORTED_INDUSTRIES = [
 
 export type IndustryPromptId = (typeof SUPPORTED_INDUSTRIES)[number];
 
+const SKIP_OVERLAY_LINE =
+  /every bullet must include a number|EVERY bullet MUST include|derive a realistic improvement|title must match the root-level|SPECIAL TITLE RULE|TITLE NORMALIZATION|Do NOT copy the job description title|root-level resume title/i;
+
+function sliceBetween(text: string, start: string, end: string): string {
+  const startIdx = text.indexOf(start);
+  if (startIdx < 0) {
+    return '';
+  }
+  const endIdx = text.indexOf(end, startIdx + start.length);
+  return (endIdx < 0 ? text.slice(startIdx) : text.slice(startIdx, endIdx)).trim();
+}
+
+/** Domain-wording hints only — no metric mandate, title rewrite, or JSON-schema instructions. */
+export function extractIndustryDomainOverlay(fullPrompt: string): string {
+  const text = fullPrompt.replace(/\r\n/g, '\n');
+  const sections: string[] = [];
+
+  const primary = sliceBetween(
+    text,
+    'PRIMARY TAILORING OBJECTIVE',
+    'RESUME WRITING RULES',
+  );
+  if (primary) {
+    sections.push(primary);
+  }
+
+  const emphasisMatch = text.match(
+    /\n([A-Z0-9][A-Z0-9 &'./-]* EMPHASIS RULES)\n([\s\S]*?)(?=\nCOVER LETTER RULES\b)/,
+  );
+  if (emphasisMatch) {
+    sections.push(`${emphasisMatch[1]}\n${emphasisMatch[2].trim()}`);
+  }
+
+  const overlay = sections
+    .join('\n\n')
+    .split('\n')
+    .filter((line) => !SKIP_OVERLAY_LINE.test(line))
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+
+  return overlay;
+}
+
 @Injectable()
 export class PromptRegistryService {
   private readonly cache = new Map<string, string>();
@@ -64,7 +108,7 @@ export class PromptRegistryService {
     }
 
     const full = this.loadIndustryPrompt(industry);
-    const overlay = full.slice(0, 1024).trim();
+    const overlay = extractIndustryDomainOverlay(full);
     return overlay || null;
   }
 

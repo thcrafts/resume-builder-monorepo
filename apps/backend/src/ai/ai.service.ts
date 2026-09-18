@@ -4,7 +4,6 @@ import type { ResumeSettings } from './resume-settings';
 import { resolveResumeSettings } from './resume-settings';
 import {
   DEFAULT_COVER_LETTER_PROMPT,
-  DEFAULT_QUESTIONS_PROMPT,
   DEFAULT_TITLE_MATCH_PROMPT,
   DEFAULT_JD_REQUIREMENTS_PROMPT,
   DEFAULT_SUMMARY_PROMPT,
@@ -31,6 +30,7 @@ import {
   applySummaryExperienceYears,
 } from '@resume-builder/shared';
 import { cleanText } from './clean-text';
+import { buildQuestionsSystemInstructions } from './generate-questions-prompt';
 import { buildSummaryChunkUserPrompt } from './generate-summary-prompt';
 import type { UserApiKeys } from './user-api-keys';
 import { OpenRouterService } from '../openrouter/openrouter.service';
@@ -522,28 +522,12 @@ export class AiService {
     aiVersion: string = 'anthropic/claude-sonnet-4.6',
     apiKeys?: UserApiKeys,
   ): Promise<Array<{ question: string; answer: string }>> {
-    const answerFormatRules = `ANSWER FORMAT (MANDATORY)
-- Return JSON only. Never write an email, cover letter, subject line, or greeting.
-- Extract every application question from the user text and answer each one.
-- At most 3 sentences per answer
-- If giving 2–3 points, structure as: First, ... Second, ... Third, ...
-- If giving one point, write one normal sentence with no First/Second/Third prefix`;
-
-    const instructions = [
-      cleanText(customPrompt?.trim() || DEFAULT_QUESTIONS_PROMPT),
-      answerFormatRules,
-    ].join('\n\n');
-
-    const cleanedJobDescription = cleanText(jobDescription);
     const cleanedQuestionsText = cleanText(questionsText);
-
-    const resumeCopy: Record<string, unknown> = { ...(resumeJson || {}) };
-    if (resumeCopy.cover_letter) {
-      delete resumeCopy.cover_letter;
-    }
-
-    const compactResumeJson = JSON.stringify(resumeCopy);
-    const fullInstructions = `${instructions} Job Description: ${cleanedJobDescription} Resume Information: ${compactResumeJson}`;
+    const fullInstructions = buildQuestionsSystemInstructions({
+      customPrompt,
+      jobDescription,
+      resumeJson,
+    });
     const apiModelId = resolveApiModelId(aiProvider, aiVersion);
 
     return this.openRouterService.parseAndAnswerQuestions(

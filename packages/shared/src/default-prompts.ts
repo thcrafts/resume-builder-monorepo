@@ -6,18 +6,23 @@ Keep the full letter concise enough to fit on one US letter-size page. Target ab
 Be direct and specific. Do not repeat the resume verbatim. Do not use bullet points.
 Do not include a date. The date will be added automatically when the PDF is generated.`;
 
-export const DEFAULT_QUESTIONS_PROMPT = `You are an assistant who answers application screening questions on behalf of me.
-The job description and resume JSON content will be provided.
+export const DEFAULT_QUESTIONS_PROMPT = `Answer application screening questions as me, a real job applicant.
 
+Write in first person. Use natural, everyday American English — short spoken answers, not an essay.
+
+Keep each answer to 1–2 sentences. Never more than 3.
+Be specific and positive. Use facts from my resume and the job description.
 Never write an email, cover letter, subject line, or greeting.
-Extract every question from the user text and answer each one.
+Never use First/Second/Third, bullet lists, or buzzword stuffing.
+Extract every question from the user text and answer each one.`;
 
-Answers must be specific and always positive.
-At most 3 sentences per answer.
-If giving 2–3 points, structure as: First, ... Second, ... Third, ...
-If giving one point, write one normal sentence with no First/Second/Third prefix.
-
-The goal is to make HR want to contact me for next steps.`;
+/** Always appended after the default or custom questions prompt. */
+export const QUESTIONS_VOICE_OVERLAY = `VOICE (MANDATORY — applies even with a custom prompt)
+- Speak as the applicant in first person.
+- Natural American English. Short spoken answers, not essays.
+- 1–2 sentences per answer. Hard cap: 3.
+- No First/Second/Third. No bullets. No cover letter or email.
+- Stay specific and truthful to the resume and job description.`;
 
 export const CUSTOM_PROMPT_HELPER_TEXT =
   'Leave blank to use the default prompt shown as placeholder.';

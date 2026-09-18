@@ -5,7 +5,7 @@ describe('parseQuestionsResponse', () => {
     const result = parseQuestionsResponse(
       JSON.stringify({
         questions_and_answers: [
-          { question: 'Why this role?', answer: 'First, I build platforms. Second, I ship reliably.' },
+          { question: 'Why this role?', answer: 'I have shipped platform work at this scale, and I want to keep doing that here.' },
         ],
       }),
     );
@@ -13,7 +13,7 @@ describe('parseQuestionsResponse', () => {
     expect(result).toEqual([
       {
         question: 'Why this role?',
-        answer: 'First, I build platforms. Second, I ship reliably.',
+        answer: 'I have shipped platform work at this scale, and I want to keep doing that here.',
       },
     ]);
   });

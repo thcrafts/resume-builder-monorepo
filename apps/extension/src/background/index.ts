@@ -1,4 +1,3 @@
-import { CANDIDATE_VOICE_PREFIX } from '../shared/constants';
 import type { ExtensionMessage } from '../shared/messages';
 import type { FillProgress, PageContext } from '../shared/types';
 import {
@@ -196,10 +195,9 @@ async function handle(
       } satisfies PageContext;
     }
     case 'ANSWER_QUESTIONS': {
-      const numbered = message.questions
+      const payload = message.questions
         .map((q, i) => `${i + 1}. ${q}`)
         .join('\n');
-      const payload = `${CANDIDATE_VOICE_PREFIX}${numbered}`;
       const result = await answerQuestions(message.resumeId, payload);
       const pairs = result.questions.map((question, index) => ({
         question,

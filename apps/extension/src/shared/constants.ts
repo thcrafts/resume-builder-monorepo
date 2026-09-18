@@ -1,8 +1,3 @@
-export const CANDIDATE_VOICE_PREFIX = `Answer as a real job applicant writing in first person. Keep each answer to 1-3 short sentences. Be specific and natural. Do not sound like a language model. No buzzword stuffing, no "passionate about", no "as an AI", no cover-letter or email formatting.
-
-Questions:
-`;
-
 export const EEO_PATTERN =
   /\b(gender|sex\b|hispanic|latino|latina|race|ethnicity|veteran|disability|disabled|lgbt|sexual orientation|pronoun|demographic|equal employment|eeo|eeoc|decline to self[- ]identif|protected veteran|voluntary self)\b/i;
 

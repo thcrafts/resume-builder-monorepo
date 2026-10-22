@@ -68,7 +68,12 @@ import {
   TableHeader,
   TableRow,
 } from "../../components/ui/table";
-import { Badge, Checkbox, Spinner } from "../../components/ui/misc";
+import {
+  Badge,
+  Checkbox,
+  GeneratingSpinner,
+  Spinner,
+} from "../../components/ui/misc";
 import { cn } from "../../lib/utils";
 
 const getLocalDateString = (date = new Date()) => {
@@ -168,9 +173,9 @@ const Resumes: React.FC = () => {
     };
   });
   const [chipFilter, setChipFilter] = React.useState<ChipFilter | null>(null);
-  const [generatingCoverLetterId, setGeneratingCoverLetterId] = React.useState<
-    string | null
-  >(null);
+  const [generatingCoverLetterIds, setGeneratingCoverLetterIds] = React.useState<
+    Set<string>
+  >(new Set());
   const [coverLetterMenu, setCoverLetterMenu] = React.useState<{
     resume: ResumeResponse;
     top: number;
@@ -639,7 +644,11 @@ const Resumes: React.FC = () => {
     format: CoverLetterFormat,
   ) => {
     setCoverLetterMenu(null);
-    setGeneratingCoverLetterId(resume._id);
+    setGeneratingCoverLetterIds((prev) => {
+      const next = new Set(prev);
+      next.add(resume._id);
+      return next;
+    });
     try {
       const response = await downloadCoverLetter(resume._id, format);
 
@@ -712,7 +721,11 @@ const Resumes: React.FC = () => {
 
       toast.error(message);
     } finally {
-      setGeneratingCoverLetterId(null);
+      setGeneratingCoverLetterIds((prev) => {
+        const next = new Set(prev);
+        next.delete(resume._id);
+        return next;
+      });
     }
   };
 
@@ -1256,12 +1269,10 @@ const Resumes: React.FC = () => {
                     <TableCell className="text-center">
                       {resume.status === "in_progress" ? (
                         <div className="flex flex-col items-center justify-center gap-1">
-                          <Spinner className="h-5 w-5" />
-                          {progressLabel ? (
-                            <Badge variant="outline" className="text-[10px]">
-                              {progressLabel}
-                            </Badge>
-                          ) : null}
+                          <GeneratingSpinner className="h-7 w-7" />
+                          <span className="text-[11px] font-medium text-muted-foreground">
+                            {progressLabel || "Tailoring…"}
+                          </span>
                         </div>
                       ) : resume.status === "failed" ? (
                         <div className="flex items-center justify-center gap-1">
@@ -1284,7 +1295,7 @@ const Resumes: React.FC = () => {
                             disabled={retryingResumeId === resume._id}
                           >
                             {retryingResumeId === resume._id ? (
-                              <Spinner className="h-4 w-4" />
+                              <GeneratingSpinner className="h-5 w-5" />
                             ) : (
                               <RefreshCw className="h-4 w-4" />
                             )}
@@ -1348,16 +1359,18 @@ const Resumes: React.FC = () => {
                         title={
                           resume.generationSource === "manual"
                             ? "Cover letter not available for manual resumes"
-                            : "Download cover letter (PDF or TXT)"
+                            : generatingCoverLetterIds.has(resume._id)
+                              ? "Generating cover letter…"
+                              : "Download cover letter (PDF or TXT)"
                         }
                         disabled={
                           resume.status !== "completed" ||
                           resume.generationSource === "manual" ||
-                          generatingCoverLetterId === resume._id
+                          generatingCoverLetterIds.has(resume._id)
                         }
                       >
-                        {generatingCoverLetterId === resume._id ? (
-                          <Spinner className="h-4 w-4" />
+                        {generatingCoverLetterIds.has(resume._id) ? (
+                          <GeneratingSpinner className="h-5 w-5" />
                         ) : resume.coverLetter?.trim() ? (
                           <MailCheck className="h-4 w-4" />
                         ) : (

@@ -27,8 +27,8 @@ describe('collectKeyModernBaselineSkills', () => {
       { category: 'Languages', items: ['TypeScript', 'Go'] },
       { category: 'Frontend', items: ['React', 'Next.js'] },
       { category: 'Backend', items: ['Node.js'] },
-      { category: 'Industry', items: ['Healthcare'] },
-      { category: 'Methodology', items: ['Agile'] },
+      { category: 'Industries', items: ['Healthcare'] },
+      { category: 'Architecture', items: ['Agile'] },
     ]);
 
     expect(skills).toEqual(
@@ -166,7 +166,7 @@ describe('mergeJdSkillsIntoCoreTechnologies', () => {
     const result = mergeJdSkillsIntoCoreTechnologies(
       [{ category: 'Backend', items: ['Node.js'] }],
       ['TypeScript', 'React', 'AWS'],
-      ['Languages', 'Frontend', 'Backend', 'Cloud & DevOps', 'Tools'],
+      ['Languages', 'Frontend', 'Backend', 'Cloud & DevOps'],
     );
 
     expect(result).toEqual(
@@ -177,5 +177,20 @@ describe('mergeJdSkillsIntoCoreTechnologies', () => {
         { category: 'Cloud & DevOps', items: ['AWS'] },
       ]),
     );
+  });
+
+  it('routes JD skills into AI, Data & Messaging, Architecture, and Industries', () => {
+    const result = mergeJdSkillsIntoCoreTechnologies(
+      [{ category: 'Databases', items: ['MySQL'] }],
+      ['LangChain', 'Kafka', 'PostgreSQL', 'Microservices', 'Healthcare'],
+      ['AI', 'Data & Messaging', 'Architecture', 'Industries'],
+    );
+
+    expect(result).toEqual([
+      { category: 'AI', items: ['LangChain'] },
+      { category: 'Data & Messaging', items: ['MySQL', 'Kafka', 'PostgreSQL'] },
+      { category: 'Architecture', items: ['Microservices'] },
+      { category: 'Industries', items: ['Healthcare'] },
+    ]);
   });
 });

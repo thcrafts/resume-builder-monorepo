@@ -16,9 +16,12 @@ const NAMED: AtsAdapter[] = [
   paylocityAdapter,
 ];
 
-export function detectAdapter(href: string): AtsAdapter {
+export function detectAdapter(href?: string): AtsAdapter {
+  const value =
+    href ||
+    (typeof location !== 'undefined' ? location.href : '');
   try {
-    const url = new URL(href);
+    const url = new URL(value);
     return NAMED.find((adapter) => adapter.match(url)) ?? genericAdapter;
   } catch {
     return genericAdapter;

@@ -155,3 +155,19 @@ details summary {
   cursor: pointer;
   font-weight: 600;
 }
+
+kbd {
+  display: inline-block;
+  background: #243041;
+  border: 1px solid #3b4a5c;
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-size: 11px;
+  margin-right: 6px;
+}
+
+.rb-hint {
+  margin-top: 6px;
+  font-size: 11px;
+  color: #7b8794;
+}

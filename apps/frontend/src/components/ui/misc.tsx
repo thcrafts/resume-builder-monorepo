@@ -65,6 +65,20 @@ export function Spinner({ className }: { className?: string }) {
   );
 }
 
+/** Color-cycling spinner for long-running AI generation. */
+export function GeneratingSpinner({ className }: { className?: string }) {
+  return (
+    <img
+      src="/generating-spinner.svg"
+      alt=""
+      role="status"
+      aria-label="Generating"
+      className={cn("h-5 w-5 shrink-0 select-none", className)}
+      draggable={false}
+    />
+  );
+}
+
 export function Checkbox({
   className,
   checked,

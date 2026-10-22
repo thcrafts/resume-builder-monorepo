@@ -21,6 +21,10 @@ import {
   type AnswerQuestionsDto,
   answerQuestionsSchema,
 } from './dto/answer-questions.dto';
+import {
+  type ExtractJobPostingDto,
+  extractJobPostingSchema,
+} from './dto/extract-job-posting.dto';
 import { type FromJsonDto, fromJsonSchema } from './dto/from-json.dto';
 import {
   type UpdateResumeDto,
@@ -137,6 +141,20 @@ export class ResumesController {
       );
       res.end();
     }
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('extract-job-posting')
+  @UsePipes(new ZodValidationPipe(extractJobPostingSchema))
+  async extractJobPosting(
+    @Request() req,
+    @Body() extractJobPostingDto: ExtractJobPostingDto,
+  ) {
+    await this.resumesService.validateApiKeyForGeneration(req.user._id);
+    return this.resumesService.extractJobPostingFromPage(
+      req.user._id,
+      extractJobPostingDto,
+    );
   }
 
   @UseGuards(JwtAuthGuard)

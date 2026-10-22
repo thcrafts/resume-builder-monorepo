@@ -182,12 +182,12 @@ const QuestionsDialog: React.FC<QuestionsDialogProps> = ({
               value={questions}
               onChange={(e) => setQuestions(e.target.value)}
               placeholder={
-                "Paste your questions here. They can be separated by blank lines, spaces, or other formatting. Unnecessary text like character counters will be automatically removed.\n\nExample:\nWhy are you interested in this position?\n\nWhat makes you a good fit for this role?"
+                "Paste one question per line (Enter). A trailing ? is optional.\n\nExample:\nWhy are you interested in this position\nWhat makes you a good fit for this role\nAre you authorized to work in the US"
               }
               disabled={isGenerating}
             />
             <p className="text-xs text-muted-foreground">
-              Paste questions in any format - they will be automatically parsed
+              Separate questions with Enter. They do not need to end with ?
             </p>
             {isGenerating ? (
               <div className="flex justify-center pt-2">

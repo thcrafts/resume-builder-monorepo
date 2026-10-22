@@ -10,7 +10,10 @@ import { Input } from "../../components/ui/input";
 import { Textarea } from "../../components/ui/textarea";
 import { Label } from "../../components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
-import { SKILL_CATEGORIES } from "../../constants/resumeSettings";
+import {
+  SKILL_CATEGORIES,
+  resolveSkillCategory,
+} from "../../constants/resumeSettings";
 
 interface CandidateProfileSectionProps {
   value: CandidateProfileData;
@@ -183,7 +186,7 @@ export const CandidateProfileSection: React.FC<CandidateProfileSectionProps> = (
               <div className="flex gap-2">
                 <select
                   className="h-10 flex-1 rounded-md border border-input bg-card px-3 text-sm"
-                  value={entry.category}
+                  value={resolveSkillCategory(entry.category) ?? entry.category}
                   onChange={(e) =>
                     updateSkillCategory(index, { category: e.target.value })
                   }

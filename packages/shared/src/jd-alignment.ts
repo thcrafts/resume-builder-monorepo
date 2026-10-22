@@ -288,7 +288,7 @@ export function buildExperienceAlignmentUserBlock(options: {
       ? 'Most recent role: INCLUDE the mandatory JD skills and the mandatory JD experience. ADD them realistically onto this company\'s main product together with modern skillsets (built, implemented, owned, shipped). Spread across bullets; do not turn the section into a JD checklist.'
       : "Older role: weaker match than more recent roles. Keep this company's real work and its modern/key stack. ADD only the assigned (smaller) mandatory subset. Do not invent JD-shaped projects.",
     '- Prefer one primary accomplishment per bullet; name a modern/key or added mandatory skill only where it belongs in that work.',
-    '- Never put the employer name in bullets. Include credible numeric improvements in exactly 1–2 bullets; no metrics in the rest.',
+    '- Never put the employer name in bullets. Include numeric improvements in exactly 1–2 bullets using the Metric targets for this role; no metrics in the rest.',
     keyModernLine,
     assignedLine,
     experienceLine,

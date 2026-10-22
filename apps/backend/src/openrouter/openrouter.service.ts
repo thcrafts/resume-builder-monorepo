@@ -6,6 +6,8 @@ import type { UserApiKeys } from '../ai/user-api-keys';
 
 const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
 const OPENROUTER_APP_TITLE = 'Resume Builder';
+const OPENROUTER_MAX_ATTEMPTS = 4;
+const OPENROUTER_RETRY_BASE_MS = 1000;
 
 interface ChatCompletionMessage {
   content?: string | null;
@@ -89,28 +91,94 @@ export class OpenRouterService {
     );
   }
 
+  private isRetryableTransientError(error: unknown): boolean {
+    if (!(error instanceof Error)) {
+      return false;
+    }
+
+    const message = error.message;
+    return (
+      /^429\b/.test(message) ||
+      /\brate[_ ]?limit\b/i.test(message) ||
+      /fetch failed/i.test(message) ||
+      /networkerror|econnreset|etimedout|socket hang up/i.test(message)
+    );
+  }
+
+  private async sleep(ms: number): Promise<void> {
+    await new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
   private async createChatCompletion(
     apiKeys: UserApiKeys,
     body: Record<string, unknown>,
   ): Promise<ChatCompletion> {
-    const response = await fetch(`${OPENROUTER_BASE_URL}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${this.resolveApiKey(apiKeys)}`,
-        'Content-Type': 'application/json',
-        'HTTP-Referer': 'http://localhost:5173',
-        'X-OpenRouter-Title': OPENROUTER_APP_TITLE,
-      },
-      body: JSON.stringify(body),
-    });
+    let lastError: unknown;
 
-    const payload = (await response.json()) as ChatCompletion | OpenRouterErrorBody;
+    for (let attempt = 1; attempt <= OPENROUTER_MAX_ATTEMPTS; attempt += 1) {
+      try {
+        const response = await fetch(`${OPENROUTER_BASE_URL}/chat/completions`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${this.resolveApiKey(apiKeys)}`,
+            'Content-Type': 'application/json',
+            'HTTP-Referer': 'http://localhost:5173',
+            'X-OpenRouter-Title': OPENROUTER_APP_TITLE,
+          },
+          body: JSON.stringify(body),
+        });
 
-    if (!response.ok) {
-      throw this.buildApiError(response.status, payload as OpenRouterErrorBody);
+        const payload = (await response.json()) as
+          | ChatCompletion
+          | OpenRouterErrorBody;
+
+        if (!response.ok) {
+          const error = this.buildApiError(
+            response.status,
+            payload as OpenRouterErrorBody,
+          );
+          if (
+            attempt < OPENROUTER_MAX_ATTEMPTS &&
+            this.isRetryableTransientError(error)
+          ) {
+            lastError = error;
+            const delay =
+              OPENROUTER_RETRY_BASE_MS * 2 ** (attempt - 1) +
+              Math.floor(Math.random() * 250);
+            console.warn(
+              `OpenRouter transient error (attempt ${attempt}/${OPENROUTER_MAX_ATTEMPTS}): ${error.message}. Retrying in ${delay}ms`,
+            );
+            await this.sleep(delay);
+            continue;
+          }
+          throw error;
+        }
+
+        return payload as ChatCompletion;
+      } catch (error) {
+        lastError = error;
+        if (
+          attempt < OPENROUTER_MAX_ATTEMPTS &&
+          this.isRetryableTransientError(error)
+        ) {
+          const delay =
+            OPENROUTER_RETRY_BASE_MS * 2 ** (attempt - 1) +
+            Math.floor(Math.random() * 250);
+          const message =
+            error instanceof Error ? error.message : String(error);
+          console.warn(
+            `OpenRouter request failed (attempt ${attempt}/${OPENROUTER_MAX_ATTEMPTS}): ${message}. Retrying in ${delay}ms`,
+          );
+          await this.sleep(delay);
+          continue;
+        }
+        throw error;
+      }
     }
 
-    return payload as ChatCompletion;
+    throw lastError instanceof Error
+      ? lastError
+      : new Error('OpenRouter request failed after retries');
   }
 
   private extractJsonText(outputText: string): string {
@@ -258,9 +326,10 @@ export class OpenRouterService {
     const jsonOnlyRule = `OUTPUT FORMAT (MANDATORY)
 Return valid JSON only. No markdown, no emails, no subject lines, no cover letters, no greeting.
 Shape: {"questions_and_answers":[{"question":"...","answer":"..."}]}
-Extract every application question from the user text (including questions inside emails or forms) and answer each one.`;
-    const userContent = `Extract and answer the application questions in the text below. Do not write an email or cover letter.\n\n${cleanText(questionsText)}`;
-    const systemContent = `${cleanText(instructions)}\n\n${jsonOnlyRule}`;
+Extract every application question from the user text (including questions inside emails or forms) and answer each one.
+Treat each numbered item or non-empty line as its own question even when it does not end with "?".`;
+    const userContent = `Extract and answer the application questions in the text below. Do not write an email or cover letter.\nQuestions may be one per line and may not end with "?". Answer each separately.\n\n${questionsText}`;
+    const systemContent = `${instructions}\n\n${jsonOnlyRule}`;
     const questionsSchema = {
       type: 'object',
       properties: {

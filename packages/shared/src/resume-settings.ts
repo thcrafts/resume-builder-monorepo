@@ -2,26 +2,53 @@ export const SKILL_CATEGORIES = [
   'Languages',
   'Backend',
   'Frontend',
-  'AI & Automation',
+  'AI',
   'Cloud & DevOps',
-  'Database',
-  'Tools',
+  'Data & Messaging',
   'Testing',
-  'Industry',
-  'Methodology',
-  'Mobile',
+  'Architecture',
+  'Industries',
 ] as const;
 
 export type SkillCategory = (typeof SKILL_CATEGORIES)[number];
 
-const SKILL_CATEGORY_LABELS: Partial<Record<SkillCategory, string>> = {
-  Database: 'Databases',
-  Industry: 'Industries',
-  Methodology: 'Methodologies',
+export function getSkillCategoryLabel(category: SkillCategory): string {
+  return category;
+}
+
+/** Legacy names stay here so saved profiles, settings, and resumes still resolve. */
+const SKILL_CATEGORY_ALIASES: Record<SkillCategory, readonly string[]> = {
+  Languages: ['Languages', 'Language', 'Programming Languages'],
+  Backend: ['Backend', 'Back-end', 'Back End'],
+  Frontend: ['Frontend', 'Front-end', 'Front End', 'Mobile'],
+  AI: ['AI', 'AI & Automation', 'AI/ML', 'AI & ML', 'Machine Learning'],
+  'Cloud & DevOps': ['Cloud & DevOps', 'Cloud', 'DevOps', 'Tools'],
+  'Data & Messaging': [
+    'Data & Messaging',
+    'Data and Messaging',
+    'Database',
+    'Databases',
+    'Data',
+    'Messaging',
+  ],
+  Testing: ['Testing', 'QA'],
+  Architecture: ['Architecture', 'Methodology', 'Methodologies'],
+  Industries: ['Industries', 'Industry', 'Domains'],
 };
 
-export function getSkillCategoryLabel(category: SkillCategory): string {
-  return SKILL_CATEGORY_LABELS[category] ?? category;
+const SKILL_CATEGORY_LOOKUP = new Map<string, SkillCategory>(
+  SKILL_CATEGORIES.flatMap((category) =>
+    SKILL_CATEGORY_ALIASES[category].map(
+      (alias) => [alias.toLowerCase(), category] as const,
+    ),
+  ),
+);
+
+export function resolveSkillCategory(category: string): SkillCategory | null {
+  if (typeof category !== 'string') {
+    return null;
+  }
+  return SKILL_CATEGORY_LOOKUP.get(category.trim().toLowerCase()) ?? null;
 }
 
 export interface ResumeSettings {
@@ -74,16 +101,6 @@ export const DEFAULT_RESUME_PDF_SETTINGS: ResumePdfSettings = {
   skillCategories: [...SKILL_CATEGORIES],
   skillsPerCategoryCount: DEFAULT_RESUME_SETTINGS.skillsPerCategoryCount,
 };
-
-const SKILL_CATEGORY_SET = new Set<string>(SKILL_CATEGORIES);
-
-function clampCount(value: unknown, fallback: number, max = 30): number {
-  const parsed = typeof value === 'number' ? value : Number(value);
-  if (!Number.isFinite(parsed)) {
-    return fallback;
-  }
-  return Math.min(max, Math.max(0, Math.round(parsed)));
-}
 
 function clampAchievementCount(value: unknown, fallback: number): number {
   const parsed = typeof value === 'number' ? value : Number(value);
@@ -141,10 +158,9 @@ export function normalizeSkillCategories(
   }
 
   const enabled = new Set(
-    categories.filter(
-      (category): category is SkillCategory =>
-        typeof category === 'string' && SKILL_CATEGORY_SET.has(category),
-    ),
+    categories
+      .map((category) => resolveSkillCategory(category))
+      .filter((category): category is SkillCategory => category !== null),
   );
 
   if (enabled.size === 0) {
@@ -229,40 +245,6 @@ export function resumeSettingsEqual(
   );
 }
 
-const SKILL_CATEGORY_ALIASES: Record<SkillCategory, readonly string[]> = {
-  Languages: ['Languages'],
-  Backend: ['Backend'],
-  Frontend: ['Frontend'],
-  'AI & Automation': ['AI & Automation'],
-  'Cloud & DevOps': ['Cloud & DevOps'],
-  Database: ['Database', 'Databases'],
-  Tools: ['Tools'],
-  Testing: ['Testing'],
-  Industry: ['Industry', 'Industries'],
-  Methodology: ['Methodology', 'Methodologies'],
-  Mobile: ['Mobile'],
-};
-
-const SKILL_CATEGORY_PDF_LABELS: Partial<Record<SkillCategory, string>> = {
-  Database: 'Databases',
-  Industry: 'Industries',
-  Methodology: 'Methodologies',
-};
-
-function resolveSkillCategory(category: string): SkillCategory | null {
-  for (const canonicalCategory of SKILL_CATEGORIES) {
-    if (SKILL_CATEGORY_ALIASES[canonicalCategory].includes(category)) {
-      return canonicalCategory;
-    }
-  }
-
-  return null;
-}
-
-function getSkillCategoryPdfLabel(category: SkillCategory): string {
-  return SKILL_CATEGORY_PDF_LABELS[category] ?? category;
-}
-
 export function filterSkillsForPdf(
   skills: Array<{ category: string; items: string[] }>,
   enabledCategories: SkillCategory[] | undefined,
@@ -298,7 +280,7 @@ export function filterSkillsForPdf(
     }
 
     skillsByCategory.set(canonicalCategory, {
-      category: getSkillCategoryPdfLabel(canonicalCategory),
+      category: canonicalCategory,
       items: [...skill.items],
     });
   }

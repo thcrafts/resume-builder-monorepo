@@ -4,10 +4,6 @@ import { visible } from '../adapters/types';
 import { semanticValue } from '../shared/applicant';
 import {
   CAPTCHA_PATTERN,
-  EEO_PATTERN,
-  SALARY_PATTERN,
-  SKIP_LEGAL_PATTERN,
-  SSN_PATTERN,
   SUBMIT_TEXT,
 } from '../shared/constants';
 import { bestMatch } from '../shared/fuzzy';
@@ -25,20 +21,14 @@ import {
 } from './fillActor';
 import { matchSelectOption } from './matcher';
 import { hideOverlaySoon, markField, showOverlay } from './overlay';
+import { shouldLeaveField } from './skip';
 
 function report(progress: FillProgress): void {
   void chrome.runtime.sendMessage({ type: 'FILL_PROGRESS', progress });
 }
 
 function shouldLeave(field: DiscoveredField): boolean {
-  const text = `${field.label} ${field.name}`;
-  return (
-    EEO_PATTERN.test(text) ||
-    CAPTCHA_PATTERN.test(text) ||
-    SALARY_PATTERN.test(text) ||
-    SSN_PATTERN.test(text) ||
-    SKIP_LEGAL_PATTERN.test(text)
-  );
+  return shouldLeaveField(field.label, field.name);
 }
 
 function yesNoValue(value: string | boolean | null): string | boolean | null {

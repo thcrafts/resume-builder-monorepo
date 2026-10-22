@@ -6,6 +6,7 @@ import {
   DEFAULT_COVER_LETTER_PROMPT,
   DEFAULT_TITLE_MATCH_PROMPT,
   DEFAULT_JD_REQUIREMENTS_PROMPT,
+  DEFAULT_JOB_POSTING_EXTRACT_PROMPT,
   DEFAULT_SUMMARY_PROMPT,
   DEFAULT_SKILLS_PROMPT,
   DEFAULT_EXPERIENCE_SKILLS_PROMPT,
@@ -17,6 +18,7 @@ import {
   DEFAULT_EXPERIENCE_SKILLS_MODEL,
   TITLE_MATCH_MAX_TOKENS,
   JD_EXTRACTION_MAX_TOKENS,
+  JOB_POSTING_EXTRACT_MAX_TOKENS,
   SUMMARY_MAX_TOKENS,
   SKILLS_MAX_TOKENS,
   EXPERIENCE_MAX_TOKENS,
@@ -30,8 +32,10 @@ import {
   applySummaryExperienceYears,
 } from '@resume-builder/shared';
 import { cleanText } from './clean-text';
+import { buildMetricHints } from './metric-hints';
 import { buildQuestionsSystemInstructions } from './generate-questions-prompt';
 import { buildSummaryChunkUserPrompt } from './generate-summary-prompt';
+import { normalizeQuestionsText } from './normalize-questions-text';
 import type { UserApiKeys } from './user-api-keys';
 import { OpenRouterService } from '../openrouter/openrouter.service';
 import {
@@ -43,6 +47,10 @@ import {
   parseJdRequirementsResult,
   jdRequirementsJsonSchema,
 } from './schemas/jd-requirements.schema';
+import {
+  jobPostingJsonSchema,
+  parseJobPostingResult,
+} from './schemas/job-posting.schema';
 import { parseSummaryResult, summaryJsonSchema } from './schemas/summary.schema';
 import { parseSkillsResult, buildSkillsJsonSchema, buildSkillsFallback } from './schemas/skills.schema';
 import {
@@ -125,6 +133,53 @@ export class AiService {
     );
 
     return parseJdRequirementsResult(data, jobDescription);
+  }
+
+  async extractJobPostingFromPage(
+    input: {
+      pageText: string;
+      pageTitle?: string;
+      pageUrl?: string;
+      companyGuess?: string;
+      roleGuess?: string;
+    },
+    apiKeys?: UserApiKeys,
+  ) {
+    const fallback = {
+      companyName: (input.companyGuess || '').trim() || 'Unknown company',
+      roleType:
+        (input.roleGuess || input.pageTitle || '').trim() || 'Software Engineer',
+      jobDescription: cleanText(input.pageText),
+    };
+
+    const userPrompt = [
+      input.pageTitle ? `Page title: ${cleanText(input.pageTitle)}` : '',
+      input.pageUrl ? `Page URL: ${cleanText(input.pageUrl)}` : '',
+      input.companyGuess
+        ? `Company hint: ${cleanText(input.companyGuess)}`
+        : '',
+      input.roleGuess ? `Title hint: ${cleanText(input.roleGuess)}` : '',
+      `Page text:\n${cleanText(input.pageText)}`,
+    ]
+      .filter(Boolean)
+      .join('\n');
+
+    try {
+      const systemPrompt = `${DEFAULT_JOB_POSTING_EXTRACT_PROMPT}\n\nSchema:\n${JSON.stringify(jobPostingJsonSchema)}`;
+      const { data } = await this.openRouterService.createJsonCompletion<unknown>(
+        systemPrompt,
+        userPrompt,
+        DEFAULT_JD_EXTRACTION_MODEL,
+        JOB_POSTING_EXTRACT_MAX_TOKENS,
+        apiKeys,
+      );
+      return parseJobPostingResult(data, fallback);
+    } catch (error) {
+      if (fallback.jobDescription.length >= 80) {
+        return fallback;
+      }
+      throw error;
+    }
   }
 
   async generateSummaryChunk(
@@ -371,6 +426,8 @@ export class AiService {
           : jd;
     }
 
+    const metricHints = buildMetricHints();
+
     const userPromptParts = [
       jdAlignment
         ? buildExperienceAlignmentUserBlock({
@@ -412,6 +469,7 @@ export class AiService {
             }
           : {}),
       })}`,
+      `Metric targets for THIS role (use these values in the 1–2 metric bullets, adapting the metric to this product; do not substitute other common numbers like 30–40%. If Extra company context states a real metric, prefer that instead):\n- ${metricHints.join('\n- ')}`,
     ];
 
     const runOnce = async (extraReminder?: string) => {
@@ -439,7 +497,7 @@ export class AiService {
         `Experience for ${company.company} returned ${parsed.achievements.length}/${targetAchievements} usable bullets; retrying once.`,
       );
       parsed = await runOnce(
-        `Return exactly ${targetAchievements} achievement strings. Every item must be a full sentence. Do not use true, false, null, or empty placeholders. Do not include the company name. Do not change the official job title. Keep this company's main product as the bullet content and keep modern skillsets from the candidate skill set. Customize toward the JD. No gap-fill or weak evidence. Include credible numeric improvements in exactly 1-2 bullets; no metrics in the rest. ADD these mandatory skills into that product work with modern skillsets (do not replace bullets with this list): ${assignedJdSkills.join(', ') || 'must-have JD technologies'}.${
+        `Return exactly ${targetAchievements} achievement strings. Every item must be a full sentence. Do not use true, false, null, or empty placeholders. Do not include the company name. Do not change the official job title. Keep this company's main product as the bullet content and keep modern skillsets from the candidate skill set. Customize toward the JD. No gap-fill or weak evidence. Include numeric improvements in exactly 1-2 bullets using the Metric targets for this role; no metrics in the rest. ADD these mandatory skills into that product work with modern skillsets (do not replace bullets with this list): ${assignedJdSkills.join(', ') || 'must-have JD technologies'}.${
           isMostRecent
             ? ' Most recent role: also include the mandatory JD experience realistically on this product.'
             : ''
@@ -522,7 +580,7 @@ export class AiService {
     aiVersion: string = 'anthropic/claude-sonnet-4.6',
     apiKeys?: UserApiKeys,
   ): Promise<Array<{ question: string; answer: string }>> {
-    const cleanedQuestionsText = cleanText(questionsText);
+    const cleanedQuestionsText = normalizeQuestionsText(questionsText);
     const fullInstructions = buildQuestionsSystemInstructions({
       customPrompt,
       jobDescription,

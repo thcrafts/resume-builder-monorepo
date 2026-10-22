@@ -18,7 +18,7 @@ describe('normalizeGeneratedSkills', () => {
     expect(result).toEqual([
       { category: 'Languages', items: ['TypeScript', 'JavaScript'] },
       { category: 'Backend', items: ['Node.js', 'Express'] },
-      { category: 'Database', items: ['PostgreSQL'] },
+      { category: 'Data & Messaging', items: ['PostgreSQL'] },
     ]);
   });
 
@@ -44,7 +44,7 @@ describe('normalizeGeneratedSkills', () => {
           items: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I'],
         },
         { category: 'Frontend', items: ['React'] },
-        { category: 'Mobile', items: ['Flutter'] },
+        { category: 'AI', items: ['LangChain'] },
       ],
       {
         ...DEFAULT_RESUME_SETTINGS,
@@ -58,6 +58,25 @@ describe('normalizeGeneratedSkills', () => {
       { category: 'Frontend', items: ['React'] },
     ]);
   });
+
+  it('maps legacy category names onto the new categories', () => {
+    const result = normalizeGeneratedSkills(
+      [
+        { category: 'AI & Automation', items: ['LangChain'] },
+        { category: 'Databases', items: ['PostgreSQL'] },
+        { category: 'Methodology', items: ['Microservices'] },
+        { category: 'Industry', items: ['Healthcare'] },
+      ],
+      { ...DEFAULT_RESUME_SETTINGS, skillsPerCategoryCount: 0 },
+    );
+
+    expect(result).toEqual([
+      { category: 'AI', items: ['LangChain'] },
+      { category: 'Data & Messaging', items: ['PostgreSQL'] },
+      { category: 'Architecture', items: ['Microservices'] },
+      { category: 'Industries', items: ['Healthcare'] },
+    ]);
+  });
 });
 
 describe('enrichSkillsWithSources', () => {
@@ -69,11 +88,11 @@ describe('enrichSkillsWithSources', () => {
           { category: 'Backend', items: ['Express', 'NestJS'] },
           { category: 'Languages', items: ['TypeScript'] },
         ],
-        roleSkills: ['PostgreSQL', 'Redis'],
+        roleSkills: ['PostgreSQL', 'Kafka'],
       },
       {
         ...DEFAULT_RESUME_SETTINGS,
-        skillCategories: ['Languages', 'Backend', 'Tools'],
+        skillCategories: ['Languages', 'Backend', 'Data & Messaging'],
         skillsPerCategoryCount: 0,
       },
     );
@@ -89,8 +108,8 @@ describe('enrichSkillsWithSources', () => {
           items: ['Node.js', 'Express', 'NestJS'],
         },
         {
-          category: 'Tools',
-          items: expect.arrayContaining(['PostgreSQL', 'Redis']),
+          category: 'Data & Messaging',
+          items: expect.arrayContaining(['PostgreSQL', 'Kafka']),
         },
       ]),
     );

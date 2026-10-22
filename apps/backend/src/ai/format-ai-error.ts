@@ -40,8 +40,12 @@ export function formatAiProviderError(error: unknown): string {
     return 'Invalid or expired API key. Update your OpenRouter API key in Profile settings.';
   }
 
-  if (/429[\s\S]*rate_limit/i.test(raw)) {
+  if (/^429\b/i.test(raw) || /\brate[_ ]?limit\b/i.test(raw)) {
     return 'Rate limit exceeded. Wait a moment and retry.';
+  }
+
+  if (/fetch failed|econnreset|etimedout|socket hang up/i.test(raw)) {
+    return 'Network error talking to OpenRouter. Wait a moment and retry.';
   }
 
   return raw.trim() || 'Failed to generate resume';

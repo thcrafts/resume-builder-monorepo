@@ -1,7 +1,10 @@
 import type {
   ApplicantPayload,
+  ApplyCapture,
   ApplyDefaults,
   FillProgress,
+  PageCapture,
+  QuestionCapture,
   ResumeListItem,
   SessionUser,
 } from './types';
@@ -15,12 +18,17 @@ export type ExtensionMessage =
   | { type: 'SAVE_SETTINGS'; apiBaseUrl: string; defaults: ApplyDefaults; lanBases?: string[] }
   | { type: 'LIST_RESUMES'; lanBases?: string[] }
   | { type: 'GET_PAGE_CONTEXT' }
+  | { type: 'GET_CAPTURE' }
   | { type: 'FILL_ACTIVE_TAB'; resumeId: string }
   | { type: 'TAB_GET_PAGE_CONTEXT' }
+  | { type: 'TAB_CAPTURE_JOB' }
+  | { type: 'TAB_CAPTURE_QUESTIONS' }
+  | { type: 'TAB_SHOW_OVERLAY'; title: string; detail: string }
   | { type: 'TAB_FILL_APPLICATION'; applicant: ApplicantPayload }
   | { type: 'FILL_APPLICATION'; applicant: ApplicantPayload }
   | { type: 'ANSWER_QUESTIONS'; resumeId: string; questions: string[] }
-  | { type: 'FILL_PROGRESS'; progress: FillProgress };
+  | { type: 'FILL_PROGRESS'; progress: FillProgress }
+  | { type: 'CAPTURE_PROGRESS'; message: string; capture?: ApplyCapture };
 
 export type SessionResponse = {
   apiBaseUrl: string;
@@ -28,6 +36,13 @@ export type SessionResponse = {
   user: SessionUser | null;
   defaults: ApplyDefaults;
 };
+
+export type CaptureResponse = {
+  capture: ApplyCapture | null;
+};
+
+export type PageCaptureResponse = PageCapture;
+export type QuestionCaptureResponse = QuestionCapture;
 
 export type ProbeApiResponse = {
   apiBaseUrl: string;

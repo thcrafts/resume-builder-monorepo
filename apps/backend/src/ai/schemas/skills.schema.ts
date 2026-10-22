@@ -1,3 +1,4 @@
+import { categorizeJdSkill, resolveSkillCategory } from '@resume-builder/shared';
 import { coerceToPlainText } from './experience.schema';
 
 export function buildSkillsJsonSchema(options: {
@@ -164,22 +165,22 @@ export function buildSkillsFallback(
     return fromBaseline;
   }
 
-  const toolsIndex = fromBaseline.findIndex(
-    (entry) => entry.category.toLowerCase() === 'tools',
-  );
-  if (toolsIndex >= 0) {
-    const next = [...fromBaseline];
-    next[toolsIndex] = {
-      ...next[toolsIndex],
-      items: [
-        ...new Set([...next[toolsIndex].items, ...uniqueRoleSkills]),
-      ],
-    };
-    return next;
+  const next = fromBaseline.map((entry) => ({
+    category: resolveSkillCategory(entry.category) ?? entry.category,
+    items: [...entry.items],
+  }));
+
+  for (const skill of uniqueRoleSkills) {
+    const category = categorizeJdSkill(skill);
+    const existing = next.find((entry) => entry.category === category);
+    if (existing) {
+      if (!existing.items.includes(skill)) {
+        existing.items.push(skill);
+      }
+    } else {
+      next.push({ category, items: [skill] });
+    }
   }
 
-  return [
-    ...fromBaseline,
-    { category: 'Tools', items: uniqueRoleSkills },
-  ];
+  return next;
 }

@@ -1,4 +1,6 @@
 import { hasFillableForm, getPageContext, runFill } from './orchestrator';
+import { captureQuestions, scrapeJobPage } from './capture';
+import { showOverlay } from './overlay';
 import type { ApplicantPayload } from '../shared/types';
 
 declare global {
@@ -21,6 +23,23 @@ function install(): void {
 
     if (message.type === 'TAB_GET_PAGE_CONTEXT') {
       sendResponse(getPageContext());
+      return;
+    }
+
+    if (message.type === 'TAB_CAPTURE_JOB') {
+      sendResponse(scrapeJobPage());
+      return;
+    }
+
+    if (message.type === 'TAB_CAPTURE_QUESTIONS') {
+      sendResponse(captureQuestions());
+      return;
+    }
+
+    if (message.type === 'TAB_SHOW_OVERLAY') {
+      const payload = message as { title: string; detail: string };
+      showOverlay(payload.title, payload.detail);
+      sendResponse({ ok: true });
       return;
     }
 

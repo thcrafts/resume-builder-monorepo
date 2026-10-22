@@ -2,6 +2,7 @@ import {
   DEFAULT_API_BASE_URL,
   DEFAULT_APPLY_DEFAULTS,
   isViteDevProxyUrl,
+  type ApplyCapture,
   type ApplyDefaults,
   type SessionUser,
 } from '../shared/types';
@@ -11,6 +12,7 @@ const KEYS = {
   token: 'access_token',
   user: 'user',
   defaults: 'applyDefaults',
+  capture: 'applyCapture',
 } as const;
 
 export function sanitizeApiBaseUrl(url: string): string {
@@ -73,4 +75,19 @@ export async function saveSettings(input: {
 
 export async function clearSession(): Promise<void> {
   await chrome.storage.local.remove([KEYS.token, KEYS.user]);
+}
+
+export async function getCapture(): Promise<ApplyCapture | null> {
+  const stored = await chrome.storage.local.get(KEYS.capture);
+  return (stored[KEYS.capture] as ApplyCapture) || null;
+}
+
+export async function saveCapture(capture: ApplyCapture): Promise<void> {
+  await chrome.storage.local.set({
+    [KEYS.capture]: { ...capture, updatedAt: Date.now() },
+  });
+}
+
+export async function clearCapture(): Promise<void> {
+  await chrome.storage.local.remove(KEYS.capture);
 }

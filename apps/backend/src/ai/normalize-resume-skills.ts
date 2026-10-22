@@ -4,34 +4,11 @@ import {
   mergeJdSkillsIntoCoreTechnologies,
   isSkillCovered,
   categorizeJdSkill,
+  resolveSkillCategory,
   MIN_SKILLS_PER_CATEGORY,
   type ResumeSettings,
   type SkillCategory,
 } from '@resume-builder/shared';
-
-const SKILL_CATEGORY_ALIASES: Record<SkillCategory, readonly string[]> = {
-  Languages: ['Languages'],
-  Backend: ['Backend'],
-  Frontend: ['Frontend'],
-  'AI & Automation': ['AI & Automation'],
-  'Cloud & DevOps': ['Cloud & DevOps'],
-  Database: ['Database', 'Databases'],
-  Tools: ['Tools'],
-  Testing: ['Testing'],
-  Industry: ['Industry', 'Industries'],
-  Methodology: ['Methodology', 'Methodologies'],
-  Mobile: ['Mobile'],
-};
-
-function resolveSkillCategory(category: string): SkillCategory | null {
-  for (const canonicalCategory of SKILL_CATEGORIES) {
-    if (SKILL_CATEGORY_ALIASES[canonicalCategory].includes(category)) {
-      return canonicalCategory;
-    }
-  }
-
-  return null;
-}
 
 function dedupeItems(items: string[]): string[] {
   const seen = new Set<string>();
@@ -98,14 +75,13 @@ export function enrichSkillsWithSources(
 
   const roleSkills = (sources.roleSkills ?? []).map((s) => s.trim()).filter(Boolean);
   if (roleSkills.length > 0) {
-    const toolsEnabled = enabled.has('Tools');
-    const fallbackCategory: SkillCategory | null = toolsEnabled
-      ? 'Tools'
-      : [...enabled][0] ?? null;
-
-    // Prefer putting unmatched role skills into an existing category that already
-    // has overlapping tokens; otherwise append to Tools (or first enabled).
+    // Prefer an existing category with overlapping tokens; otherwise use the
+    // skill's inferred category (or the first enabled one).
     for (const roleSkill of roleSkills) {
+      const inferred = categorizeJdSkill(roleSkill);
+      const fallbackCategory: SkillCategory | null = enabled.has(inferred)
+        ? inferred
+        : [...enabled][0] ?? null;
       let placed = false;
       const roleKey = roleSkill.toLowerCase();
 

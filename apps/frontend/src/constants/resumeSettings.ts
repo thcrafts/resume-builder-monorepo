@@ -17,6 +17,8 @@ export {
 
   normalizeSkillCategories,
 
+  resolveSkillCategory,
+
   resolveResumeSettings,
 
   resumeSettingsEqual,

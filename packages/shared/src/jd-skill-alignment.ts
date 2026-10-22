@@ -1,6 +1,7 @@
 import type { JdAlignmentRequirements } from './jd-alignment';
 import {
   SKILL_CATEGORIES,
+  resolveSkillCategory,
   type SkillCategory,
 } from './resume-settings';
 import {
@@ -56,6 +57,8 @@ const KEY_MODERN_CATEGORY_HINTS = [
   'cloud',
   'devops',
   'database',
+  'data',
+  'messaging',
   'ai',
   'automation',
   'mobile',
@@ -64,7 +67,7 @@ const KEY_MODERN_CATEGORY_HINTS = [
   'testing',
 ] as const;
 
-const SKIP_BASELINE_CATEGORY_HINTS = ['industry', 'methodolog'];
+const SKIP_BASELINE_CATEGORY_HINTS = ['industr', 'methodolog', 'architecture'];
 
 function keyModernCategoryPriority(label: string): number {
   const lower = label.toLowerCase();
@@ -355,8 +358,42 @@ const BACKEND_TERMS = [
   '.net',
   'graphql',
   'rest',
+];
+
+const ARCHITECTURE_TERMS = [
   'microservices',
-  'kafka',
+  'event-driven',
+  'event driven',
+  'domain-driven',
+  'ddd',
+  'system design',
+  'distributed systems',
+  'serverless architecture',
+  'design patterns',
+  'clean architecture',
+  'cqrs',
+  'event sourcing',
+  'api design',
+  'agile',
+  'scrum',
+  'kanban',
+];
+
+const INDUSTRY_TERMS = [
+  'healthcare',
+  'fintech',
+  'banking',
+  'insurance',
+  'e-commerce',
+  'ecommerce',
+  'retail',
+  'saas',
+  'logistics',
+  'telecom',
+  'edtech',
+  'govtech',
+  'media',
+  'gaming',
 ];
 
 const CLOUD_TERMS = [
@@ -383,6 +420,16 @@ const DATABASE_TERMS = [
   'cassandra',
   'sqlite',
   'oracle',
+  'snowflake',
+  'bigquery',
+  'kafka',
+  'rabbitmq',
+  'sqs',
+  'sns',
+  'kinesis',
+  'pub/sub',
+  'airflow',
+  'spark',
 ];
 
 const AI_TERMS = [
@@ -398,8 +445,6 @@ const AI_TERMS = [
 ];
 
 const TESTING_TERMS = ['jest', 'cypress', 'playwright', 'selenium', 'pytest', 'junit'];
-
-const METHODOLOGY_TERMS = ['agile', 'scrum', 'kanban'];
 
 function matchesTerm(skill: string, terms: string[]): boolean {
   const lower = skill.toLowerCase();
@@ -417,26 +462,29 @@ export function categorizeJdSkill(skill: string): SkillCategory {
   if (matchesTerm(skill, FRONTEND_TERMS)) {
     return 'Frontend';
   }
+  if (matchesTerm(skill, ARCHITECTURE_TERMS)) {
+    return 'Architecture';
+  }
+  if (matchesTerm(skill, DATABASE_TERMS)) {
+    return 'Data & Messaging';
+  }
   if (matchesTerm(skill, BACKEND_TERMS)) {
     return 'Backend';
   }
   if (matchesTerm(skill, CLOUD_TERMS)) {
     return 'Cloud & DevOps';
   }
-  if (matchesTerm(skill, DATABASE_TERMS)) {
-    return 'Database';
-  }
   if (matchesTerm(skill, AI_TERMS)) {
-    return 'AI & Automation';
+    return 'AI';
   }
   if (matchesTerm(skill, TESTING_TERMS)) {
     return 'Testing';
   }
-  if (matchesTerm(skill, METHODOLOGY_TERMS)) {
-    return 'Methodology';
+  if (matchesTerm(skill, INDUSTRY_TERMS)) {
+    return 'Industries';
   }
 
-  return 'Tools';
+  return 'Cloud & DevOps';
 }
 
 export function mergeJdSkillsIntoCoreTechnologies(
@@ -452,7 +500,14 @@ export function mergeJdSkillsIntoCoreTechnologies(
   const byCategory = new Map<string, string[]>();
 
   for (const entry of skills) {
-    byCategory.set(entry.category, dedupeSkillsCaseInsensitive(entry.items ?? []));
+    const category = resolveSkillCategory(entry.category) ?? entry.category;
+    byCategory.set(
+      category,
+      dedupeSkillsCaseInsensitive([
+        ...(byCategory.get(category) ?? []),
+        ...(entry.items ?? []),
+      ]),
+    );
   }
 
   for (const jdSkill of jdSkills) {
@@ -461,33 +516,16 @@ export function mergeJdSkillsIntoCoreTechnologies(
       continue;
     }
 
-    const label =
-      category === 'Database'
-        ? 'Databases'
-        : category === 'Industry'
-          ? 'Industries'
-          : category === 'Methodology'
-            ? 'Methodologies'
-            : category;
-
-    const existing = byCategory.get(label) ?? [];
+    const existing = byCategory.get(category) ?? [];
     if (!isSkillCovered(jdSkill, existing)) {
-      byCategory.set(label, dedupeSkillsCaseInsensitive([...existing, jdSkill]));
+      byCategory.set(category, dedupeSkillsCaseInsensitive([...existing, jdSkill]));
     }
   }
 
   return SKILL_CATEGORIES.filter((category) => enabled.has(category))
-    .map((category) => {
-      const label =
-        category === 'Database'
-          ? 'Databases'
-          : category === 'Industry'
-            ? 'Industries'
-            : category === 'Methodology'
-              ? 'Methodologies'
-              : category;
-      const items = byCategory.get(label) ?? byCategory.get(category) ?? [];
-      return items.length > 0 ? { category: label, items } : null;
+    .map((category): { category: string; items: string[] } | null => {
+      const items = byCategory.get(category) ?? [];
+      return items.length > 0 ? { category, items } : null;
     })
     .filter(
       (entry): entry is { category: string; items: string[] } => entry !== null,

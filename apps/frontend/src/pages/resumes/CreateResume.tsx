@@ -29,7 +29,7 @@ import { Input } from "../../components/ui/input";
 import { Textarea } from "../../components/ui/textarea";
 import { Label } from "../../components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
-import { Alert, Checkbox } from "../../components/ui/misc";
+import { Alert, Checkbox, GeneratingSpinner } from "../../components/ui/misc";
 
 const aiGenerateSchema = yup
   .object({
@@ -393,7 +393,14 @@ const CreateResume: React.FC = () => {
               }}
             />
             <Button type="submit" disabled={isSubmitting} className="w-full">
-              {isSubmitting ? "Generating…" : "Generate from JSON"}
+              {isSubmitting ? (
+                <span className="inline-flex items-center gap-2">
+                  <GeneratingSpinner className="h-5 w-5" />
+                  Generating…
+                </span>
+              ) : (
+                "Generate from JSON"
+              )}
             </Button>
           </form>
         ) : (
@@ -412,14 +419,21 @@ const CreateResume: React.FC = () => {
             </div>
             <p className="text-xs text-muted-foreground">
               Uses chunked generation (title → JD requirements → summary → skills → experience).
-              Multiple jobs can run at the same time — progress appears on the Resumes page.
+              You can start up to 8 tailored resumes at once — progress and a spinner appear on the Resumes page.
             </p>
             <Button
               type="submit"
               disabled={isAiGenerateDisabled}
               className="w-full"
             >
-              {isSubmitting ? "Starting…" : "Generate resume"}
+              {isSubmitting ? (
+                <span className="inline-flex items-center gap-2">
+                  <GeneratingSpinner className="h-5 w-5" />
+                  Starting…
+                </span>
+              ) : (
+                "Generate resume"
+              )}
             </Button>
           </form>
         )}

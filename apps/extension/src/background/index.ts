@@ -1,39 +1,23 @@
 import type { ExtensionMessage } from '../shared/messages';
-import type { FillProgress, PageContext } from '../shared/types';
+import type { PageContext } from '../shared/types';
+import { answerQuestions, listResumes, login, probeNestApi } from './api';
+import { runCommand } from './commands';
 import {
-  answerQuestions,
-  downloadResumePdf,
-  getProfile,
-  getResume,
-  listResumes,
-  login,
-  probeNestApi,
-  tryDownloadCoverLetterPdf,
-} from './api';
+  fillActiveTab,
+  injectContentScript,
+  persistNestBase,
+  sendToFrames,
+} from './runtime';
 import {
   clearSession,
   getApiBaseUrl,
+  getCapture,
   getDefaults,
   getToken,
   getUser,
   saveSession,
   saveSettings,
 } from './storage';
-
-async function persistNestBase(
-  preferred?: string,
-  lanBases: string[] = [],
-): Promise<string> {
-  const apiBaseUrl = await probeNestApi(
-    preferred ?? (await getApiBaseUrl()),
-    lanBases,
-  );
-  await saveSettings({
-    apiBaseUrl,
-    defaults: await getDefaults(),
-  });
-  return apiBaseUrl;
-}
 
 async function ensureOriginPermission(apiBaseUrl: string): Promise<void> {
   let origin: string;
@@ -56,42 +40,6 @@ async function activeTab(): Promise<chrome.tabs.Tab> {
   return tab;
 }
 
-async function injectContentScript(tabId: number): Promise<void> {
-  const file = chrome.runtime.getManifest().content_scripts?.[0]?.js?.[0];
-  if (!file) return;
-  try {
-    await chrome.scripting.executeScript({
-      target: { tabId, allFrames: true },
-      files: [file],
-    });
-  } catch (error) {
-    const text = error instanceof Error ? error.message : String(error);
-    if (!/Cannot access|The extensions gallery/i.test(text)) {
-      console.warn('inject failed', text);
-    }
-  }
-}
-
-async function sendToFrames<T>(
-  tabId: number,
-  message: ExtensionMessage,
-): Promise<T[]> {
-  const frames = await chrome.webNavigation.getAllFrames({ tabId });
-  const ids = frames?.map((f) => f.frameId) ?? [0];
-  const results: T[] = [];
-  for (const frameId of ids) {
-    try {
-      const response = (await chrome.tabs.sendMessage(tabId, message, {
-        frameId,
-      })) as T;
-      if (response !== undefined) results.push(response);
-    } catch {
-      /* frame without listener */
-    }
-  }
-  return results;
-}
-
 chrome.runtime.onMessage.addListener((message: ExtensionMessage, sender, sendResponse) => {
   void handle(message, sender)
     .then(sendResponse)
@@ -100,6 +48,12 @@ chrome.runtime.onMessage.addListener((message: ExtensionMessage, sender, sendRes
       sendResponse({ error: text });
     });
   return true;
+});
+
+chrome.commands.onCommand.addListener((command) => {
+  void runCommand(command).catch((error: unknown) => {
+    console.warn('Hotkey failed', error);
+  });
 });
 
 async function handle(
@@ -117,6 +71,9 @@ async function handle(
         user: await getUser(),
         defaults: await getDefaults(),
       };
+    }
+    case 'GET_CAPTURE': {
+      return { capture: await getCapture() };
     }
     case 'PROBE_API': {
       const apiBaseUrl = await persistNestBase(
@@ -205,48 +162,19 @@ async function handle(
       }));
       return { pairs };
     }
-    case 'FILL_PROGRESS': {
+    case 'FILL_PROGRESS':
+    case 'CAPTURE_PROGRESS': {
       return { ok: true };
     }
     case 'FILL_ACTIVE_TAB': {
       await persistNestBase();
-      const tab = await activeTab();
-      if (!tab.id) throw new Error('No active tab');
-      await injectContentScript(tab.id);
-
-      const [profile, resume, resumeBase64, defaults] = await Promise.all([
-        getProfile(),
-        getResume(message.resumeId),
-        downloadResumePdf(message.resumeId),
-        getDefaults(),
-      ]);
-      const cover = await tryDownloadCoverLetterPdf(message.resumeId);
-      const { buildApplicant } = await import('../shared/applicant');
-      const applicant = buildApplicant({
-        profile,
-        resume,
-        resumeBase64,
-        coverLetterBase64: cover?.base64,
-        coverLetterFileName: cover?.filename,
-        defaults,
-      });
-
-      const responses = await sendToFrames<{
-        ok?: boolean;
-        skipped?: boolean;
-        progress?: FillProgress;
-        error?: string;
-      }>(tab.id, { type: 'TAB_FILL_APPLICATION', applicant });
-
-      const used = responses.find((r) => r && r.ok && !r.skipped);
-      if (used?.error) throw new Error(used.error);
-      if (!used) {
-        throw new Error('No application form found on this page');
-      }
-      return { ok: true, ats: used.progress?.ats, progress: used.progress };
+      return fillActiveTab(message.resumeId);
     }
     case 'FILL_APPLICATION':
     case 'TAB_GET_PAGE_CONTEXT':
+    case 'TAB_CAPTURE_JOB':
+    case 'TAB_CAPTURE_QUESTIONS':
+    case 'TAB_SHOW_OVERLAY':
     case 'TAB_FILL_APPLICATION': {
       return { ok: true };
     }

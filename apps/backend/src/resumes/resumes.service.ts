@@ -82,6 +82,20 @@ export class ResumesService {
     }
   }
 
+  async extractJobPostingFromPage(
+    userId: string,
+    input: {
+      pageText: string;
+      pageTitle?: string;
+      pageUrl?: string;
+      companyGuess?: string;
+      roleGuess?: string;
+    },
+  ) {
+    const apiKeys = await this.usersService.getApiKeysForUser(userId);
+    return this.aiService.extractJobPostingFromPage(input, apiKeys);
+  }
+
   async markResumeFailed(
     resumeId: string,
     userId: string,

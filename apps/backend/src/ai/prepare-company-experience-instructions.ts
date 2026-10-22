@@ -59,7 +59,7 @@ export function prepareCompanyExperienceInstructions(options: {
 ${JSON.stringify(experienceJsonSchema, null, 2)}
 - achievements must contain exactly ${achievementsCount} full resume bullet sentences as plain strings (not objects).
 - Do NOT return a skills field — skills are generated from these bullets in a later step.
-- Example (with metric — required in 1–2 bullets): "Cut p95 API latency 40% by redesigning the caching layer on the clinical data platform."
+- Example (with metric — required in 1–2 bullets): "Cut p95 API latency by <metric target> by redesigning the caching layer on the clinical data platform." (always use the Metric targets given for this role, never a number from this example)
 - Example (no metric — use for the remaining bullets): "Led checkout rewrite for the payments platform, improving reliability under peak traffic."
 - Do NOT return objects like {"text":"..."} — each achievements array item must be a string.
 - NEVER pad the achievements array with true, false, null, numbers, or empty strings — every slot must be a real sentence.
@@ -70,7 +70,7 @@ ${JSON.stringify(experienceJsonSchema, null, 2)}
 - ADD assigned mandatory JD skill names into that existing-work story, together with modern skillsets. No gap-fill, no implied stacks, no weak evidence.
 - Most recent role: include the mandatory JD skills and the mandatory JD experience on the main product, added realistically with modern skillsets. Older roles: weaker match with fewer assigned skills.
 - Each achievement is one sentence: strong action + this company's work + modern/key and added mandatory skill + impact.
-- Numerical improvements (%, ms, $, users, x, weeks) REQUIRED in exactly 1–2 bullets total. The remaining bullets must have no numeric improvement metrics.
+- Numerical improvements (%, ms, $, users, x, weeks) REQUIRED in exactly 1–2 bullets total, using the Metric targets for this role so numbers differ across roles and resumes. The remaining bullets must have no numeric improvement metrics.
 - When Target Role Alignment lists mandatory JD skills or experience for this role, add those into bullets about this employer's main product. Older roles receive fewer skills to add and must stay historically plausible.
 - Do not include a responsibilities field.
 - Do not invent employers, dates, or unsupported technologies.`);

@@ -16,9 +16,23 @@ const atsMatches = [
 export default defineManifest({
   manifest_version: 3,
   name: 'Resume Builder Apply',
-  version: '1.0.1',
+  version: '1.1.0',
   description:
     'Fill ATS job applications from your Resume Builder profile and tailored resume. Stops before submit.',
+  commands: {
+    'capture-job': {
+      suggested_key: { default: 'Alt+Shift+1' },
+      description: 'Capture job title, company, and description',
+    },
+    'capture-questions': {
+      suggested_key: { default: 'Alt+Shift+2' },
+      description: 'Capture application questions and generate answers',
+    },
+    'fill-application': {
+      suggested_key: { default: 'Alt+Shift+3' },
+      description: 'Fill the application with captured data (does not submit)',
+    },
+  },
   action: {
     default_title: 'Resume Builder Apply',
     default_popup: 'index.html',
@@ -40,7 +54,6 @@ export default defineManifest({
     'http://*/*',
     ...atsMatches,
   ],
-  // @ts-expect-error CRXJS ManifestV3Export omits this valid MV3 key
   optional_host_permissions: ['http://*/*', 'https://*/*'],
   content_scripts: [
     {

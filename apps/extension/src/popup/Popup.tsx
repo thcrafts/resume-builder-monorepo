@@ -11,6 +11,7 @@ import { pickResumeByPage } from '../shared/fuzzy';
 import {
   DEFAULT_API_BASE_URL,
   DEFAULT_APPLY_DEFAULTS,
+  type ApplyCapture,
   type ApplyDefaults,
   type FillProgress,
   type PageContext,
@@ -80,9 +81,13 @@ export function Popup() {
   const [resumes, setResumes] = useState<ResumeListItem[]>([]);
   const [resumeId, setResumeId] = useState('');
   const [page, setPage] = useState<PageContext | null>(null);
+  const [capture, setCapture] = useState<ApplyCapture | null>(null);
+  const [shortcuts, setShortcuts] = useState<chrome.commands.Command[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const [log, setLog] = useState('Load a job apply page, pick a resume, then fill.');
+  const [log, setLog] = useState(
+    'Sign in once. Then use hotkeys on the job page — no web app needed.',
+  );
 
   const load = useCallback(async () => {
     try {
@@ -122,6 +127,11 @@ export function Popup() {
         if (listed?.error) throw new Error(listed.error);
         const items = listed.resumes || [];
         setResumes(items);
+        const captured = await send<{ capture?: ApplyCapture | null }>(
+          { type: 'GET_CAPTURE' },
+          4000,
+        );
+        if (captured?.capture) setCapture(captured.capture);
         try {
           const context = await send<PageContext & { error?: string }>(
             { type: 'GET_PAGE_CONTEXT' },
@@ -129,19 +139,22 @@ export function Popup() {
           );
           if (context && !context.error) {
             setPage(context);
-            if (items.length) {
-              const index = pickResumeByPage(
-                items,
-                context.companyGuess,
-                context.roleGuess,
-              );
-              setResumeId(items[index]._id);
-            }
+          }
+          if (captured?.capture?.resumeId) {
+            setResumeId(captured.capture.resumeId);
+          } else if (context && !context.error && items.length) {
+            const index = pickResumeByPage(
+              items,
+              context.companyGuess,
+              context.roleGuess,
+            );
+            setResumeId(items[index]._id);
           } else if (items[0]) {
             setResumeId(items[0]._id);
           }
         } catch {
-          if (items[0]) setResumeId(items[0]._id);
+          if (captured?.capture?.resumeId) setResumeId(captured.capture.resumeId);
+          else if (items[0]) setResumeId(items[0]._id);
         }
       } catch (error) {
         setError(sendError(error));
@@ -159,12 +172,25 @@ export function Popup() {
 
   useEffect(() => {
     void load();
-    const listener = (message: { type?: string; progress?: FillProgress }) => {
+    void chrome.commands.getAll().then(setShortcuts).catch(() => undefined);
+    const listener = (message: {
+      type?: string;
+      progress?: FillProgress;
+      message?: string;
+      capture?: ApplyCapture;
+    }) => {
       if (message.type === 'FILL_PROGRESS' && message.progress) {
         const p = message.progress;
         setLog(
           `${p.message}${p.done ? `\nFilled ${p.filled}, skipped ${p.skipped}.` : ''}`,
         );
+      }
+      if (message.type === 'CAPTURE_PROGRESS') {
+        if (message.capture) {
+          setCapture(message.capture);
+          if (message.capture.resumeId) setResumeId(message.capture.resumeId);
+        }
+        if (message.message) setLog(message.message);
       }
     };
     chrome.runtime.onMessage.addListener(listener);
@@ -175,6 +201,9 @@ export function Popup() {
     () => resumes.find((r) => r._id === resumeId),
     [resumes, resumeId],
   );
+
+  const hotkey = (name: string, fallback: string) =>
+    shortcuts.find((command) => command.name === name)?.shortcut || fallback;
 
   async function onLogin(e: FormEvent) {
     e.preventDefault();
@@ -333,6 +362,43 @@ export function Popup() {
           submits
         </p>
       </div>
+
+      <div className="card status">
+        <strong>Hotkeys — skip the web app after sign-in</strong>
+        <div>
+          <kbd>{hotkey('capture-job', 'Alt+Shift+1')}</kbd> Job page: capture
+          company, title, description and generate a tailored resume
+        </div>
+        <div>
+          <kbd>{hotkey('capture-questions', 'Alt+Shift+2')}</kbd> Application
+          page: capture questions and generate answers
+        </div>
+        <div>
+          <kbd>{hotkey('fill-application', 'Alt+Shift+3')}</kbd> Fill this form
+          (does not submit)
+        </div>
+        <div className="rb-hint">Remap in chrome://extensions/shortcuts</div>
+      </div>
+
+      {capture?.companyName || capture?.roleType ? (
+        <div className="banner">
+          <div>
+            Capture: <strong>{capture.status}</strong>
+          </div>
+          <div>
+            {capture.companyName}
+            {capture.roleType ? ` — ${capture.roleType}` : ''}
+          </div>
+          {capture.answers.length ? (
+            <div>{capture.answers.length} answers ready</div>
+          ) : capture.questions.length ? (
+            <div>{capture.questions.length} questions captured</div>
+          ) : null}
+          {capture.failureMessage ? (
+            <div className="error">{capture.failureMessage}</div>
+          ) : null}
+        </div>
+      ) : null}
 
       {page ? (
         <div className="banner">

@@ -13,7 +13,7 @@ function ensureStyle(): void {
       top: 12px;
       right: 12px;
       z-index: 2147483646;
-      max-width: 320px;
+      max-width: 360px;
       background: #111827;
       color: #f9fafb;
       border: 1px solid #374151;
@@ -23,12 +23,20 @@ function ensureStyle(): void {
       box-shadow: 0 10px 30px rgba(0,0,0,.35);
     }
     #${ROOT_ID} strong { display: block; margin-bottom: 4px; }
-    #${ROOT_ID} .rb-muted { color: #9ca3af; font-size: 12px; }
+    #${ROOT_ID} .rb-muted { color: #9ca3af; font-size: 12px; white-space: pre-wrap; }
     .rb-mark-filled { outline: 2px solid #10b981 !important; outline-offset: 2px; }
     .rb-mark-guessed { outline: 2px solid #f59e0b !important; outline-offset: 2px; }
     .rb-mark-skipped { outline: 2px solid #ef4444 !important; outline-offset: 2px; }
   `;
   document.documentElement.appendChild(style);
+}
+
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }
 
 export function showOverlay(title: string, detail: string): void {
@@ -39,7 +47,7 @@ export function showOverlay(title: string, detail: string): void {
     root.id = ROOT_ID;
     document.documentElement.appendChild(root);
   }
-  root.innerHTML = `<strong>${title}</strong><div class="rb-muted">${detail}</div>`;
+  root.innerHTML = `<strong>${escapeHtml(title)}</strong><div class="rb-muted">${escapeHtml(detail)}</div>`;
 }
 
 export function hideOverlaySoon(): void {

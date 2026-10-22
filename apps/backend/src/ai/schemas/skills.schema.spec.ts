@@ -63,7 +63,7 @@ describe('buildSkillsFallback', () => {
       ),
     ).toEqual([
       { category: 'Languages', items: ['TypeScript'] },
-      { category: 'Tools', items: ['AWS', 'Docker'] },
+      { category: 'Cloud & DevOps', items: ['AWS', 'Docker'] },
     ]);
   });
 });

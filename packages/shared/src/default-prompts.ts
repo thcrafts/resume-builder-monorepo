@@ -14,7 +14,8 @@ Keep each answer to 1–2 sentences. Never more than 3.
 Be specific and positive. Use facts from my resume and the job description.
 Never write an email, cover letter, subject line, or greeting.
 Never use First/Second/Third, bullet lists, or buzzword stuffing.
-Extract every question from the user text and answer each one.`;
+Extract every question from the user text and answer each one.
+Questions are often one per line (Enter-separated) and may not end with "?". Treat each non-empty line or numbered item as its own question.`;
 
 /** Always appended after the default or custom questions prompt. */
 export const QUESTIONS_VOICE_OVERLAY = `VOICE (MANDATORY — applies even with a custom prompt)
@@ -22,7 +23,8 @@ export const QUESTIONS_VOICE_OVERLAY = `VOICE (MANDATORY — applies even with a
 - Natural American English. Short spoken answers, not essays.
 - 1–2 sentences per answer. Hard cap: 3.
 - No First/Second/Third. No bullets. No cover letter or email.
-- Stay specific and truthful to the resume and job description.`;
+- Stay specific and truthful to the resume and job description.
+- One answer per question. Line breaks or numbering split questions; a trailing "?" is optional.`;
 
 export const CUSTOM_PROMPT_HELPER_TEXT =
   'Leave blank to use the default prompt shown as placeholder.';
@@ -54,7 +56,7 @@ HOW TO WRITE BULLETS
 - Each bullet should focus on a distinct accomplishment — not a comma-separated skill dump.
 - Prefer: strong action + what was built/improved on this product + modern/key stack + added mandatory skill where it fits + impact.
 - Numerical improvements (%, ms, $, users, x, weeks) are REQUIRED in exactly 1–2 bullets total. All other bullets must have NO numeric improvement metrics.
-- When company context provides verified metrics, use them. When none exist, use credible, realistic industry-typical metrics.
+- When company context provides verified metrics, use them. When none exist, use the Metric targets provided for the role (they vary per role and resume); do not default to the same common values like 30–40%.
 - Return JSON only matching the provided schema.`;
 
 export const DEFAULT_EXPERIENCE_SKILLS_PROMPT = `You generate company experience skill lists for an ATS-friendly resume.
@@ -113,6 +115,8 @@ RULES
 - Skip categories with no supported skills. Do not invent filler skills to reach a count.
 - Prefer specific technologies, frameworks, platforms, tools, and methodologies over vague soft skills
 - De-duplicate across categories; place each skill in the most specific applicable category
+- Category guide: Languages (TypeScript, Python, Go, SQL); Backend (Node.js, NestJS, Spring Boot, REST, GraphQL); Frontend (React, Next.js, Tailwind, React Native); AI (LLMs, OpenAI API, LangChain, RAG, PyTorch, AI automation); Cloud & DevOps (AWS, Docker, Kubernetes, Terraform, CI/CD, Git); Data & Messaging (PostgreSQL, MongoDB, Redis, Elasticsearch, Kafka, RabbitMQ, SQS, Snowflake); Testing (Jest, Cypress, Playwright); Architecture (Microservices, Event-Driven, System Design, DDD, Agile); Industries (Healthcare, Fintech, E-commerce)
+- Use ONLY the enabled category names exactly as given (e.g. "Data & Messaging", not "Database"; "AI", not "AI & Automation")
 - Keep items concise (1–4 words each) and ATS-friendly
 - Return JSON only matching the provided schema: { "skills": [{ "category": "Backend", "items": ["Node.js", "Express"] }] }
 - category and each items entry must be plain strings (not objects)`;
@@ -143,3 +147,13 @@ Rules:
 - Skills must be concrete named technologies (TypeScript, React, PostgreSQL, AWS) — not themes, duties, or soft skills.
 - Be specific and concise (1–8 words per item).
 - Return JSON only matching the provided schema.`;
+
+export const DEFAULT_JOB_POSTING_EXTRACT_PROMPT = `You extract one job posting from messy webpage text. Nav, cookies, related jobs, and application-form chrome may be mixed in.
+
+Return JSON only:
+- companyName: hiring company only (not a job board like Greenhouse or LinkedIn)
+- roleType: the job title only
+- jobDescription: the posting itself in clean prose. Include responsibilities and requirements. Exclude cookie banners, related jobs, apply-button chrome, and screening questions.
+
+If hints look correct, keep them. If the page is an application form with little description, still return the best company and title and put any visible role summary in jobDescription.
+Do not invent a company or title that is not supported by the page or hints.`;

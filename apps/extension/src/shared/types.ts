@@ -161,6 +161,8 @@ export interface ProfileResponse {
     context?: string;
     sortOrder?: number;
   }>;
+  defaultAiModel?: string;
+  defaultAiVersion?: string;
 }
 
 export interface ResumeListItem {
@@ -169,6 +171,7 @@ export interface ResumeListItem {
   roleType: string;
   jobDescription?: string;
   status?: string;
+  failureMessage?: string;
   coverLetter?: string;
   answers?: QaPair[];
   resumeJson?: Record<string, unknown>;
@@ -199,4 +202,41 @@ export interface PageContext {
   companyGuess: string;
   roleGuess: string;
   isApplyPage: boolean;
+}
+
+export interface PageCapture {
+  pageText: string;
+  pageTitle: string;
+  pageUrl: string;
+  companyGuess: string;
+  roleGuess: string;
+  hasForm: boolean;
+}
+
+export interface QuestionCapture {
+  questions: string[];
+  pageText: string;
+  hasForm: boolean;
+}
+
+export type CaptureStatus =
+  | 'idle'
+  | 'extracting'
+  | 'generating'
+  | 'ready'
+  | 'answering'
+  | 'answered'
+  | 'failed';
+
+export interface ApplyCapture {
+  sourceUrl: string;
+  companyName: string;
+  roleType: string;
+  jobDescription: string;
+  resumeId: string | null;
+  status: CaptureStatus;
+  questions: string[];
+  answers: QaPair[];
+  failureMessage?: string;
+  updatedAt: number;
 }

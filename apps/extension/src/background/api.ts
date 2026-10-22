@@ -168,3 +168,82 @@ export async function answerQuestions(
   if (!res.ok) throw new Error(await readError(res));
   return res.json() as Promise<{ questions: string[]; answers: string[] }>;
 }
+
+export async function extractJobPosting(input: {
+  pageText: string;
+  pageTitle?: string;
+  pageUrl?: string;
+  companyGuess?: string;
+  roleGuess?: string;
+}): Promise<{
+  companyName: string;
+  roleType: string;
+  jobDescription: string;
+}> {
+  const res = await fetch(await apiUrl('/api/resumes/extract-job-posting'), {
+    method: 'POST',
+    headers: await authHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) throw new Error(await readError(res));
+  return res.json() as Promise<{
+    companyName: string;
+    roleType: string;
+    jobDescription: string;
+  }>;
+}
+
+export async function startResumeGeneration(input: {
+  companyName: string;
+  roleType: string;
+  jobDescription: string;
+  aiModel?: string;
+  aiVersion?: string;
+}): Promise<string> {
+  const res = await fetch(await apiUrl('/api/resumes/generate'), {
+    method: 'POST',
+    headers: await authHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) throw new Error(await readError(res));
+  const text = await res.text();
+  for (const line of text.split('\n')) {
+    if (!line.startsWith('data: ')) continue;
+    let event: { type?: string; message?: string; resumeId?: string };
+    try {
+      event = JSON.parse(line.slice(6)) as {
+        type?: string;
+        message?: string;
+        resumeId?: string;
+      };
+    } catch {
+      continue;
+    }
+    if (event.type === 'error') {
+      throw new Error(event.message || 'Resume generation failed');
+    }
+    if (event.type === 'started' && event.resumeId) {
+      return event.resumeId;
+    }
+  }
+  throw new Error('Did not receive a resume id from generate');
+}
+
+export async function waitForResume(
+  resumeId: string,
+  timeoutMs = 240000,
+): Promise<ResumeListItem> {
+  const deadline = Date.now() + timeoutMs;
+  let last: ResumeListItem | null = null;
+  while (Date.now() < deadline) {
+    last = await getResume(resumeId);
+    if (last.status === 'completed') return last;
+    if (last.status === 'failed') {
+      throw new Error(last.failureMessage || 'Resume generation failed');
+    }
+    await new Promise((resolve) => setTimeout(resolve, 2500));
+  }
+  throw new Error(
+    'Resume is still generating. Wait, then press the questions hotkey.',
+  );
+}

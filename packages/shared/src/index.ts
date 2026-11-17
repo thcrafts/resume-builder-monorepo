@@ -1,5 +1,6 @@
 export * from './jd-alignment';
 export * from './jd-skill-alignment';
+export * from './job-title-family';
 export * from './tech-stack-skills';
 export * from './resume-settings';
 export * from './default-prompts';

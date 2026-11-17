@@ -159,6 +159,41 @@ describe('planJdTechStackPerCompany', () => {
     expect(plan.get('mid')?.length).toBeLessThan(6);
     expect(plan.get('old')?.length).toBeLessThan(plan.get('mid')?.length ?? 0);
   });
+
+  it('skips companies whose titles are dissimilar to the JD role', () => {
+    const plan = planJdTechStackPerCompany(
+      [
+        { id: 'ux', title: 'UX Designer' },
+        { id: 'swe', title: 'Software Engineer' },
+        { id: 'fe', title: 'Frontend Engineer' },
+      ],
+      ['TypeScript', 'React', 'AWS', 'PostgreSQL', 'Kubernetes', 'Kafka'],
+      { jdRoleTitle: 'Software Engineer', rng: () => 0.99 },
+    );
+
+    expect(plan.get('ux')).toEqual([]);
+    expect(plan.get('swe')?.length).toBe(6);
+    expect(plan.get('fe')?.length).toBeLessThan(6);
+  });
+});
+
+describe('distributeJdSkillsAcrossExperience title gating', () => {
+  it('does not force JD skills onto ineligible company ids', () => {
+    const result = distributeJdSkillsAcrossExperience(
+      [
+        { id: 'ux', skills: ['Figma'] },
+        { id: 'swe', skills: ['Node.js'] },
+      ],
+      ['TypeScript', 'React', 'AWS'],
+      10,
+      { eligibleIds: ['swe'] },
+    );
+
+    expect(result.find((entry) => entry.id === 'ux')?.skills).toEqual(['Figma']);
+    expect(result.find((entry) => entry.id === 'swe')?.skills).toEqual(
+      expect.arrayContaining(['TypeScript', 'React', 'AWS', 'Node.js']),
+    );
+  });
 });
 
 describe('mergeJdSkillsIntoCoreTechnologies', () => {

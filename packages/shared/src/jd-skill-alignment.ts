@@ -1,4 +1,5 @@
 import type { JdAlignmentRequirements } from './jd-alignment';
+import { isTitleSimilarToJd } from './job-title-family';
 import {
   SKILL_CATEGORIES,
   resolveSkillCategory,
@@ -147,19 +148,33 @@ function trimSkillsPreservingRequired(
   );
 }
 
+export interface DistributeJdSkillsOptions {
+  /** When set, only these company ids receive JD skill injection. */
+  eligibleIds?: Iterable<string>;
+}
+
 /**
  * Ensures JD skills appear across company experience entries:
- * - Most recent role: ALL JD skills
- * - Older roles: partial JD skills so the union covers every JD skill
+ * - Most recent eligible role: ALL JD skills
+ * - Older eligible roles: partial JD skills so the union covers every JD skill
+ * - Ineligible roles (title dissimilar to JD): unchanged aside from optional trim
  */
 export function distributeJdSkillsAcrossExperience(
   companies: CompanyExperienceSkills[],
   jdSkills: string[],
   companySkillsCount: number,
+  options?: DistributeJdSkillsOptions,
 ): CompanyExperienceSkills[] {
   if (companies.length === 0) {
     return companies;
   }
+
+  const eligibleIdSet =
+    options?.eligibleIds == null
+      ? null
+      : new Set(
+          [...options.eligibleIds].filter((id) => typeof id === 'string' && id),
+        );
 
   const jdSkillSet = dedupeSkillsCaseInsensitive(
     normalizeTechStackSkills(jdSkills),
@@ -169,40 +184,48 @@ export function distributeJdSkillsAcrossExperience(
     skills: normalizeTechStackSkills(company.skills),
   }));
 
-  if (jdSkillSet.length === 0) {
-    if (companySkillsCount <= 0) {
-      return result;
-    }
-    return result.map((company) => ({
-      ...company,
-      skills: company.skills.slice(0, companySkillsCount),
-    }));
+  const isEligible = (id: string) =>
+    eligibleIdSet == null ? true : eligibleIdSet.has(id);
+  const eligibleCompanies = result.filter((company) => isEligible(company.id));
+  const ineligibleCompanies = result.filter((company) => !isEligible(company.id));
+
+  const trimOnly = (company: CompanyExperienceSkills) => ({
+    id: company.id,
+    skills:
+      companySkillsCount > 0
+        ? company.skills.slice(0, companySkillsCount)
+        : company.skills,
+  });
+
+  if (jdSkillSet.length === 0 || eligibleCompanies.length === 0) {
+    return result.map(trimOnly);
   }
 
-  const unionAll = () => result.flatMap((company) => company.skills);
+  const unionEligible = () =>
+    eligibleCompanies.flatMap((company) => company.skills);
 
-  // Most recent company must include every JD skill.
-  result[0].skills = dedupeSkillsCaseInsensitive([
+  // Most recent eligible company must include every JD skill.
+  eligibleCompanies[0].skills = dedupeSkillsCaseInsensitive([
     ...jdSkillSet,
-    ...result[0].skills,
+    ...eligibleCompanies[0].skills,
   ]);
 
-  let missing = getUncoveredJdSkills(jdSkillSet, unionAll());
-  const olderCompanies = result.slice(1);
+  let missing = getUncoveredJdSkills(jdSkillSet, unionEligible());
+  const olderEligible = eligibleCompanies.slice(1);
 
-  if (olderCompanies.length > 0) {
+  if (olderEligible.length > 0) {
     missing.forEach((skill, index) => {
-      const target = olderCompanies[index % olderCompanies.length];
+      const target = olderEligible[index % olderEligible.length];
       if (!isSkillCovered(skill, target.skills)) {
         target.skills = dedupeSkillsCaseInsensitive([...target.skills, skill]);
       }
     });
   }
 
-  missing = getUncoveredJdSkills(jdSkillSet, unionAll());
+  missing = getUncoveredJdSkills(jdSkillSet, unionEligible());
   if (missing.length > 0) {
-    result[0].skills = dedupeSkillsCaseInsensitive([
-      ...result[0].skills,
+    eligibleCompanies[0].skills = dedupeSkillsCaseInsensitive([
+      ...eligibleCompanies[0].skills,
       ...missing,
     ]);
   }
@@ -212,16 +235,16 @@ export function distributeJdSkillsAcrossExperience(
   }
 
   const protectedJdByCompany = new Map<string, string[]>();
-  protectedJdByCompany.set(result[0].id, jdSkillSet);
+  protectedJdByCompany.set(eligibleCompanies[0].id, jdSkillSet);
 
-  for (const company of olderCompanies) {
+  for (const company of olderEligible) {
     protectedJdByCompany.set(
       company.id,
       jdSkillSet.filter((jd) => isSkillCovered(jd, company.skills)),
     );
   }
 
-  return result.map((company, index) => {
+  const trimmedEligible = eligibleCompanies.map((company, index) => {
     const protectedJd = protectedJdByCompany.get(company.id) ?? [];
     const minCount =
       index === 0
@@ -235,6 +258,13 @@ export function distributeJdSkillsAcrossExperience(
       ),
     };
   });
+
+  const byId = new Map([
+    ...trimmedEligible.map((company) => [company.id, company] as const),
+    ...ineligibleCompanies.map((company) => [company.id, trimOnly(company)] as const),
+  ]);
+
+  return result.map((company) => byId.get(company.id) ?? trimOnly(company));
 }
 
 /** Recency 0 = most recent role. Expression of JD skills is strongest there and tapers. */
@@ -286,22 +316,46 @@ export function selectJdSkillsForRecency(
   return shuffleInPlace([...skills], rng).slice(0, count);
 }
 
+export interface PlanJdTechStackOptions {
+  /** JD target role title; when set, only title-similar companies get assigned skills. */
+  jdRoleTitle?: string;
+  rng?: RandomFn;
+}
+
 /** Pre-assign JD tech-stack skills per company before AI generation (sorted most-recent first). */
 export function planJdTechStackPerCompany(
-  companies: Array<{ id: string }>,
+  companies: Array<{ id: string; title?: string }>,
   jdSkills: string[],
-  rng: RandomFn = Math.random,
+  rngOrOptions: RandomFn | PlanJdTechStackOptions = Math.random,
 ): Map<string, string[]> {
+  const options: PlanJdTechStackOptions =
+    typeof rngOrOptions === 'function'
+      ? { rng: rngOrOptions }
+      : rngOrOptions ?? {};
+  const rng = options.rng ?? Math.random;
+  const jdRoleTitle = options.jdRoleTitle?.trim() ?? '';
+
   const plan = new Map<string, string[]>();
   let previousCount = normalizeTechStackSkills(jdSkills).length;
+  let eligibleRecencyRank = 0;
 
-  companies.forEach((company, recencyRank) => {
-    const selected = selectJdSkillsForRecency(jdSkills, recencyRank, {
-      previousCount: recencyRank === 0 ? undefined : previousCount,
+  companies.forEach((company) => {
+    const eligible =
+      !jdRoleTitle ||
+      isTitleSimilarToJd(company.title ?? '', jdRoleTitle);
+
+    if (!eligible) {
+      plan.set(company.id, []);
+      return;
+    }
+
+    const selected = selectJdSkillsForRecency(jdSkills, eligibleRecencyRank, {
+      previousCount: eligibleRecencyRank === 0 ? undefined : previousCount,
       rng,
     });
     plan.set(company.id, selected);
     previousCount = selected.length;
+    eligibleRecencyRank += 1;
   });
 
   return plan;

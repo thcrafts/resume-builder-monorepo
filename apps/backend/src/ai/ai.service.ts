@@ -403,12 +403,15 @@ export class AiService {
       companySkillsCount?: number;
       achievementsCount?: number;
       experienceSkillsModel?: string;
+      /** When false, skip JD skill/experience weave for this company title. */
+      jdEligible?: boolean;
     },
   ) {
     const jdAlignment = options?.jdAlignment;
     const isMostRecent = options?.isMostRecent ?? false;
     const recencyRank = options?.recencyRank ?? (isMostRecent ? 0 : 1);
-    const assignedJdSkills = options?.assignedJdSkills ?? [];
+    const jdEligible = options?.jdEligible !== false;
+    const assignedJdSkills = jdEligible ? options?.assignedJdSkills ?? [] : [];
     const keyModernSkills = options?.keyModernSkills ?? [];
     const targetAchievements =
       options?.achievementsCount && options.achievementsCount > 0
@@ -418,7 +421,7 @@ export class AiService {
     const minAcceptableAchievements = Math.max(4, targetAchievements - 1);
 
     let jdExcerpt = '';
-    if (isMostRecent) {
+    if (jdEligible && isMostRecent) {
       const jd = cleanText(jobDescription);
       jdExcerpt =
         jd.length > JD_MOST_RECENT_EXCERPT_CHARS
@@ -437,6 +440,7 @@ export class AiService {
             assignedJdSkills,
             keyModernSkills,
             jobDescriptionExcerpt: jdExcerpt,
+            jdEligible,
             company: {
               title: company.title,
               product: company.product,
@@ -456,9 +460,10 @@ export class AiService {
         mission: company.mission,
         context: company.context,
         isMostRecentRole: isMostRecent,
+        jdEligible,
         keyModernSkills,
         assignedJdSkillsToAdd: assignedJdSkills,
-        ...(isMostRecent
+        ...(jdEligible && isMostRecent
           ? {
               mandatoryJdExperience: jdAlignment
                 ? [
@@ -497,11 +502,13 @@ export class AiService {
         `Experience for ${company.company} returned ${parsed.achievements.length}/${targetAchievements} usable bullets; retrying once.`,
       );
       parsed = await runOnce(
-        `Return exactly ${targetAchievements} achievement strings. Every item must be a full sentence. Do not use true, false, null, or empty placeholders. Do not include the company name. Do not change the official job title. Keep this company's main product as the bullet content and keep modern skillsets from the candidate skill set. Customize toward the JD. No gap-fill or weak evidence. Include numeric improvements in exactly 1-2 bullets using the Metric targets for this role; no metrics in the rest. ADD these mandatory skills into that product work with modern skillsets (do not replace bullets with this list): ${assignedJdSkills.join(', ') || 'must-have JD technologies'}.${
-          isMostRecent
-            ? ' Most recent role: also include the mandatory JD experience realistically on this product.'
-            : ''
-        }`,
+        jdEligible
+          ? `Return exactly ${targetAchievements} achievement strings. Every item must be a full sentence. Do not use true, false, null, or empty placeholders. Do not include the company name. Do not change the official job title. Keep this company's main product as the bullet content and keep modern skillsets from the candidate skill set. Customize toward the JD. No gap-fill or weak evidence. Include numeric improvements in exactly 1-2 bullets using the Metric targets for this role; no metrics in the rest. ADD these mandatory skills into that product work with modern skillsets (do not replace bullets with this list): ${assignedJdSkills.join(', ') || 'must-have JD technologies'}.${
+              isMostRecent
+                ? ' Most recent role: also include the mandatory JD experience realistically on this product.'
+                : ''
+            }`
+          : `Return exactly ${targetAchievements} achievement strings. Every item must be a full sentence. Do not use true, false, null, or empty placeholders. Do not include the company name. Do not change the official job title. Write for this official title only — do NOT weave mandatory JD skills or JD experience into the bullets. Keep this company's main product as the bullet content. Include numeric improvements in exactly 1-2 bullets using the Metric targets for this role; no metrics in the rest.`,
       );
     }
 
@@ -524,7 +531,7 @@ export class AiService {
         companySkillsCount: options?.companySkillsCount,
         isMostRecent,
         recencyRank,
-        jdAlignment,
+        jdAlignment: jdEligible ? jdAlignment : undefined,
         jobDescriptionExcerpt: jdExcerpt,
         keyModernSkills,
         assignedJdSkills,

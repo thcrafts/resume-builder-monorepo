@@ -18,6 +18,8 @@ import {
   collectKeyModernBaselineSkills,
   collectMandatoryJdExperience,
   planJdTechStackPerCompany,
+  isTitleSimilarToJd,
+  computeYearsOfExperienceFromSimilarRoles,
   type CompanyEntry,
 } from '@resume-builder/shared';
 import { AiService } from '../ai/ai.service';
@@ -98,6 +100,8 @@ export class ChunkedResumeBuilder {
   async run(options: {
     resumeId: string;
     jobDescription: string;
+    /** Target JD role title used for title-family JD weave and summary years. */
+    roleType?: string;
     user: {
       name: string;
       contacts: Parameters<typeof assembleResumeJson>[0]['contacts'];
@@ -151,10 +155,16 @@ export class ChunkedResumeBuilder {
     steps.push({ step: 'jd-requirements', model: DEFAULT_JD_EXTRACTION_MODEL });
 
     const mostRecentCompany = getMostRecentCompany(sortedCompanies);
+    const jdRoleTitle = options.roleType?.trim() || finalTitle;
     const companySummaries = sortedCompanies.map(
       (c) => `${c.company}: ${c.product}`,
     );
+    const similarRoleYears = computeYearsOfExperienceFromSimilarRoles(
+      sortedCompanies,
+      jdRoleTitle,
+    );
     const yearsOfExperience =
+      similarRoleYears ??
       options.user.candidateProfile.yearsOfExperience ??
       computeYearsOfExperienceFromEducation(
         options.user.candidateProfile.education,
@@ -183,6 +193,15 @@ export class ChunkedResumeBuilder {
     const jdSkillsByCompanyId = planJdTechStackPerCompany(
       sortedCompanies,
       jdTechStackSkills,
+      { jdRoleTitle },
+    );
+
+    const eligibleCompanies = sortedCompanies.filter((company) =>
+      isTitleSimilarToJd(company.title, jdRoleTitle),
+    );
+    const mostRecentEligibleCompany = eligibleCompanies[0] ?? null;
+    const eligibleRecencyById = new Map(
+      eligibleCompanies.map((company, index) => [company.id, index]),
     );
 
     const total = sortedCompanies.length;
@@ -216,6 +235,9 @@ export class ChunkedResumeBuilder {
             total,
           });
 
+          const jdEligible = isTitleSimilarToJd(company.title, jdRoleTitle);
+          const eligibleRecency = eligibleRecencyById.get(company.id);
+
           try {
             const result = await this.aiService.generateCompanyExperience(
               cleanedJd,
@@ -225,13 +247,18 @@ export class ChunkedResumeBuilder {
               experienceModel,
               {
                 jdAlignment,
-                isMostRecent: company.id === mostRecentCompany?.id,
-                recencyRank: index,
+                isMostRecent:
+                  jdEligible &&
+                  company.id === mostRecentEligibleCompany?.id,
+                recencyRank:
+                  eligibleRecency ??
+                  (company.id === mostRecentCompany?.id ? 0 : index),
                 assignedJdSkills: jdSkillsByCompanyId.get(company.id) ?? [],
                 keyModernSkills,
                 companySkillsCount: options.resumeSettings.companySkillsCount,
                 achievementsCount: options.resumeSettings.achievementsCount,
                 experienceSkillsModel,
+                jdEligible,
               },
             );
             experienceByCompanyId.set(company.id, result);

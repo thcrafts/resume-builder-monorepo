@@ -113,4 +113,30 @@ describe('jd alignment', () => {
     expect(block).toContain('Software Engineer');
     expect(block).not.toContain('Job description excerpt');
   });
+
+  it('skips JD weave when the company title is ineligible', () => {
+    const block = buildExperienceAlignmentUserBlock({
+      alignment: {
+        languages: ['Rust', 'TypeScript'],
+        requiredSkills: ['React'],
+        experienceThemes: ['scalability'],
+        experienceRequirements: ['5+ years backend development'],
+      },
+      isMostRecent: true,
+      recencyRank: 0,
+      assignedJdSkills: ['Rust', 'TypeScript', 'React'],
+      jdEligible: false,
+      company: {
+        title: 'UX Designer',
+        product: 'Design system',
+        mission: 'Improve usability',
+      },
+    });
+
+    expect(block).toContain('TITLE MISMATCH');
+    expect(block).toContain('Do NOT add mandatory JD skills');
+    expect(block).toContain('none (title dissimilar to JD)');
+    expect(block).toContain('UX Designer');
+    expect(block).not.toContain('INCLUDE the mandatory JD skills');
+  });
 });

@@ -219,6 +219,8 @@ export function buildExperienceAlignmentUserBlock(options: {
   assignedJdSkills?: string[];
   keyModernSkills?: string[];
   jobDescriptionExcerpt?: string;
+  /** When false, do not weave JD skills/experience into this company role. */
+  jdEligible?: boolean;
   company?: {
     title: string;
     product: string;
@@ -227,18 +229,24 @@ export function buildExperienceAlignmentUserBlock(options: {
     context?: string;
   };
 }): string {
+  const jdEligible = options.jdEligible !== false;
   const recencyRank = options.recencyRank ?? (options.isMostRecent ? 0 : 1);
   const isMostRecent = options.isMostRecent || recencyRank === 0;
-  const assignedJdSkills = dedupeCaseInsensitive(
-    options.assignedJdSkills && options.assignedJdSkills.length > 0
-      ? options.assignedJdSkills
-      : isMostRecent
-        ? [...options.alignment.languages, ...options.alignment.requiredSkills]
-        : [...options.alignment.languages, ...options.alignment.requiredSkills].slice(
-            0,
-            6,
-          ),
-  );
+  const assignedJdSkills = !jdEligible
+    ? []
+    : dedupeCaseInsensitive(
+        options.assignedJdSkills && options.assignedJdSkills.length > 0
+          ? options.assignedJdSkills
+          : isMostRecent
+            ? [
+                ...options.alignment.languages,
+                ...options.alignment.requiredSkills,
+              ]
+            : [
+                ...options.alignment.languages,
+                ...options.alignment.requiredSkills,
+              ].slice(0, 6),
+      );
   const keyModernSkills = dedupeCaseInsensitive(options.keyModernSkills ?? []);
   const mandatoryExperience = collectMandatoryJdExperience(options.alignment);
   const alignmentText = formatJdAlignmentForPrompt(options.alignment);
@@ -261,6 +269,31 @@ export function buildExperienceAlignmentUserBlock(options: {
         company.context ? `Extra company context: ${company.context}` : '',
       ].filter(Boolean)
     : [];
+
+  if (!jdEligible) {
+    const keyModernLine =
+      keyModernSkills.length > 0
+        ? `Candidate modern skillsets for THIS title (keep natural to the official job title): ${keyModernSkills.join(', ')}`
+        : 'Candidate modern skillsets: keep technologies natural to this official job title.';
+
+    return [
+      'TARGET ROLE ALIGNMENT — TITLE MISMATCH (skip JD weave)',
+      'Write achievement bullets for THIS employer only. Keep the official job title, employer, dates, and location unchanged.',
+      "This company's official title is NOT similar to the target JD role. Do NOT add mandatory JD skills or mandatory JD experience into these bullets.",
+      "Keep this company's main product, mission, and extra context as the bullet content for the official job title.",
+      'Do not rewrite this role around the JD. Do not invent JD-shaped projects or tech stacks.',
+      '- Prefer one primary accomplishment per bullet.',
+      '- Never put the employer name in bullets. Include numeric improvements in exactly 1–2 bullets using the Metric targets for this role; no metrics in the rest.',
+      keyModernLine,
+      'Mandatory JD skills to ADD: none (title dissimilar to JD).',
+      ...companyLines,
+      alignmentText
+        ? `JD context (for awareness only — do not weave into this role):\n${alignmentText}`
+        : '',
+    ]
+      .filter(Boolean)
+      .join('\n');
+  }
 
   const assignedLine =
     assignedJdSkills.length > 0

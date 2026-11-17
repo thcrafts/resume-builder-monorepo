@@ -55,6 +55,7 @@ export class ResumeGenerationService {
         await this.chunkedBuilder.run({
           resumeId,
           jobDescription: resume.jobDescription,
+          roleType: resume.roleType,
           industry,
           apiKeys,
           resumeSettings,

@@ -565,7 +565,7 @@ export class ResumePDFTemplate7 {
     let totalContentHeight = 0;
     doc.font(this.fontName).fontSize(contentFontSize);
     const prefixWidth = doc.widthOfString('• ');
-    const wrappedTextWidth = heightEstimateWidth - prefixWidth;
+    const bodyWidth = Math.max(1, heightEstimateWidth - prefixWidth);
     for (const item of items) {
       const itemText = String(item).replace(/\n/g, ' ').trim();
       if (!itemText) {
@@ -575,7 +575,7 @@ export class ResumePDFTemplate7 {
         this._estimateTextHeight(
           doc,
           itemText,
-          wrappedTextWidth,
+          bodyWidth,
           contentFontSize,
         ) + paragraphGap;
     }
@@ -697,8 +697,15 @@ export class ResumePDFTemplate7 {
     const lineGap = options.lineGap ?? EXPERIENCE_BULLET_LINE_GAP;
 
     doc.font(this.fontName).fontSize(contentFontSize).fillColor(contentColor);
+    // Hanging indent: bullet in the left gutter; wrapped lines share the same
+    // left edge as the first letter of the sentence (not under the bullet).
+    // Do NOT use continued:true — that orphans "•" on the last line of a page.
+    // Always ensure the first text line fits before drawing the bullet.
     const bulletPrefix = '• ';
     const prefixWidth = doc.widthOfString(bulletPrefix);
+    const bodyWidth = Math.max(1, textWidth - prefixWidth);
+    const minFirstLineHeight = contentFontSize * 1.2 + lineGap;
+    const pageBottom = this.pageHeight - this.marginB;
 
     for (const item of items) {
       const itemText = String(item).replace(/\n/g, ' ').trim();
@@ -706,12 +713,16 @@ export class ResumePDFTemplate7 {
         continue;
       }
 
-      doc.text(bulletPrefix, bulletX, doc.y, {
-        continued: true,
+      if (doc.y + minFirstLineHeight > pageBottom) {
+        doc.addPage();
+      }
+
+      const startY = doc.y;
+      doc.text(bulletPrefix, bulletX, startY, {
         lineBreak: false,
       });
-      doc.text(itemText, {
-        width: textWidth - prefixWidth,
+      doc.text(itemText, bulletX + prefixWidth, startY, {
+        width: bodyWidth,
         align: 'justify',
         paragraphGap: EXPERIENCE_BULLET_PARAGRAPH_GAP,
         lineGap,

@@ -20,6 +20,45 @@ interface CandidateProfileSectionProps {
   onChange: (profile: CandidateProfileData) => void;
 }
 
+function parseSkillItems(raw: string): string[] {
+  return raw
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+/** Keep a draft string so commas can be typed before the next skill name. */
+const SkillItemsInput: React.FC<{
+  items: string[];
+  onCommit: (items: string[]) => void;
+}> = ({ items, onCommit }) => {
+  const [draft, setDraft] = React.useState(() => items.join(", "));
+  const focusedRef = React.useRef(false);
+
+  React.useEffect(() => {
+    if (!focusedRef.current) {
+      setDraft(items.join(", "));
+    }
+  }, [items]);
+
+  return (
+    <Input
+      value={draft}
+      placeholder="TypeScript, React, Node.js"
+      onFocus={() => {
+        focusedRef.current = true;
+      }}
+      onChange={(e) => setDraft(e.target.value)}
+      onBlur={() => {
+        focusedRef.current = false;
+        const next = parseSkillItems(draft);
+        setDraft(next.join(", "));
+        onCommit(next);
+      }}
+    />
+  );
+};
+
 export const CandidateProfileSection: React.FC<CandidateProfileSectionProps> = ({
   value,
   onChange,
@@ -215,16 +254,9 @@ export const CandidateProfileSection: React.FC<CandidateProfileSectionProps> = (
               </div>
               <div className="space-y-1">
                 <Label>Items (comma-separated)</Label>
-                <Input
-                  value={entry.items.join(", ")}
-                  onChange={(e) =>
-                    updateSkillCategory(index, {
-                      items: e.target.value
-                        .split(",")
-                        .map((item) => item.trim())
-                        .filter(Boolean),
-                    })
-                  }
+                <SkillItemsInput
+                  items={entry.items}
+                  onCommit={(items) => updateSkillCategory(index, { items })}
                 />
               </div>
             </div>

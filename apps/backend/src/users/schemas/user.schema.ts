@@ -95,6 +95,10 @@ export class User {
   @Prop({ type: [CompanyEmbedded], default: [] })
   companies: CompanyEmbedded[];
 
+  /** Cached SE career years from company dates. Number only — never rewrite candidateProfile. */
+  @Prop({ type: Number, required: false })
+  summaryExperienceYears?: number;
+
   @Prop({ default: 'anthropic' })
   defaultAiModel: string;
 

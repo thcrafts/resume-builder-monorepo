@@ -114,6 +114,9 @@ const Profile: React.FC = () => {
   const [contacts, setContacts] = React.useState<ContactEntry[]>([]);
   const [candidateProfile, setCandidateProfile] =
     React.useState<CandidateProfileData>(emptyCandidateProfile());
+  const [summaryExperienceYears, setSummaryExperienceYears] = React.useState<
+    number | ""
+  >("");
   const [companies, setCompanies] = React.useState<CompanyEntry[]>([]);
   const [resumeSettingsForm, setResumeSettingsForm] =
     React.useState<ResumeSettings>(DEFAULT_RESUME_SETTINGS);
@@ -145,6 +148,11 @@ const Profile: React.FC = () => {
       setResumeSettingsForm(resolveResumeSettings(profile.resumeSettings));
       setContacts(profile.contacts ?? []);
       setCandidateProfile(profile.candidateProfile ?? emptyCandidateProfile());
+      setSummaryExperienceYears(
+        typeof profile.summaryExperienceYears === "number"
+          ? profile.summaryExperienceYears
+          : "",
+      );
       setCompanies(profile.companies ?? []);
       setFormData({
         name: profile.name || "",
@@ -208,6 +216,19 @@ const Profile: React.FC = () => {
     persistProfile,
     userId,
   ]);
+
+  // Summary experience years (number-only cache / manual override).
+  React.useEffect(() => {
+    if (skipAutoSaveRef.current || !userId) return;
+    const timer = window.setTimeout(() => {
+      if (skipAutoSaveRef.current) return;
+      void persistProfile({
+        summaryExperienceYears:
+          summaryExperienceYears === "" ? null : summaryExperienceYears,
+      }).catch(() => toast.error("Failed to save experience years"));
+    }, AUTO_SAVE_DELAY_MS);
+    return () => window.clearTimeout(timer);
+  }, [summaryExperienceYears, persistProfile, userId]);
 
   // Contacts + candidate profile autosave (companies are saved manually).
   React.useEffect(() => {
@@ -274,9 +295,20 @@ const Profile: React.FC = () => {
 
   const saveCompanies = React.useCallback(
     async (nextCompanies: CompanyEntry[]) => {
-      const updated = await persistProfile({ companies: nextCompanies });
-      setCompanies(updated.companies ?? nextCompanies);
-      toast.success("Companies saved");
+      skipAutoSaveRef.current = true;
+      try {
+        const updated = await persistProfile({ companies: nextCompanies });
+        setCompanies(updated.companies ?? nextCompanies);
+        // Only sync the number cache — never touch candidate profile fields.
+        if (typeof updated.summaryExperienceYears === "number") {
+          setSummaryExperienceYears(updated.summaryExperienceYears);
+        }
+        toast.success("Companies saved");
+      } finally {
+        window.setTimeout(() => {
+          skipAutoSaveRef.current = false;
+        }, 0);
+      }
     },
     [persistProfile],
   );
@@ -458,6 +490,8 @@ const Profile: React.FC = () => {
             <CandidateProfileSection
               value={candidateProfile}
               onChange={setCandidateProfile}
+              summaryExperienceYears={summaryExperienceYears}
+              onSummaryExperienceYearsChange={setSummaryExperienceYears}
             />
             <CompaniesEditor
               value={companies}

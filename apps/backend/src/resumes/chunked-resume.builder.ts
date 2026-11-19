@@ -19,7 +19,7 @@ import {
   collectMandatoryJdExperience,
   planJdTechStackPerCompany,
   isTitleSimilarToJd,
-  computeYearsOfExperienceFromSimilarRoles,
+  computeSoftwareEngineeringCareerYears,
   type CompanyEntry,
 } from '@resume-builder/shared';
 import { AiService } from '../ai/ai.service';
@@ -107,6 +107,8 @@ export class ChunkedResumeBuilder {
       contacts: Parameters<typeof assembleResumeJson>[0]['contacts'];
       candidateProfile: Parameters<typeof assembleResumeJson>[0]['candidateProfile'];
       companies: CompanyEntry[];
+      /** Cached SE years from company dates (number-only user field). */
+      summaryExperienceYears?: number;
       instructions?: string;
       experiencePrompt?: string;
     };
@@ -159,13 +161,11 @@ export class ChunkedResumeBuilder {
     const companySummaries = sortedCompanies.map(
       (c) => `${c.company}: ${c.product}`,
     );
-    const similarRoleYears = computeYearsOfExperienceFromSimilarRoles(
-      sortedCompanies,
-      jdRoleTitle,
-    );
+    // Prefer top-level number cache, then recompute from DB companies,
+    // then education as last resort. Never rewrite candidateProfile for this.
     const yearsOfExperience =
-      similarRoleYears ??
-      options.user.candidateProfile.yearsOfExperience ??
+      options.user.summaryExperienceYears ??
+      computeSoftwareEngineeringCareerYears(sortedCompanies) ??
       computeYearsOfExperienceFromEducation(
         options.user.candidateProfile.education,
       );

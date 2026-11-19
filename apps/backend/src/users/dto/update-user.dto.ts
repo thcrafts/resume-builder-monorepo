@@ -18,6 +18,8 @@ export class UpdateUserDto {
   contacts?: ContactEntry[];
   candidateProfile?: Partial<CandidateProfileData>;
   companies?: CompanyEntry[];
+  /** Manual override / cached SE years (number only). */
+  summaryExperienceYears?: number | null;
   defaultAiModel?: string;
   defaultAiVersion?: string;
   defaultGenerateFromJson?: boolean;

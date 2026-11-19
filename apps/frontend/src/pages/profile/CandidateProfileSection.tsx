@@ -18,6 +18,9 @@ import {
 interface CandidateProfileSectionProps {
   value: CandidateProfileData;
   onChange: (profile: CandidateProfileData) => void;
+  /** Top-level years cache (from company dates). Number only. */
+  summaryExperienceYears: number | "";
+  onSummaryExperienceYearsChange: (years: number | "") => void;
 }
 
 function parseSkillItems(raw: string): string[] {
@@ -62,6 +65,8 @@ const SkillItemsInput: React.FC<{
 export const CandidateProfileSection: React.FC<CandidateProfileSectionProps> = ({
   value,
   onChange,
+  summaryExperienceYears,
+  onSummaryExperienceYearsChange,
 }) => {
   const updateEducation = (index: number, patch: Partial<EducationEntry>) => {
     const education = value.education.map((entry, i) =>
@@ -94,6 +99,40 @@ export const CandidateProfileSection: React.FC<CandidateProfileSectionProps> = (
             }
             placeholder="Senior Software Engineer"
           />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Summary experience length</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <Label htmlFor="summary-experience-years">
+            Years of experience (number)
+          </Label>
+          <Input
+            id="summary-experience-years"
+            type="number"
+            min={0}
+            step={1}
+            value={summaryExperienceYears}
+            onChange={(e) => {
+              const raw = e.target.value;
+              if (raw === "") {
+                onSummaryExperienceYearsChange("");
+                return;
+              }
+              const n = Number(raw);
+              if (Number.isFinite(n)) {
+                onSummaryExperienceYearsChange(Math.max(0, Math.floor(n)));
+              }
+            }}
+            placeholder="Auto-filled when you save companies"
+          />
+          <p className="text-sm text-muted-foreground">
+            Cached from company experience when you save companies. You can
+            override the number here.
+          </p>
         </CardContent>
       </Card>
 

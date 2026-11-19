@@ -13,6 +13,7 @@ import * as bcrypt from 'bcrypt';
 import { EncryptionService } from '../crypto/encryption.service';
 import {
   MISSING_OPENROUTER_KEY_MESSAGE,
+  computeSoftwareEngineeringCareerYears,
   resolveResumeSettings,
   validateCompanyFieldsForSave,
   type ResumeSettings,
@@ -137,6 +138,27 @@ export class UsersService {
         throw new BadRequestException(validation.errors.join('; '));
       }
       user.companies = normalized as UserDocument['companies'];
+      // Cache is a plain number on the user — never rewrite candidateProfile.
+      const careerYears = computeSoftwareEngineeringCareerYears(
+        normalized.map((c) => ({ title: c.title, date_range: c.date_range })),
+      );
+      if (careerYears != null) {
+        user.summaryExperienceYears = careerYears;
+      }
+    }
+    if (updateUserDto.summaryExperienceYears !== undefined) {
+      if (
+        updateUserDto.summaryExperienceYears === null ||
+        (typeof updateUserDto.summaryExperienceYears === 'number' &&
+          !Number.isFinite(updateUserDto.summaryExperienceYears))
+      ) {
+        user.summaryExperienceYears = undefined;
+      } else if (typeof updateUserDto.summaryExperienceYears === 'number') {
+        user.summaryExperienceYears = Math.max(
+          0,
+          Math.floor(updateUserDto.summaryExperienceYears),
+        );
+      }
     }
     if (updateUserDto.defaultAiModel !== undefined) {
       user.defaultAiModel = updateUserDto.defaultAiModel;

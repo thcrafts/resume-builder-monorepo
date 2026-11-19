@@ -69,6 +69,7 @@ export class ResumeGenerationService {
               baselineSkills: [],
             },
             companies: user.companies ?? [],
+            summaryExperienceYears: user.summaryExperienceYears,
             instructions: user.instructions,
             experiencePrompt: user.experiencePrompt,
           },

@@ -1,5 +1,4 @@
 import {
-  computeYearsOfExperienceFromEducation,
   type CandidateProfileData,
   type CompanyEntry,
   type ContactEntry,
@@ -63,8 +62,6 @@ export function normalizeCandidateProfile(
       }))
     : [];
 
-  const yearsOfExperience = computeYearsOfExperienceFromEducation(education) ?? undefined;
-
   return {
     professionalTitle: trimString(profile?.professionalTitle, 200),
     education,
@@ -72,7 +69,6 @@ export function normalizeCandidateProfile(
       ? profile.certifications
       : [],
     baselineSkills,
-    ...(yearsOfExperience != null ? { yearsOfExperience } : {}),
   };
 }
 

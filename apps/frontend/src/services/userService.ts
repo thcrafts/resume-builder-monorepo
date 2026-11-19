@@ -32,6 +32,7 @@ export interface UserResponse {
   contacts?: ContactEntry[];
   candidateProfile?: CandidateProfileData;
   companies?: CompanyEntry[];
+  summaryExperienceYears?: number;
   defaultAiModel?: string;
   defaultAiVersion?: string;
   defaultGenerateFromJson?: boolean;
@@ -87,6 +88,7 @@ export interface UpdateProfileDto {
   contacts?: ContactEntry[];
   candidateProfile?: Partial<CandidateProfileData>;
   companies?: CompanyEntry[];
+  summaryExperienceYears?: number | null;
   defaultAiModel?: string;
   defaultAiVersion?: string;
   defaultGenerateFromJson?: boolean;

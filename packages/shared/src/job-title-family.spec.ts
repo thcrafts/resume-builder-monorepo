@@ -1,4 +1,5 @@
 import {
+  computeSoftwareEngineeringCareerYears,
   computeYearsOfExperienceFromSimilarRoles,
   isTitleSimilarToJd,
   mergeMonthIntervals,
@@ -91,9 +92,7 @@ describe('computeYearsOfExperienceFromSimilarRoles', () => {
       reference,
     );
 
-    // SWE 2020-2023 + Frontend overlap into 2024 merged = Jan 2020–Dec 2023? 
     // 2020-2024 year-only = Jan 2020–Dec 2024 = 60 months = 5 years
-    // Frontend 2022-2024 overlaps → still 5 years
     expect(years).toBe(5);
   });
 
@@ -104,5 +103,21 @@ describe('computeYearsOfExperienceFromSimilarRoles', () => {
         'Software Engineer',
       ),
     ).toBeNull();
+  });
+});
+
+describe('computeSoftwareEngineeringCareerYears', () => {
+  it('spans from earliest SE/intern start to now', () => {
+    const reference = new Date(2024, 0, 1);
+    expect(
+      computeSoftwareEngineeringCareerYears(
+        [
+          { title: 'UX Designer', date_range: '2015 - 2017' },
+          { title: 'Software Engineering Intern', date_range: '2018 - 2018' },
+          { title: 'Software Engineer', date_range: '2020 - Present' },
+        ],
+        reference,
+      ),
+    ).toBe(6);
   });
 });

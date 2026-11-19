@@ -56,6 +56,16 @@ export function normalizeJobTitleFamily(title: string): JobTitleFamily {
     return 'data';
   }
 
+  // Software engineering internships count as software_eng.
+  if (
+    /\bintern(ship)?\b/.test(t) &&
+    /\b(software|swe|sde|developer|engineer|programming|full[\s-]?stack|frontend|front[\s-]?end|backend|back[\s-]?end)\b/.test(
+      t,
+    )
+  ) {
+    return 'software_eng';
+  }
+
   if (
     /\b(software|full[\s-]?stack|frontend|front[\s-]?end|backend|back[\s-]?end|swe|sde|devops|sre|platform|mobile|ios|android|web)\b/.test(
       t,
@@ -66,6 +76,10 @@ export function normalizeJobTitleFamily(title: string): JobTitleFamily {
   }
 
   return 'other';
+}
+
+export function isSoftwareEngineeringRelatedTitle(title: string): boolean {
+  return normalizeJobTitleFamily(title) === 'software_eng';
 }
 
 /** True when company title and JD role title share the same family. */
@@ -176,7 +190,17 @@ export function parseEmploymentDateRange(
     return null;
   }
 
-  const parts = trimmed.split(/\s*(?:-|–|—|\sto\s)\s*/i);
+  // Prefer en/em dashes and " to " before ASCII hyphen so "02/2022-Present" still
+  // splits once, and unicode minus signs are treated as range separators too.
+  const rangeSeparators = /\s*(?:\u2013|\u2014|\u2212|\sto\s)\s*/i;
+  let parts = trimmed.split(rangeSeparators);
+  if (parts.length < 2) {
+    parts = trimmed.split(/\s*-\s*/);
+  }
+  // "02/2022-06/2025" can over-split if other hyphens appear; keep first/last.
+  if (parts.length > 2) {
+    parts = [parts[0], parts[parts.length - 1]];
+  }
   if (parts.length < 2) {
     const single = parseFlexibleDatePart(trimmed, referenceDate);
     if (!single) {
@@ -254,4 +278,42 @@ export function computeYearsOfExperienceFromSimilarRoles(
 
   const months = mergeMonthIntervals(intervals);
   return Math.floor(months / 12);
+}
+
+/**
+ * Profile-cached career years: from the start of the earliest
+ * software-engineering-related role (including internships) until now.
+ * Calendar span (not summed employment). Returns null if none parseable.
+ */
+export function computeSoftwareEngineeringCareerYears(
+  companies: Array<{ title: string; date_range: string }>,
+  referenceDate: Date = new Date(),
+): number | null {
+  let earliestStart: number | null = null;
+
+  for (const company of companies) {
+    if (!isSoftwareEngineeringRelatedTitle(company.title)) {
+      continue;
+    }
+    const interval = parseEmploymentDateRange(
+      company.date_range,
+      referenceDate,
+    );
+    if (!interval) {
+      continue;
+    }
+    if (earliestStart == null || interval.startMonth < earliestStart) {
+      earliestStart = interval.startMonth;
+    }
+  }
+
+  if (earliestStart == null) {
+    return null;
+  }
+
+  const nowMonth = toMonthIndex(
+    referenceDate.getFullYear(),
+    referenceDate.getMonth(),
+  );
+  return Math.floor(Math.max(0, nowMonth - earliestStart) / 12);
 }

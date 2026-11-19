@@ -266,6 +266,13 @@ export const retryResume = async (id: string) => {
   return res.data;
 };
 
+export const regenerateResume = async (id: string) => {
+  const res = await api.post<{ message: string }>(
+    `/api/resumes/${id}/regenerate`,
+  );
+  return res.data;
+};
+
 export interface FromJsonDto {
   companyName: string;
   roleType: string;

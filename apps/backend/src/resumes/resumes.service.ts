@@ -128,12 +128,14 @@ export class ResumesService {
       throw new NotFoundException('Resume not found');
     }
 
-    if (resume.status !== 'failed') {
-      throw new BadRequestException('Only failed resumes can be retried');
+    if (resume.status !== 'failed' && resume.status !== 'completed') {
+      throw new BadRequestException(
+        'Only failed or completed resumes can be regenerated',
+      );
     }
 
     if (resume.generationSource === 'manual') {
-      throw new BadRequestException('Manual resumes cannot be retried');
+      throw new BadRequestException('Manual resumes cannot be regenerated');
     }
 
     await this.validateApiKeyForGeneration(userId);
@@ -142,7 +144,10 @@ export class ResumesService {
     await this.resumeModel
       .updateOne(
         { _id: resumeId, userId },
-        { status: 'in_progress', $unset: { failureMessage: '' } },
+        {
+          status: 'in_progress',
+          $unset: { failureMessage: '', coverLetter: '' },
+        },
       )
       .exec();
 
@@ -154,7 +159,7 @@ export class ResumesService {
       'default',
     ).catch((error) => {
       const message = formatAiProviderError(error);
-      console.error('Error retrying resume generation:', message);
+      console.error('Error regenerating resume:', message);
       void this.markResumeFailed(resumeId, userId, message);
     });
   }

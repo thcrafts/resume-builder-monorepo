@@ -11,7 +11,6 @@ import {
   Eye,
   Copy,
   Pencil,
-  FilePenLine,
   Settings,
   LogOut,
   Sun,
@@ -28,6 +27,7 @@ import {
   downloadResume,
   downloadCoverLetter,
   retryResume,
+  regenerateResume,
   type ResumeResponse,
   type FilterResumeParams,
   type CoverLetterFormat,
@@ -729,19 +729,35 @@ const Resumes: React.FC = () => {
     }
   };
 
-  const handleRetryResume = async (id: string) => {
-    setRetryingResumeId(id);
+  const handleRestartResumeGeneration = async (
+    resume: ResumeResponse,
+    mode: "retry" | "regenerate",
+  ) => {
+    setRetryingResumeId(resume._id);
     try {
-      await retryResume(id);
-      clearProgress(id);
+      if (mode === "regenerate") {
+        await regenerateResume(resume._id);
+      } else {
+        await retryResume(resume._id);
+      }
+      clearProgress(resume._id);
       setResumes((prev) =>
         prev.map((r) =>
-          r._id === id
-            ? { ...r, status: "in_progress", failureMessage: undefined }
+          r._id === resume._id
+            ? {
+                ...r,
+                status: "in_progress",
+                failureMessage: undefined,
+                coverLetter: mode === "regenerate" ? undefined : r.coverLetter,
+              }
             : r,
         ),
       );
-      toast.success("Resume generation restarted");
+      toast.success(
+        mode === "regenerate"
+          ? "Resume regeneration started"
+          : "Resume generation restarted",
+      );
     } catch (error: unknown) {
       const err = error as {
         response?: { data?: { message?: string | string[] } };
@@ -750,7 +766,10 @@ const Resumes: React.FC = () => {
       const rawMessage = err.response?.data?.message ?? err.message;
       const message = Array.isArray(rawMessage)
         ? rawMessage.join(", ")
-        : rawMessage || "Failed to retry resume generation";
+        : rawMessage ||
+          (mode === "regenerate"
+            ? "Failed to regenerate resume"
+            : "Failed to retry resume generation");
       toast.error(message);
     } finally {
       setRetryingResumeId(null);
@@ -1290,7 +1309,12 @@ const Resumes: React.FC = () => {
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8 text-destructive hover:text-destructive"
-                            onClick={() => handleRetryResume(resume._id)}
+                            onClick={() =>
+                              void handleRestartResumeGeneration(
+                                resume,
+                                "retry",
+                              )
+                            }
                             title="Retry generation"
                             disabled={retryingResumeId === resume._id}
                           >
@@ -1404,10 +1428,29 @@ const Resumes: React.FC = () => {
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8"
-                        onClick={() => handleOpenMetadataEdit(resume)}
-                        title="Edit company & role"
+                        onClick={() =>
+                          void handleRestartResumeGeneration(
+                            resume,
+                            "regenerate",
+                          )
+                        }
+                        title={
+                          resume.generationSource === "manual"
+                            ? "Regenerate not available for manual resumes"
+                            : "Regenerate resume"
+                        }
+                        disabled={
+                          resume.status !== "completed" ||
+                          resume.generationSource === "manual" ||
+                          retryingResumeId === resume._id
+                        }
                       >
-                        <FilePenLine className="h-4 w-4" />
+                        {retryingResumeId === resume._id &&
+                        resume.status === "completed" ? (
+                          <GeneratingSpinner className="h-5 w-5" />
+                        ) : (
+                          <RefreshCw className="h-4 w-4" />
+                        )}
                       </Button>
                     </TableCell>
                     <TableCell className="text-center">

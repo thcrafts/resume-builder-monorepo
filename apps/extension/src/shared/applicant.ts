@@ -1,4 +1,6 @@
 import {
+  computeSoftwareEngineeringCareerYears,
+  computeYearsOfExperienceFromEducation,
   getMostRecentCompany,
   getPrimaryContact,
   sanitizeFilename,
@@ -174,7 +176,22 @@ export function buildApplicant(input: {
     .map((entry) => certLabel(entry))
     .filter(Boolean);
 
-  const years = profile.candidateProfile?.yearsOfExperience;
+  const years =
+    (typeof profile.summaryExperienceYears === 'number' &&
+    Number.isFinite(profile.summaryExperienceYears)
+      ? profile.summaryExperienceYears
+      : null) ??
+    computeSoftwareEngineeringCareerYears(
+      companies.map((c) => ({ title: c.title, date_range: c.date_range })),
+    ) ??
+    computeYearsOfExperienceFromEducation(
+      (profile.candidateProfile?.education ?? []).map((entry) => ({
+        degree: entry.degree || '',
+        institution: entry.institution || '',
+        date_range: entry.date_range || '',
+        location: entry.location || '',
+      })),
+    );
   const resumeFileName = `${sanitizeFilename(profile.name || 'resume')}.pdf`;
 
   return {
@@ -189,8 +206,7 @@ export function buildApplicant(input: {
     website: extra.website || '',
     headline: profile.candidateProfile?.professionalTitle || '',
     currentCompany: recent?.company || '',
-    yearsOfExperience:
-      typeof years === 'number' && Number.isFinite(years) ? String(years) : '',
+    yearsOfExperience: years != null ? String(years) : '',
     resumeFileName,
     resumeBase64: input.resumeBase64,
     coverLetterFileName: input.coverLetterFileName,

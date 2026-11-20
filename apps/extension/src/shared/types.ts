@@ -139,6 +139,7 @@ export interface ProfileResponse {
     linkedin?: string;
     isPrimary?: boolean;
   }>;
+  summaryExperienceYears?: number;
   candidateProfile?: {
     professionalTitle?: string;
     education?: Array<{
@@ -148,7 +149,6 @@ export interface ProfileResponse {
       location?: string;
     }>;
     certifications?: Array<Record<string, unknown>>;
-    yearsOfExperience?: number;
   };
   companies?: Array<{
     id: string;

@@ -40,8 +40,6 @@ export interface CandidateProfileData {
   education: EducationEntry[];
   certifications: CertificationEntry[];
   baselineSkills: SkillCategoryEntry[];
-  /** Derived from education graduation dates when the profile is saved. */
-  yearsOfExperience?: number;
 }
 
 export interface CompanyEntry {
@@ -68,8 +66,6 @@ export interface ProfileValidationResult {
   valid: boolean;
   errors: string[];
 }
-
-export const TITLE_SIMILARITY_THRESHOLD = 0.8;
 
 function isNonEmpty(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0;

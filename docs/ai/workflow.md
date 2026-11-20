@@ -126,7 +126,7 @@ sequenceDiagram
 
 
 
-Legacy single-shot `AiService.generateResume` remains for compatibility but standard generate uses the chunked builder.
+Resume generation is chunked-only via `ChunkedResumeBuilder` (title match, JD extract, summary, skills, per-company experience).
 
 
 

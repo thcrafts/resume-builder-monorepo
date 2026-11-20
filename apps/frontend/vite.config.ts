@@ -122,8 +122,8 @@ function buildProxyOptions(targetRef: { value: string }): ProxyOptions {
             !response.headersSent &&
             !response.writableEnded
           ) {
-            response.writeHead(502, { 'Content-Type': 'application/json' })
-            response.end(
+            response.writeHead?.(502, { 'Content-Type': 'application/json' })
+            response.end?.(
               JSON.stringify({
                 message:
                   'Backend unavailable — Nest may still be starting. Retry shortly.',

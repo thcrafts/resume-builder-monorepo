@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
+import { MISSING_RESUME_PROMPT_MESSAGE } from '@resume-builder/shared';
 
 const INDUSTRY_PROMPTS_DIR = join(
   process.cwd(),
@@ -84,9 +85,7 @@ export class PromptRegistryService {
     if (!industry || industry === 'default') {
       const trimmed = userInstructions?.trim();
       if (!trimmed) {
-        throw new NotFoundException(
-          'No resume prompt configured. Add your resume prompt in Profile settings before generating a resume.',
-        );
+        throw new NotFoundException(MISSING_RESUME_PROMPT_MESSAGE);
       }
       return trimmed;
     }

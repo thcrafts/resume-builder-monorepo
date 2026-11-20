@@ -1,6 +1,5 @@
 import {
   validateCandidateProfile,
-  TITLE_SIMILARITY_THRESHOLD,
   parseGraduationYearFromDateRange,
   computeYearsOfExperienceFromEducation,
   applySummaryExperienceYears,
@@ -91,9 +90,6 @@ describe('validateCandidateProfile', () => {
     expect(result.valid).toBe(false);
   });
 
-  it('exports title similarity threshold of 0.8', () => {
-    expect(TITLE_SIMILARITY_THRESHOLD).toBe(0.8);
-  });
 });
 
 describe('parseGraduationYearFromDateRange', () => {

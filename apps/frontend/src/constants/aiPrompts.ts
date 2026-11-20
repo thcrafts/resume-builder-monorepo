@@ -1,5 +1,0 @@
-export {
-  DEFAULT_COVER_LETTER_PROMPT,
-  DEFAULT_QUESTIONS_PROMPT,
-  CUSTOM_PROMPT_HELPER_TEXT,
-} from "@resume-builder/shared";

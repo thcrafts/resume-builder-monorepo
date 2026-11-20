@@ -3,11 +3,6 @@ const LEGACY_PROVIDER_MAP: Record<string, string> = {
   openai: 'openai',
 };
 
-export const DEFAULT_AI_MODEL = 'anthropic';
-export const DEFAULT_AI_VERSION = 'anthropic/claude-sonnet-4.6';
-export const DEFAULT_FROM_JSON_AI_MODEL = 'openai';
-export const DEFAULT_FROM_JSON_AI_VERSION = 'openai/gpt-5.2';
-
 export const DEFAULT_TITLE_MATCH_MODEL = 'openai/gpt-4o-mini';
 /** Dedicated cheap pass to extract JD skills/experience for company alignment. */
 export const DEFAULT_JD_EXTRACTION_MODEL = 'openai/gpt-4o-mini';
@@ -23,7 +18,6 @@ export const JD_EXTRACTION_MAX_TOKENS = 1024;
 export const JOB_POSTING_EXTRACT_MAX_TOKENS = 2048;
 export const SUMMARY_MAX_TOKENS = 512;
 /** Target professional summary length is 100–120 words; this is the hard cap. */
-export const SUMMARY_MIN_WORDS = 100;
 export const SUMMARY_MAX_WORDS = 120;
 /** How many JD / modern skill names the summary should try to mention. */
 export const SUMMARY_SKILL_MENTION_LIMIT = 6;

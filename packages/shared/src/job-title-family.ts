@@ -256,31 +256,6 @@ export function mergeMonthIntervals(intervals: MonthInterval[]): number {
 }
 
 /**
- * Years of experience from companies whose titles match the JD role family.
- * Overlapping ranges are merged so concurrent similar roles do not double-count.
- * Returns null when no eligible parseable ranges exist.
- */
-export function computeYearsOfExperienceFromSimilarRoles(
-  companies: Array<{ title: string; date_range: string }>,
-  jdRoleTitle: string,
-  referenceDate: Date = new Date(),
-): number | null {
-  const intervals = companies
-    .filter((company) => isTitleSimilarToJd(company.title, jdRoleTitle))
-    .map((company) =>
-      parseEmploymentDateRange(company.date_range, referenceDate),
-    )
-    .filter((interval): interval is MonthInterval => interval != null);
-
-  if (intervals.length === 0) {
-    return null;
-  }
-
-  const months = mergeMonthIntervals(intervals);
-  return Math.floor(months / 12);
-}
-
-/**
  * Profile-cached career years: from the start of the earliest
  * software-engineering-related role (including internships) until now.
  * Calendar span (not summed employment). Returns null if none parseable.

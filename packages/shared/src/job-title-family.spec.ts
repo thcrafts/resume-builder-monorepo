@@ -1,6 +1,5 @@
 import {
   computeSoftwareEngineeringCareerYears,
-  computeYearsOfExperienceFromSimilarRoles,
   isTitleSimilarToJd,
   mergeMonthIntervals,
   normalizeJobTitleFamily,
@@ -79,33 +78,6 @@ describe('mergeMonthIntervals', () => {
   });
 });
 
-describe('computeYearsOfExperienceFromSimilarRoles', () => {
-  it('sums similar roles and excludes dissimilar titles', () => {
-    const reference = new Date(2024, 0, 1);
-    const years = computeYearsOfExperienceFromSimilarRoles(
-      [
-        { title: 'UX Designer', date_range: '2017 - 2020' },
-        { title: 'Software Engineer', date_range: '2020 - 2024' },
-        { title: 'Frontend Engineer', date_range: '2022 - 2024' },
-      ],
-      'Software Engineer',
-      reference,
-    );
-
-    // 2020-2024 year-only = Jan 2020–Dec 2024 = 60 months = 5 years
-    expect(years).toBe(5);
-  });
-
-  it('returns null when no similar parseable ranges exist', () => {
-    expect(
-      computeYearsOfExperienceFromSimilarRoles(
-        [{ title: 'UX Designer', date_range: '2017 - 2020' }],
-        'Software Engineer',
-      ),
-    ).toBeNull();
-  });
-});
-
 describe('computeSoftwareEngineeringCareerYears', () => {
   it('spans from earliest SE/intern start to now', () => {
     const reference = new Date(2024, 0, 1);
@@ -119,5 +91,13 @@ describe('computeSoftwareEngineeringCareerYears', () => {
         reference,
       ),
     ).toBe(6);
+  });
+
+  it('returns null when no software-engineering roles exist', () => {
+    expect(
+      computeSoftwareEngineeringCareerYears([
+        { title: 'UX Designer', date_range: '2017 - 2020' },
+      ]),
+    ).toBeNull();
   });
 });

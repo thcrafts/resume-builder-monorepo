@@ -2,7 +2,7 @@ import {
   normalizeTechStackSkills,
   isNonTechStackSkill,
   techStackSkillsMatch,
-} from '@resume-builder/shared';
+} from './tech-stack-skills';
 
 describe('normalizeTechStackSkills', () => {
   it('removes compliance and design-practice phrases', () => {

@@ -1,12 +1,10 @@
-import {
+﻿import {
   collectJdSkills,
   collectKeyModernBaselineSkills,
-  distributeJdSkillsAcrossExperience,
   mergeJdSkillsIntoCoreTechnologies,
-  getUncoveredJdSkills,
   selectJdSkillsForRecency,
   planJdTechStackPerCompany,
-} from '@resume-builder/shared';
+} from './jd-skill-alignment';
 
 describe('collectJdSkills', () => {
   it('merges languages and required skills', () => {
@@ -44,70 +42,6 @@ describe('collectKeyModernBaselineSkills', () => {
         { category: 'Programming', items: ['Rust', 'React'] },
       ]),
     ).toEqual(expect.arrayContaining(['Rust', 'React']));
-  });
-});
-
-describe('distributeJdSkillsAcrossExperience', () => {
-  const jdSkills = ['TypeScript', 'React', 'AWS', 'PostgreSQL', 'Kubernetes'];
-
-  it('puts all JD skills on the most recent company', () => {
-    const result = distributeJdSkillsAcrossExperience(
-      [
-        { id: 'recent', skills: ['Node.js'] },
-        { id: 'older', skills: ['Java'] },
-      ],
-      jdSkills,
-      10,
-    );
-
-    for (const skill of jdSkills) {
-      expect(result[0].skills.join(' ')).toContain(skill);
-    }
-  });
-
-  it('covers all JD skills across the union of companies', () => {
-    const result = distributeJdSkillsAcrossExperience(
-      [
-        { id: 'recent', skills: ['Node.js'] },
-        { id: 'older-a', skills: ['Java'] },
-        { id: 'older-b', skills: ['Spring'] },
-      ],
-      jdSkills,
-      10,
-    );
-
-    const union = result.flatMap((entry) => entry.skills);
-    expect(getUncoveredJdSkills(jdSkills, union)).toEqual([]);
-  });
-
-  it('distributes missing JD skills to older companies', () => {
-    const result = distributeJdSkillsAcrossExperience(
-      [
-        { id: 'recent', skills: ['TypeScript'] },
-        { id: 'older', skills: ['Java'] },
-      ],
-      ['TypeScript', 'React', 'AWS'],
-      10,
-    );
-
-    expect(result[0].skills).toEqual(
-      expect.arrayContaining(['TypeScript', 'React', 'AWS']),
-    );
-    expect(
-      getUncoveredJdSkills(['TypeScript', 'React', 'AWS'], result.flatMap((r) => r.skills)),
-    ).toEqual([]);
-  });
-
-  it('normalizes AWS services when distributing JD skills', () => {
-    const result = distributeJdSkillsAcrossExperience(
-      [{ id: 'recent', skills: ['Node.js', 'EC2', 'RDS'] }],
-      ['TypeScript', 'EC2', 'RDS'],
-      10,
-    );
-
-    expect(result[0].skills).toContain('AWS');
-    expect(result[0].skills).not.toContain('EC2');
-    expect(result[0].skills).not.toContain('RDS');
   });
 });
 
@@ -174,25 +108,6 @@ describe('planJdTechStackPerCompany', () => {
     expect(plan.get('ux')).toEqual([]);
     expect(plan.get('swe')?.length).toBe(6);
     expect(plan.get('fe')?.length).toBeLessThan(6);
-  });
-});
-
-describe('distributeJdSkillsAcrossExperience title gating', () => {
-  it('does not force JD skills onto ineligible company ids', () => {
-    const result = distributeJdSkillsAcrossExperience(
-      [
-        { id: 'ux', skills: ['Figma'] },
-        { id: 'swe', skills: ['Node.js'] },
-      ],
-      ['TypeScript', 'React', 'AWS'],
-      10,
-      { eligibleIds: ['swe'] },
-    );
-
-    expect(result.find((entry) => entry.id === 'ux')?.skills).toEqual(['Figma']);
-    expect(result.find((entry) => entry.id === 'swe')?.skills).toEqual(
-      expect.arrayContaining(['TypeScript', 'React', 'AWS', 'Node.js']),
-    );
   });
 });
 

@@ -2,7 +2,7 @@ import {
   extractJdRequirementsHeuristic,
   mergeJdAlignment,
   buildExperienceAlignmentUserBlock,
-} from '@resume-builder/shared';
+} from './jd-alignment';
 
 describe('jd alignment', () => {
   it('extracts languages and skills from job description text', () => {

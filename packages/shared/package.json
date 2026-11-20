@@ -15,7 +15,7 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js 2>/dev/null || echo 'no jest in shared'"
+    "test": "npm run test -w resume-builder-backend -- --testPathPattern=packages/shared"
   },
   "devDependencies": {
     "typescript": "^5.7.3"

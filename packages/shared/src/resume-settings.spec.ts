@@ -1,5 +1,5 @@
-import { resolveResumeSettings, DEFAULT_RESUME_SETTINGS } from '@resume-builder/shared';
-import { sanitizeFilename } from '@resume-builder/shared';
+import { resolveResumeSettings, DEFAULT_RESUME_SETTINGS } from './resume-settings';
+import { sanitizeFilename } from './sanitize-filename';
 
 describe('shared resume settings', () => {
   it('forces responsibilitiesCount to zero', () => {
@@ -29,7 +29,7 @@ describe('shared resume settings', () => {
 
 describe('sanitizeFilename', () => {
   it('strips special characters and normalizes spaces', () => {
-    expect(sanitizeFilename('John O\'Neil Jr.')).toBe('John_ONeil_Jr');
+    expect(sanitizeFilename("John O'Neil Jr.")).toBe('John_ONeil_Jr');
     expect(sanitizeFilename('A B', '-')).toBe('A-B');
   });
 });
